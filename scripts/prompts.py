@@ -61,7 +61,10 @@ def list_models():
 
 CYAN = "\033[36m"
 GREEN = "\033[32m"
+RED = "\033[31m"
 GREY = "\033[90m"
+GREEN_BG = "\033[42;30m"
+RED_BG = "\033[41;37m"
 RESET = "\033[0m"
 
 
@@ -123,6 +126,52 @@ def run_ollama(model_tag: str, sys_prompt: str, transcript: str) -> str:
     return data["message"]["content"]
 
 
+EVAL_SYSTEM_PROMPT = """\
+You are an evaluation judge. You will be given:
+1. A system prompt that was given to another model
+2. The output that model produced
+
+Break the system prompt into its individual instructions/criteria. For each one, determine \
+whether the model's output satisfies it ("pass") or not ("fail"). The "slice" should be a \
+short quote or paraphrase of that part of the prompt.
+
+Respond with JSON only: { "evals": [{ "status": "pass" | "fail", "slice": "<text from prompt>", "reason": "<short explanation>" }] }"""
+
+
+def evaluate_result(sys_prompt: str, result: str) -> list[dict]:
+    from openai import OpenAI
+
+    client = OpenAI()
+    completion = client.chat.completions.create(
+        model="gpt-5.4",
+        messages=[
+            {"role": "system", "content": EVAL_SYSTEM_PROMPT},
+            {"role": "user", "content": f'System prompt:\n"""\n{sys_prompt}\n"""\n\nModel output:\n"""\n{result}\n"""'},
+        ],
+        response_format={"type": "json_object"},
+    )
+
+    content = completion.choices[0].message.content
+    try:
+        parsed = json.loads(content)
+        return parsed.get("evals", [])
+    except json.JSONDecodeError:
+        return []
+
+
+def print_evals(evals: list[dict]):
+    for e in evals:
+        status = e.get("status", "?")
+        slice_text = e.get("slice", "")
+        reason = e.get("reason", "")
+        if status == "pass":
+            print(f"  {GREEN_BG} pass {RESET} {slice_text}")
+        else:
+            print(f"  {RED_BG} fail {RESET} {slice_text}")
+        print(f"  {GREY}{reason}{RESET}")
+        print()
+
+
 def run_one(model_tag: str, sys_prompt: str, transcript: str) -> str:
     if is_groq_model(model_tag):
         return run_groq(model_tag, sys_prompt, transcript)
@@ -133,12 +182,21 @@ def run_prompt(model_tags: list[str], sys_prompt: str, transcript: str):
     print(f"\n{CYAN}Original{RESET}")
     print(transcript)
 
-    for tag in model_tags:
+    for i, tag in enumerate(model_tags):
         start = time.perf_counter()
         content = run_one(tag, sys_prompt, transcript)
         ms = int((time.perf_counter() - start) * 1000)
+        result = extract_result(content)
+
         print(f"\n{GREEN}{tag} {GREY}[{ms}ms]{RESET}")
-        print(extract_result(content))
+        print(result)
+
+        evals = evaluate_result(sys_prompt, content)
+        print()
+        print_evals(evals)
+
+        if i < len(model_tags) - 1:
+            print(f"\n{GREY}---{RESET}")
 
 
 def main():
