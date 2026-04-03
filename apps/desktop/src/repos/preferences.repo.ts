@@ -7,6 +7,10 @@ import {
   UserPreferences,
 } from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
+import {
+  DEFAULT_DICTATION_LIMIT_MINUTES,
+  normalizeDictationLimitMinutes,
+} from "../utils/dictation-limit.utils";
 import { getEffectivePillVisibility, LOCAL_USER_ID } from "../utils/user.utils";
 import { BaseRepo } from "./base.repo";
 
@@ -36,6 +40,7 @@ type LocalUserPreferences = {
   ignoreUpdateDialog: boolean;
   incognitoModeEnabled: boolean;
   incognitoModeIncludeInStats: boolean;
+  dictationLimitMinutes?: Nullable<number>;
   dictationPillVisibility: DictationPillVisibility;
   realtimeOutputEnabled: boolean;
   remoteOutputEnabled: boolean;
@@ -87,6 +92,9 @@ const fromLocalPreferences = (
   ignoreUpdateDialog: preferences.ignoreUpdateDialog ?? false,
   incognitoModeEnabled: preferences.incognitoModeEnabled ?? false,
   incognitoModeIncludeInStats: preferences.incognitoModeIncludeInStats ?? false,
+  dictationLimitMinutes: normalizeDictationLimitMinutes(
+    preferences.dictationLimitMinutes,
+  ),
   dictationPillVisibility: getEffectivePillVisibility(
     preferences.dictationPillVisibility,
   ),
@@ -127,6 +135,9 @@ const toLocalPreferences = (
   ignoreUpdateDialog: preferences.ignoreUpdateDialog ?? false,
   incognitoModeEnabled: preferences.incognitoModeEnabled ?? false,
   incognitoModeIncludeInStats: preferences.incognitoModeIncludeInStats ?? false,
+  dictationLimitMinutes: normalizeDictationLimitMinutes(
+    preferences.dictationLimitMinutes ?? DEFAULT_DICTATION_LIMIT_MINUTES,
+  ),
   dictationPillVisibility: getEffectivePillVisibility(
     preferences.dictationPillVisibility,
   ),

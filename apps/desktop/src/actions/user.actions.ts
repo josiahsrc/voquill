@@ -22,6 +22,10 @@ import {
   normalizeTranscriptionDevice,
   supportsGpuTranscriptionDevice,
 } from "../utils/local-transcription.utils";
+import {
+  DEFAULT_DICTATION_LIMIT_MINUTES,
+  normalizeDictationLimitMinutes,
+} from "../utils/dictation-limit.utils";
 import { getLogger } from "../utils/log.utils";
 import {
   getMyEffectiveUserId,
@@ -100,6 +104,7 @@ export const createDefaultPreferences = (): UserPreferences => ({
   ignoreUpdateDialog: false,
   incognitoModeEnabled: false,
   incognitoModeIncludeInStats: false,
+  dictationLimitMinutes: DEFAULT_DICTATION_LIMIT_MINUTES,
   dictationPillVisibility: "while_active",
   realtimeOutputEnabled: false,
   remoteOutputEnabled: false,
@@ -542,6 +547,14 @@ export const setDictationPillVisibility = async (
   await updateUserPreferences((preferences) => {
     preferences.dictationPillVisibility = visibility;
   }, "Failed to save dictation pill visibility preference. Please try again.");
+};
+
+export const setDictationLimitMinutes = async (
+  minutes: number,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.dictationLimitMinutes = normalizeDictationLimitMinutes(minutes);
+  }, "Failed to save dictation limit preference. Please try again.");
 };
 
 export const setRealtimeOutputEnabled = async (
