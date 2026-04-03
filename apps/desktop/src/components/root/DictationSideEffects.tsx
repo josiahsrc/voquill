@@ -68,7 +68,6 @@ import {
   syncHotkeyCombosToNative,
 } from "../../utils/keyboard.utils";
 import { getLogger } from "../../utils/log.utils";
-import { flashPillTooltip } from "../../utils/overlay.utils";
 import { minutesToMilliseconds } from "../../utils/time.utils";
 import {
   getActiveManualToneIds,
@@ -128,15 +127,6 @@ export const DictationSideEffects = () => {
   const additionalLanguageEntries = useAppStore(getAdditionalLanguageEntries);
   const isDictationUnlocked = useAppStore(getIsDictationUnlocked);
   const isDictationInteractable = isDictationUnlocked && !isStopping;
-  const pillHoverEnabled = useAppStore((state) => {
-    if (!getIsDictationUnlocked(state)) {
-      return false;
-    }
-    const visibility = getEffectivePillVisibility(
-      state.userPrefs?.dictationPillVisibility,
-    );
-    return visibility === "persistent";
-  });
   const pillVisibility = useAppStore((state) =>
     getEffectivePillVisibility(state.userPrefs?.dictationPillVisibility),
   );
@@ -223,7 +213,6 @@ export const DictationSideEffects = () => {
       draft.dictationLanguageOverride = null;
       draft.assistantInputMode = "voice";
     });
-    invoke("set_overlay_focusable", { focusable: false }).catch(console.error);
   }, []);
 
   const hardResetHotkeyState = useCallback(() => {
@@ -642,9 +631,6 @@ export const DictationSideEffects = () => {
       produceAppState((draft) => {
         draft.assistantInputMode = "voice";
       });
-      invoke("set_overlay_focusable", { focusable: false }).catch(
-        console.error,
-      );
     }
 
     recordStreak();
@@ -663,7 +649,6 @@ export const DictationSideEffects = () => {
     const elapsed = now - lastStyleSwitchRef.current;
     lastStyleSwitchRef.current = now;
     if (elapsed > secondsToMilliseconds(3)) {
-      flashPillTooltip();
       return;
     }
 
@@ -770,7 +755,6 @@ export const DictationSideEffects = () => {
     produceAppState((draft) => {
       draft.assistantInputMode = "type";
     });
-    await invoke("set_overlay_focusable", { focusable: true });
   });
 
   useTauriListen<{ text: string }>(
@@ -861,12 +845,6 @@ export const DictationSideEffects = () => {
       resolveToolPermission(payload.permissionId, payload.status);
     },
   );
-
-  useEffect(() => {
-    invoke("set_pill_hover_enabled", { enabled: pillHoverEnabled }).catch(
-      console.error,
-    );
-  }, [pillHoverEnabled]);
 
   useEffect(() => {
     invoke("set_pill_visibility", { visibility: pillVisibility }).catch(

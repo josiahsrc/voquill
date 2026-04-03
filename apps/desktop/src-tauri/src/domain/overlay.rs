@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 pub const EVT_OVERLAY_PHASE: &str = "overlay_phase";
-pub const EVT_PILL_EXPANDED: &str = "pill_expanded";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -10,12 +9,6 @@ pub enum PillWindowSize {
     AssistantCompact,
     AssistantExpanded,
     AssistantTyping,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct PillExpandedPayload {
-    pub expanded: bool,
-    pub hovered: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

@@ -18,10 +18,6 @@ impl MacosPill {
     }
 }
 
-pub fn should_use_native_overlays() -> bool {
-    true
-}
-
 pub fn try_create_native_overlays(app: &tauri::AppHandle) -> bool {
     let (in_tx, in_rx) = mpsc::channel::<InMessage>();
     let (out_tx, out_rx) = mpsc::channel::<OutMessage>();
