@@ -454,18 +454,15 @@ fn draw_assistant_panel(gfx: &mut Gfx, state: &PillState, ww: f64, wh: f64) {
             gfx.draw_line(cx - 3.0, cy - 1.0, cx, cy - 4.0, arrow_color, 1.8);
             gfx.draw_line(cx + 3.0, cy - 1.0, cx, cy - 4.0, arrow_color, 1.8);
 
-            // Text input area
+            // Text input area — native Edit control overlays this region
             let input_x = panel_x + PANEL_CONTENT_SIDE_INSET;
             let input_w = panel_w - PANEL_CONTENT_SIDE_INSET * 2.0 - send_btn_size - 8.0;
-            let entry_text = state.entry_text.borrow();
-            if entry_text.is_empty() {
-                gfx.draw_text_top_left("Type a message...", input_x, input_y + 14.0,
-                    14.0, false, false, [1.0, 1.0, 1.0, 0.3 * alpha]);
-            } else {
-                gfx.draw_text_top_left(&entry_text, input_x, input_y + 14.0,
-                    14.0, false, false, [1.0, 1.0, 1.0, 0.92 * alpha]);
-            }
-            let _ = input_w;
+
+            // Click region for cursor (IDC_IBEAM) and focus
+            state.click_regions.borrow_mut().push(ClickRegion {
+                x: input_x, y: input_y + 1.0, w: input_w, h: PANEL_INPUT_HEIGHT - 1.0,
+                action: ClickAction::InputField,
+            });
 
             if has_text {
                 state.click_regions.borrow_mut().push(ClickRegion {

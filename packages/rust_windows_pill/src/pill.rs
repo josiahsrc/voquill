@@ -13,7 +13,7 @@ use crate::draw;
 use crate::gfx::Gfx;
 use crate::input;
 use crate::ipc::{self, InMessage, OutMessage, Phase, Visibility};
-use crate::state::{PillState, Rocket, RocketPhase, Spark, WindowMode};
+use crate::state::{ClickAction, PillState, Rocket, RocketPhase, Spark, WindowMode};
 
 const TIMER_ANIM: usize = 1;
 const TIMER_CURSOR: usize = 2;
@@ -25,6 +25,9 @@ thread_local! {
     static QUIT: Cell<bool> = const { Cell::new(false) };
     static HWND_CELL: Cell<HWND> = const { Cell::new(HWND(std::ptr::null_mut())) };
     static TYPING_ACTIVE: Cell<bool> = const { Cell::new(false) };
+    static EDIT_CONTAINER: Cell<HWND> = const { Cell::new(HWND(std::ptr::null_mut())) };
+    static EDIT_HWND: Cell<HWND> = const { Cell::new(HWND(std::ptr::null_mut())) };
+    static EDIT_BG_BRUSH: Cell<HBRUSH> = const { Cell::new(HBRUSH(std::ptr::null_mut())) };
 }
 
 pub fn run(receiver: Receiver<InMessage>) {
@@ -122,6 +125,8 @@ pub fn run(receiver: Receiver<InMessage>) {
     GFX.with(|g| *g.borrow_mut() = Some(gfx));
     RECEIVER.with(|r| *r.borrow_mut() = Some(receiver));
 
+    create_edit_overlay(hinstance, hwnd);
+
     unsafe {
         SetTimer(Some(hwnd), TIMER_ANIM, 16, None);
         SetTimer(Some(hwnd), TIMER_CURSOR, 60, None);
@@ -133,6 +138,7 @@ pub fn run(receiver: Receiver<InMessage>) {
         let mut msg = MSG::default();
         while GetMessageW(&mut msg, None, 0, 0).into() {
             if QUIT.with(|q| q.get()) { break; }
+            if handle_edit_message(&msg) { continue; }
             let _ = TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
@@ -161,8 +167,12 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
                     state.mouse_x.set(x);
                     state.mouse_y.set(y);
                     let regions = state.click_regions.borrow();
-                    let over_button = regions.iter().any(|r| r.contains(x, y));
-                    let cursor_id = if over_button { IDC_HAND } else { IDC_ARROW };
+                    let hit = regions.iter().rev().find(|r| r.contains(x, y));
+                    let cursor_id = match hit {
+                        Some(r) if matches!(r.action, ClickAction::InputField) => IDC_IBEAM,
+                        Some(_) => IDC_HAND,
+                        None => IDC_ARROW,
+                    };
                     unsafe { SetCursor(LoadCursorW(None, cursor_id).ok()); }
                 }
             });
@@ -175,6 +185,18 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
             } else {
                 unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) }
             }
+        }
+        WM_LBUTTONDOWN => {
+            STATE.with(|s| {
+                if let Some(ref state) = *s.borrow() {
+                    if state.assistant_active.get()
+                        && *state.assistant_input_mode.borrow() == "type"
+                    {
+                        focus_edit_control();
+                    }
+                }
+            });
+            LRESULT(0)
         }
         WM_LBUTTONUP => {
             let x = (lparam.0 & 0xFFFF) as i16 as f64;
@@ -270,6 +292,7 @@ fn on_anim_tick(hwnd: HWND) {
             if let (Some(ref mut gfx), Some(ref state)) = (&mut *g.borrow_mut(), &*s.borrow()) {
                 draw::draw_all(gfx, state);
                 update_layered(hwnd, gfx);
+                update_edit_overlay(hwnd, state);
             }
         });
     });
@@ -552,26 +575,20 @@ fn update_visibility(hwnd: HWND, state: &PillState) {
     }
 }
 
-fn update_typing_focus(hwnd: HWND, state: &PillState) {
+fn update_typing_focus(_hwnd: HWND, state: &PillState) {
     let is_typing = state.assistant_active.get()
         && *state.assistant_input_mode.borrow() == "type";
     let was_typing = TYPING_ACTIVE.with(|t| t.get());
 
     if is_typing && !was_typing {
         TYPING_ACTIVE.with(|t| t.set(true));
-        unsafe {
-            // Remove NOACTIVATE so the window can receive keyboard focus
-            let style = GetWindowLongW(hwnd, GWL_EXSTYLE) as u32;
-            SetWindowLongW(hwnd, GWL_EXSTYLE, (style & !WS_EX_NOACTIVATE.0) as i32);
-            let _ = SetForegroundWindow(hwnd);
-            let _ = SetFocus(Some(hwnd));
-        }
+        // Sync any existing text to the Edit control and focus it
+        let text = state.entry_text.borrow().clone();
+        set_edit_text(&text);
+        focus_edit_control();
     } else if !is_typing && was_typing {
         TYPING_ACTIVE.with(|t| t.set(false));
-        unsafe {
-            let style = GetWindowLongW(hwnd, GWL_EXSTYLE) as u32;
-            SetWindowLongW(hwnd, GWL_EXSTYLE, (style | WS_EX_NOACTIVATE.0) as i32);
-        }
+        clear_edit_control();
     }
 }
 
@@ -723,5 +740,272 @@ fn spring_px(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: f6
     } else {
         value.set(new_v);
         velocity.set(new_vel);
+    }
+}
+
+// ── Native text input overlay ────────────────────────────────────────
+
+const ES_AUTOHSCROLL: u32 = 0x0080;
+const EN_CHANGE_NOTIFICATION: u16 = 0x0300;
+const EM_SETMARGINS: u32 = 0x00D3;
+const EM_GETSEL: u32 = 0x00B0;
+const EM_SETSEL: u32 = 0x00B1;
+const EM_REPLACESEL: u32 = 0x00C2;
+const EC_LEFTMARGIN: u32 = 1;
+const EC_RIGHTMARGIN: u32 = 2;
+const EDIT_COLOR_KEY: u32 = 0x00010001; // RGB(1,0,1) - unique color for transparency
+const EDIT_TEXT_COLOR: u32 = 0x00E8E8E8; // RGB(232, 232, 232)
+
+fn create_edit_overlay(hinstance: HMODULE, main_hwnd: HWND) {
+    unsafe {
+        let brush = CreateSolidBrush(COLORREF(EDIT_COLOR_KEY));
+        EDIT_BG_BRUSH.with(|b| b.set(brush));
+
+        let class_name = w!("VoquillInput");
+        let wc = WNDCLASSEXW {
+            cbSize: std::mem::size_of::<WNDCLASSEXW>() as u32,
+            lpfnWndProc: Some(edit_container_proc),
+            hInstance: hinstance.into(),
+            lpszClassName: class_name,
+            hbrBackground: brush,
+            ..Default::default()
+        };
+        RegisterClassExW(&wc);
+
+        let container = CreateWindowExW(
+            WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED,
+            class_name,
+            w!(""),
+            WS_POPUP | WS_CLIPCHILDREN,
+            0, 0, 400, PANEL_INPUT_HEIGHT as i32,
+            Some(main_hwnd),
+            None,
+            Some(hinstance.into()),
+            None,
+        ).unwrap();
+
+        let edit = CreateWindowExW(
+            WS_EX_LEFT,
+            w!("EDIT"),
+            w!(""),
+            WINDOW_STYLE(WS_CHILD.0 | WS_VISIBLE.0 | ES_AUTOHSCROLL),
+            0, 0, 400, PANEL_INPUT_HEIGHT as i32,
+            Some(container),
+            None,
+            Some(hinstance.into()),
+            None,
+        ).unwrap();
+
+        // Font: Segoe UI ~14pt
+        let mut lf = LOGFONTW::default();
+        lf.lfHeight = -18;
+        lf.lfWeight = 400;
+        let face: Vec<u16> = "Segoe UI".encode_utf16().collect();
+        lf.lfFaceName[..face.len()].copy_from_slice(&face);
+        let font = CreateFontIndirectW(&lf);
+        SendMessageW(edit, WM_SETFONT, Some(WPARAM(font.0 as usize)), Some(LPARAM(1)));
+
+        // Set internal margins
+        let margins = (8u32 as isize) | ((8u32 as isize) << 16);
+        SendMessageW(edit, EM_SETMARGINS, Some(WPARAM((EC_LEFTMARGIN | EC_RIGHTMARGIN) as usize)), Some(LPARAM(margins)));
+
+        EDIT_CONTAINER.with(|c| c.set(container));
+        EDIT_HWND.with(|e| e.set(edit));
+    }
+}
+
+unsafe extern "system" fn edit_container_proc(
+    hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM,
+) -> LRESULT {
+    match msg {
+        WM_CTLCOLOREDIT => {
+            let hdc = HDC(wparam.0 as *mut std::ffi::c_void);
+            SetTextColor(hdc, COLORREF(EDIT_TEXT_COLOR));
+            SetBkMode(hdc, TRANSPARENT);
+            let brush = EDIT_BG_BRUSH.with(|b| b.get());
+            LRESULT(brush.0 as isize)
+        }
+        WM_COMMAND => {
+            let notification = ((wparam.0 >> 16) & 0xFFFF) as u16;
+            if notification == EN_CHANGE_NOTIFICATION {
+                // Sync native Edit text → state.entry_text
+                let text = get_edit_text();
+                STATE.with(|s| {
+                    if let Some(ref state) = *s.borrow() {
+                        *state.entry_text.borrow_mut() = text;
+                    }
+                });
+            }
+            LRESULT(0)
+        }
+        _ => DefWindowProcW(hwnd, msg, wparam, lparam),
+    }
+}
+
+/// Intercepts messages for the Edit control before TranslateMessage/DispatchMessage.
+/// Returns true if the message was consumed and should not be dispatched.
+fn handle_edit_message(msg: &MSG) -> bool {
+    let edit = EDIT_HWND.with(|e| e.get());
+    if msg.hwnd != edit { return false; }
+
+    match msg.message {
+        WM_KEYDOWN => {
+            let ctrl = unsafe { (GetKeyState(VK_CONTROL.0 as i32) as u16 & 0x8000) != 0 };
+
+            if msg.wParam.0 == VK_RETURN.0 as usize {
+                // Send the typed message
+                STATE.with(|s| {
+                    if let Some(ref state) = *s.borrow() {
+                        let text = state.entry_text.borrow().trim().to_string();
+                        if !text.is_empty() {
+                            ipc::send(&OutMessage::TypedMessage { text });
+                            *state.entry_text.borrow_mut() = String::new();
+                        }
+                    }
+                });
+                unsafe { let _ = SetWindowTextW(edit, w!("")); }
+                return true;
+            } else if msg.wParam.0 == VK_ESCAPE.0 as usize {
+                ipc::send(&OutMessage::AssistantClose);
+                return true;
+            } else if ctrl && msg.wParam.0 == 'A' as usize {
+                // Select all
+                unsafe { SendMessageW(edit, EM_SETSEL, Some(WPARAM(0)), Some(LPARAM(-1))); }
+                return true;
+            } else if ctrl && msg.wParam.0 == VK_BACK.0 as usize {
+                ctrl_backspace(edit);
+                return true;
+            }
+            false
+        }
+        _ => false,
+    }
+}
+
+fn ctrl_backspace(edit: HWND) {
+    unsafe {
+        // Get caret position from return value: LOWORD=start, HIWORD=end
+        let result = SendMessageW(edit, EM_GETSEL, None, None);
+        let caret = ((result.0 >> 16) & 0xFFFF) as usize;
+        if caret == 0 { return; }
+
+        // Get text as UTF-16
+        let len = GetWindowTextLengthW(edit);
+        if len == 0 { return; }
+        let mut buf = vec![0u16; (len + 1) as usize];
+        GetWindowTextW(edit, &mut buf);
+
+        let mut pos = caret.min(len as usize);
+
+        // Skip whitespace backwards
+        while pos > 0 && (buf[pos - 1] == b' ' as u16 || buf[pos - 1] == b'\t' as u16) {
+            pos -= 1;
+        }
+        // Skip non-whitespace backwards
+        while pos > 0 && buf[pos - 1] != b' ' as u16 && buf[pos - 1] != b'\t' as u16 {
+            pos -= 1;
+        }
+
+        // Select from word start to caret and replace with empty
+        SendMessageW(edit, EM_SETSEL, Some(WPARAM(pos)), Some(LPARAM(caret as isize)));
+        let empty: [u16; 1] = [0];
+        SendMessageW(edit, EM_REPLACESEL, Some(WPARAM(1)), Some(LPARAM(empty.as_ptr() as isize)));
+    }
+}
+
+fn update_edit_overlay(main_hwnd: HWND, state: &PillState) {
+    let is_typing = state.assistant_active.get()
+        && *state.assistant_input_mode.borrow() == "type";
+    let container = EDIT_CONTAINER.with(|c| c.get());
+    let edit = EDIT_HWND.with(|e| e.get());
+
+    if !is_typing {
+        unsafe {
+            if IsWindowVisible(container).as_bool() {
+                ShowWindow(container, SW_HIDE);
+            }
+        }
+        return;
+    }
+
+    // Calculate input field position in screen coordinates
+    let (ox, oy) = state.content_offset();
+    let ww = state.draw_width.get();
+    let wh = state.draw_height.get();
+
+    let panel_w = PANEL_EXPANDED_WIDTH;
+    let panel_x = (ww - panel_w) / 2.0;
+    let panel_h = wh - PANEL_TOP_MARGIN as f64 - PANEL_BOTTOM_MARGIN as f64;
+    let y_shift = (1.0 - state.panel_open_t.get()) * 12.0;
+    let py = PANEL_TOP_MARGIN as f64 + y_shift;
+    let input_y = py + panel_h - PANEL_INPUT_HEIGHT;
+    let input_x = panel_x + PANEL_CONTENT_SIDE_INSET;
+    let send_btn_size = 28.0_f64;
+    let input_w = panel_w - PANEL_CONTENT_SIDE_INSET * 2.0 - send_btn_size - 8.0;
+
+    let mut win_rect = RECT::default();
+    unsafe { let _ = GetWindowRect(main_hwnd, &mut win_rect); }
+
+    let screen_x = win_rect.left as f64 + ox + input_x;
+    let screen_y = win_rect.top as f64 + oy + input_y + 1.0;
+    let h = PANEL_INPUT_HEIGHT - 1.0;
+
+    unsafe {
+        // Color key makes the background transparent; alpha matches text to panel opacity
+        let alpha = (state.panel_open_t.get() * PANEL_BG_ALPHA * 255.0) as u8;
+        let _ = SetLayeredWindowAttributes(
+            container, COLORREF(EDIT_COLOR_KEY), alpha,
+            LWA_COLORKEY | LWA_ALPHA,
+        );
+
+        let _ = SetWindowPos(
+            container, None,
+            screen_x as i32, screen_y as i32,
+            input_w as i32, h as i32,
+            SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW,
+        );
+        let _ = SetWindowPos(
+            edit, None,
+            0, 0,
+            input_w as i32, h as i32,
+            SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE,
+        );
+    }
+
+    // If state.entry_text was cleared externally (e.g. send button), sync to Edit
+    let state_text = state.entry_text.borrow().clone();
+    let edit_text = get_edit_text();
+    if state_text.is_empty() && !edit_text.is_empty() {
+        set_edit_text("");
+    }
+}
+
+fn get_edit_text() -> String {
+    let edit = EDIT_HWND.with(|e| e.get());
+    unsafe {
+        let len = GetWindowTextLengthW(edit);
+        if len == 0 { return String::new(); }
+        let mut buf = vec![0u16; (len + 1) as usize];
+        GetWindowTextW(edit, &mut buf);
+        String::from_utf16_lossy(&buf[..len as usize])
+    }
+}
+
+fn set_edit_text(text: &str) {
+    let edit = EDIT_HWND.with(|e| e.get());
+    let wide: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
+    unsafe { let _ = SetWindowTextW(edit, PCWSTR(wide.as_ptr())); }
+}
+
+pub(crate) fn clear_edit_control() {
+    set_edit_text("");
+}
+
+pub(crate) fn focus_edit_control() {
+    let container = EDIT_CONTAINER.with(|c| c.get());
+    let edit = EDIT_HWND.with(|e| e.get());
+    unsafe {
+        let _ = SetForegroundWindow(container);
+        let _ = SetFocus(Some(edit));
     }
 }

@@ -47,6 +47,7 @@ pub(crate) enum ClickAction {
     PermissionDeny(String),
     PermissionAlwaysAllow(String),
     SendButton,
+    InputField,
 }
 
 #[derive(Debug, Clone)]

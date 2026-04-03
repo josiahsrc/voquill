@@ -58,7 +58,11 @@ pub(crate) fn handle_click(state: &PillState, x: f64, y: f64) {
                     if !text.is_empty() {
                         ipc::send(&OutMessage::TypedMessage { text });
                         *state.entry_text.borrow_mut() = String::new();
+                        crate::pill::clear_edit_control();
                     }
+                }
+                ClickAction::InputField => {
+                    crate::pill::focus_edit_control();
                 }
             }
             return;
