@@ -4,7 +4,6 @@ import { Nullable } from "@voquill/types";
 import { getRec } from "@voquill/utilities";
 import { getAppState } from "../store";
 import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
-import { getIsEmulators } from "../utils/env.utils";
 import { getLogger } from "../utils/log.utils";
 import { OLLAMA_DEFAULT_URL } from "../utils/ollama.utils";
 import { buildOpenAICompatibleUrl } from "../utils/openai-compatible.utils";
@@ -98,7 +97,6 @@ import {
   AldeaTranscribeAudioRepo,
   AzureTranscribeAudioRepo,
   BaseTranscribeAudioRepo,
-  CloudTranscribeAudioRepo,
   EnterpriseTranscribeAudioRepo,
   GeminiTranscribeAudioRepo,
   GroqTranscribeAudioRepo,
@@ -386,8 +384,6 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
     let repo: BaseTranscribeAudioRepo;
     if (getIsEnterpriseEnabled()) {
       repo = new EnterpriseTranscribeAudioRepo();
-    } else if (getIsEmulators()) {
-      repo = new CloudTranscribeAudioRepo();
     } else {
       repo = new NewServerTranscribeAudioRepo();
     }
