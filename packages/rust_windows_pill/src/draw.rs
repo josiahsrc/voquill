@@ -176,22 +176,27 @@ fn draw_loading(
 
     let bar_h = 2.0;
     let bar_y = ry + (pill_h - bar_h) / 2.0;
-    let bar_w = pill_w * LOADING_BAR_WIDTH_FRAC;
-    let offset = state.loading_offset.get();
-    let bar_x = rx + (pill_w + bar_w) * offset - bar_w;
+    let pad = pill_h * 0.1;
+    let track_x = rx + pad;
+    let track_w = pill_w - pad * 2.0;
 
-    let alpha = 0.7 * expand_t;
-    gfx.fill_gradient_rect(
-        bar_x, bar_y, bar_w, bar_h,
-        bar_x, 0.0, bar_x + bar_w, 0.0,
-        &[
-            (0.0, [1.0, 1.0, 1.0, 0.0]),
-            (0.5, [1.0, 1.0, 1.0, alpha]),
-            (1.0, [1.0, 1.0, 1.0, 0.0]),
-        ],
-    );
+    // Track line
+    gfx.fill_rect(track_x, bar_y, track_w, bar_h, [1.0, 1.0, 1.0, 0.15 * expand_t]);
+
+    // Moving indicator
+    let indicator_w = track_w * LOADING_BAR_WIDTH_FRAC;
+    let offset = state.loading_offset.get();
+    let ind_x = track_x + (track_w + indicator_w) * offset - indicator_w;
+
+    let draw_left = ind_x.max(track_x);
+    let draw_right = (ind_x + indicator_w).min(track_x + track_w);
+    if draw_right > draw_left {
+        gfx.fill_rect(draw_left, bar_y, draw_right - draw_left, bar_h, [1.0, 1.0, 1.0, 0.7 * expand_t]);
+    }
 
     gfx.restore();
+
+    draw_edge_gradient(gfx, rx, ry, pill_w, pill_h, expand_t);
 }
 
 fn draw_idle_label(gfx: &Gfx, rx: f64, ry: f64, pill_w: f64, pill_h: f64, expand_t: f64) {

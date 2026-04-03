@@ -189,20 +189,31 @@ fn draw_loading(
 
     let bar_h = 2.0;
     let bar_y = ry + (pill_h - bar_h) / 2.0;
-    let bar_w = pill_w * LOADING_BAR_WIDTH_FRAC;
-    let offset = state.loading_offset.get();
-    let bar_x = rx + (pill_w + bar_w) * offset - bar_w;
+    let pad = pill_h * 0.1;
+    let track_x = rx + pad;
+    let track_w = pill_w - pad * 2.0;
 
-    let alpha = 0.7 * expand_t;
-    let gradient = cairo::LinearGradient::new(bar_x, 0.0, bar_x + bar_w, 0.0);
-    gradient.add_color_stop_rgba(0.0, 1.0, 1.0, 1.0, 0.0);
-    gradient.add_color_stop_rgba(0.5, 1.0, 1.0, 1.0, alpha);
-    gradient.add_color_stop_rgba(1.0, 1.0, 1.0, 1.0, 0.0);
-    cr.set_source(&gradient).ok();
-    cr.rectangle(bar_x, bar_y, bar_w, bar_h);
+    // Track line
+    cr.set_source_rgba(1.0, 1.0, 1.0, 0.15 * expand_t);
+    cr.rectangle(track_x, bar_y, track_w, bar_h);
     let _ = cr.fill();
 
+    // Moving indicator
+    let indicator_w = track_w * LOADING_BAR_WIDTH_FRAC;
+    let offset = state.loading_offset.get();
+    let ind_x = track_x + (track_w + indicator_w) * offset - indicator_w;
+
+    let draw_left = ind_x.max(track_x);
+    let draw_right = (ind_x + indicator_w).min(track_x + track_w);
+    if draw_right > draw_left {
+        cr.set_source_rgba(1.0, 1.0, 1.0, 0.7 * expand_t);
+        cr.rectangle(draw_left, bar_y, draw_right - draw_left, bar_h);
+        let _ = cr.fill();
+    }
+
     cr.restore().ok();
+
+    draw_edge_gradient(cr, rx, ry, pill_w, pill_h, radius, expand_t);
 }
 
 fn draw_idle_label(cr: &cairo::Context, rx: f64, ry: f64, pill_w: f64, pill_h: f64, expand_t: f64) {
