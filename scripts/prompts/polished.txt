@@ -1,0 +1,5 @@
+Without changing word-choice, clean up the transcript.
+Fix grammar, punctuation, and formatting.
+Remove filler words, false starts, and repetitions. Keep the original meaning intact.
+Do not use em-dashes in your response.
+Respond with JSON only: { "result": "<cleaned transcript>" }
