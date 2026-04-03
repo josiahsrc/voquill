@@ -9,11 +9,13 @@ import {
   Select,
   Stack,
   Switch,
+  TextField,
 } from "@mui/material";
 import type { DictationPillVisibility, StylingMode } from "@voquill/types";
-import { ChangeEvent } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import {
+  setDictationLimitMinutes,
   setDictationPillVisibility,
   setIgnoreUpdateDialog,
   setIncognitoModeEnabled,
@@ -23,6 +25,12 @@ import {
 } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
 import {
+  getEffectiveDictationLimitMinutes,
+  MAX_DICTATION_LIMIT_MINUTES,
+  normalizeDictationLimitMinutes,
+  shouldEnableDictationLimit,
+} from "../../utils/dictation-limit.utils";
+import {
   getAllowChangeStylingMode,
   getAllowsMultiDeviceMode,
 } from "../../utils/enterprise.utils";
@@ -30,6 +38,7 @@ import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
   getEffectivePillVisibility,
   getMyUserPreferences,
+  getTranscriptionPrefs,
 } from "../../utils/user.utils";
 import { SettingSection } from "../common/SettingSection";
 
@@ -44,8 +53,11 @@ export const MoreSettingsDialog = () => {
     realtimeOutputEnabled,
     stylingMode,
     canChangeStylingMode,
+    showDictationLimitSetting,
+    dictationLimitMinutes,
   ] = useAppStore((state) => {
     const prefs = getMyUserPreferences(state);
+    const transcriptionPrefs = getTranscriptionPrefs(state);
     return [
       state.settings.moreSettingsDialogOpen,
       prefs?.ignoreUpdateDialog ?? false,
@@ -55,10 +67,50 @@ export const MoreSettingsDialog = () => {
       prefs?.realtimeOutputEnabled ?? false,
       getEffectiveStylingMode(state),
       getAllowChangeStylingMode(state),
+      shouldEnableDictationLimit(transcriptionPrefs.mode),
+      getEffectiveDictationLimitMinutes(prefs),
     ] as const;
   });
+  const [dictationLimitInput, setDictationLimitInput] = useState(
+    String(dictationLimitMinutes),
+  );
+  const lastCommittedDictationLimitMinutesRef = useRef(dictationLimitMinutes);
+
+  useEffect(() => {
+    lastCommittedDictationLimitMinutesRef.current = dictationLimitMinutes;
+    if (open) {
+      setDictationLimitInput(String(dictationLimitMinutes));
+    }
+  }, [dictationLimitMinutes, open]);
+
+  const commitDictationLimitInput = () => {
+    if (!showDictationLimitSetting) {
+      return;
+    }
+
+    if (dictationLimitInput === "") {
+      setDictationLimitInput(String(dictationLimitMinutes));
+      return;
+    }
+
+    const parsed = Number(dictationLimitInput);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setDictationLimitInput(String(dictationLimitMinutes));
+      return;
+    }
+
+    const normalized = normalizeDictationLimitMinutes(parsed);
+    setDictationLimitInput(String(normalized));
+    if (normalized === lastCommittedDictationLimitMinutesRef.current) {
+      return;
+    }
+
+    lastCommittedDictationLimitMinutesRef.current = normalized;
+    void setDictationLimitMinutes(normalized);
+  };
 
   const handleClose = () => {
+    commitDictationLimitInput();
     produceAppState((draft) => {
       draft.settings.moreSettingsDialogOpen = false;
     });
@@ -90,6 +142,15 @@ export const MoreSettingsDialog = () => {
 
   const handleToggleRealtimeOutput = (event: ChangeEvent<HTMLInputElement>) => {
     void setRealtimeOutputEnabled(event.target.checked);
+  };
+
+  const handleDictationLimitChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setDictationLimitInput(value);
+  };
+
+  const handleDictationLimitBlur = () => {
+    commitDictationLimitInput();
   };
 
   const allowMultiDevice = useAppStore(getAllowsMultiDeviceMode);
@@ -201,6 +262,33 @@ export const MoreSettingsDialog = () => {
               />
             }
           />
+
+          {showDictationLimitSetting && (
+            <SettingSection
+              title={
+                <FormattedMessage defaultMessage="Dictation limit (minutes)" />
+              }
+              description={
+                <FormattedMessage defaultMessage="Set the maximum dictation length in minutes. Enter 0 for no limit." />
+              }
+              action={
+                <TextField
+                  size="small"
+                  type="number"
+                  value={dictationLimitInput}
+                  onChange={handleDictationLimitChange}
+                  onBlur={handleDictationLimitBlur}
+                  sx={{ width: 104 }}
+                  inputProps={{
+                    min: 0,
+                    max: MAX_DICTATION_LIMIT_MINUTES,
+                    step: 1,
+                    inputMode: "numeric",
+                  }}
+                />
+              }
+            />
+          )}
 
           {canChangeStylingMode && (
             <SettingSection

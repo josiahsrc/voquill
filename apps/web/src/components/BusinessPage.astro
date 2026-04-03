@@ -1,0 +1,775 @@
+---
+import type { Locale } from '../types/locale';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const calendarUrl = 'https://calendar.app.google/j64iosi7sjJretxd9';
+
+const features = [
+	{
+		icon: '\u{1F465}',
+		title: 'Centralized user management',
+		description: 'Provision users from one admin console. SSO, role-based access, and onboarding built for scale.',
+	},
+	{
+		icon: '\u{1F4D6}',
+		title: 'Shared dictionaries & styles',
+		description: 'Org-wide and team-level custom dictionaries and formatting templates so Voquill nails your terminology and output style.',
+	},
+	{
+		icon: '\u{1F4CA}',
+		title: 'Usage analytics',
+		description: 'See who\u2019s using Voquill, how much time it\u2019s saving, and where adoption is growing. Real data for ROI conversations.',
+	},
+	{
+		icon: '\u2699\uFE0F',
+		title: 'Custom deployments',
+		description: 'On-prem, private cloud, or hybrid. Deployed exactly how your infrastructure team wants it.',
+	},
+];
+
+const comparisonRows = [
+	{ feature: 'State-of-the-art accuracy', voquill: true, cloud: true },
+	{ feature: 'Runs in your cloud / on-prem', voquill: true, cloud: false },
+	{ feature: 'Audio never leaves your network', voquill: true, cloud: false },
+	{ feature: 'Open-source core', voquill: true, cloud: false },
+	{ feature: 'Audit every line of code', voquill: true, cloud: false },
+];
+---
+
+<!-- Hero -->
+<section class="biz-hero">
+	<h1>Voice-to-text that never leaves your network.</h1>
+	<p class="biz-hero-sub">State-of-the-art transcription accuracy, deployed inside your cloud. Your team's audio never touches a third-party server.</p>
+	<div class="biz-hero-actions">
+		<a href={calendarUrl} target="_blank" rel="noopener noreferrer" class="btn-primary" data-track="BusinessContact">Book a 15-minute call</a>
+		<a href="#how" class="btn-ghost">See how it works</a>
+	</div>
+</section>
+
+<p class="biz-proof-bar">Trusted by security-conscious teams in healthcare, finance, legal, and government.</p>
+
+<!-- The Problem -->
+<section class="biz-problem">
+	<div class="biz-section-label">The problem</div>
+	<h2>Your team speaks 4x faster than they type.</h2>
+	<p>Voice dictation is the single fastest way to get work done across your organization: drafting emails, writing documentation, coding, capturing clinical notes, filing reports.</p>
+	<p>But every cloud dictation vendor requires you to send your team's audio (which often contains sensitive IP, patient data, legal details, and internal communications) through <strong>their infrastructure</strong>. There's a better way.</p>
+	<p><strong>Voquill is different.</strong></p>
+</section>
+
+<!-- Comparison Table -->
+<section class="biz-compare">
+	<div class="biz-compare-wrap">
+		<table class="biz-table">
+			<thead>
+				<tr>
+					<th></th>
+					<th>Voquill</th>
+					<th>Cloud-only vendors</th>
+				</tr>
+			</thead>
+			<tbody>
+				{comparisonRows.map((row) => (
+					<tr>
+						<td class="biz-table-feature">{row.feature}</td>
+						<td><span class={row.voquill ? 'biz-check' : 'biz-cross'}>{row.voquill ? '\u2713' : '\u2013'}</span></td>
+						<td><span class={row.cloud ? 'biz-check' : 'biz-cross'}>{row.cloud ? '\u2713' : '\u2013'}</span></td>
+					</tr>
+				))}
+			</tbody>
+		</table>
+	</div>
+</section>
+
+<!-- How It Works -->
+<section class="biz-how" id="how">
+	<div class="biz-how-inner">
+		<div class="biz-section-label-light">How it works</div>
+		<h2>Deployed in your environment. Running in hours, not months.</h2>
+		<div class="biz-steps">
+			<div class="biz-step">
+				<div class="biz-step-num">01</div>
+				<h3>Deploy inside your cloud</h3>
+				<p>Runs on AWS, Azure, GCP, or bare metal. We provide container images and infrastructure-as-code templates. Your IT team stays in full control.</p>
+			</div>
+			<div class="biz-step">
+				<div class="biz-step-num">02</div>
+				<h3>Roll out to your team</h3>
+				<p>We assist with the rollout: installing clients across your workforce, configuring SSO, and onboarding departments at your pace.</p>
+			</div>
+			<div class="biz-step">
+				<div class="biz-step-num">03</div>
+				<h3>Transcribe everything, on your terms</h3>
+				<p>Real-time and batch transcription at state-of-the-art accuracy. Scale across departments. Audio never leaves your perimeter.</p>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- Benefits -->
+<section class="biz-benefits">
+	<div class="biz-section-label">Why teams switch</div>
+	<h2>Built for organizations that take data sovereignty seriously.</h2>
+	<div class="biz-benefits-grid">
+		<div class="biz-benefit-card">
+			<h3>Shrink your compliance surface</h3>
+			<p>No third-party data processing agreements for audio. No new vendors on your SOC 2 scope. Your audio stays inside the boundary you've already secured.</p>
+		</div>
+		<div class="biz-benefit-card">
+			<h3>State-of-the-art accuracy, on your hardware</h3>
+			<p>Voquill runs the same models in your environment that cloud vendors run in theirs. Full accuracy, full control, and incredibly cost-effective to operate at scale.</p>
+		</div>
+		<div class="biz-benefit-card">
+			<h3>Transparent by design</h3>
+			<p>Open-source core means your security team can audit every line. No black boxes. No trust-us-it's-secure. Verify it yourself.</p>
+		</div>
+		<div class="biz-benefit-card">
+			<h3>Predictable costs at scale</h3>
+			<p>No per-minute transcription charges that balloon as adoption grows. Run it on your hardware, scale to every department, and keep costs flat.</p>
+		</div>
+	</div>
+</section>
+
+<!-- Enterprise Features -->
+<section class="biz-enterprise">
+	<div class="biz-enterprise-inner">
+		<div class="biz-section-label">Beyond on-prem</div>
+		<h2>Tools for your whole organization.</h2>
+		<p class="biz-enterprise-lead">Voquill for Business isn't just about where your data lives. It's a managed voice platform with the controls your IT team expects and the customization your teams need.</p>
+		<div class="biz-features-grid">
+			{features.map((feature) => (
+				<div class="biz-feature-card">
+					<h3><span class="biz-feature-icon">{feature.icon}</span> {feature.title}</h3>
+					<p>{feature.description}</p>
+				</div>
+			))}
+		</div>
+	</div>
+</section>
+
+<!-- AI Multiplier -->
+<section class="biz-multiplier">
+	<div class="biz-section-label">The bigger picture</div>
+	<h2>Voice accelerates your entire AI stack.</h2>
+	<p>When people can talk to their AI tools instead of typing, they naturally give more context and get better results. Talking is something your team already knows how to do.</p>
+	<div class="biz-stats">
+		<div class="biz-stat">
+			<div class="biz-stat-number">+60%</div>
+			<div class="biz-stat-label">more AI tool usage with voice input enabled</div>
+		</div>
+		<div class="biz-stat">
+			<div class="biz-stat-number">3.1×</div>
+			<div class="biz-stat-label">longer, more detailed prompts. Better AI output</div>
+		</div>
+		<div class="biz-stat">
+			<div class="biz-stat-number">+91%</div>
+			<div class="biz-stat-label">higher satisfaction with existing AI tools</div>
+		</div>
+	</div>
+</section>
+
+<!-- Testimonial -->
+<section class="biz-trust">
+	<div class="biz-trust-inner">
+		<blockquote>"We evaluated every voice-to-text vendor on the market. Voquill was the only one that met our security requirements without compromising on accuracy."</blockquote>
+		<cite>CTO, financial services firm</cite>
+	</div>
+</section>
+
+<!-- Open Source -->
+<section class="biz-oss">
+	<div class="biz-oss-box">
+		<h3>Open source at the core.</h3>
+		<p>Voquill's transcription engine is fully open source. Your security team can audit every line of code, your engineers can inspect exactly how your data is processed, and you're never dependent on a black box. The same engine that powers our cloud runs on your infrastructure.</p>
+	</div>
+</section>
+
+<!-- Final CTA -->
+<section class="biz-cta" id="cta">
+	<h2>Your audio belongs in your cloud.</h2>
+	<p>15-minute call. We'll talk about your infrastructure, your requirements, and how Voquill fits in.</p>
+	<a href={calendarUrl} target="_blank" rel="noopener noreferrer" class="biz-cta-btn" data-track="BusinessContact">Book a 15-minute call</a>
+</section>
+
+<script>
+	document.addEventListener('click', (e) => {
+		const el = (e.target as HTMLElement).closest<HTMLAnchorElement>('[data-track="BusinessContact"]');
+		if (!el) return;
+		const url = el.href;
+		if (typeof gtag === 'function') {
+			e.preventDefault();
+			gtag('event', 'conversion', {
+				send_to: 'AW-18059615608/WPp1CMvIwpQcEPi6v6ND',
+				event_callback: () => { window.open(url, '_blank'); },
+			});
+			setTimeout(() => { window.open(url, '_blank'); }, 1000);
+		}
+	});
+</script>
+
+<style>
+	/* ── Shared ── */
+	.biz-section-label {
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: var(--text-muted);
+		margin-bottom: 0.75rem;
+	}
+
+	.biz-section-label-light {
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: var(--text-muted);
+		margin-bottom: 0.75rem;
+	}
+
+	/* ── Hero ── */
+	.biz-hero {
+		max-width: 800px;
+		margin: 0 auto;
+		padding: 5rem 2rem 4rem;
+		text-align: center;
+	}
+
+	.biz-hero h1 {
+		font-weight: 700;
+		font-size: clamp(2.5rem, 5.5vw, 3.5rem);
+		line-height: 1.1;
+		letter-spacing: -0.035em;
+		margin-bottom: 1.5rem;
+	}
+
+	.biz-hero-sub {
+		font-size: 1.15rem;
+		color: var(--text-muted);
+		max-width: 560px;
+		margin: 0 auto 2.5rem;
+		line-height: 1.7;
+	}
+
+	.biz-hero-actions {
+		display: flex;
+		gap: 0.75rem;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	/* ── Proof Bar ── */
+	.biz-proof-bar {
+		text-align: center;
+		padding: 1rem 2rem 2rem;
+		color: var(--text-muted);
+		font-size: 0.8rem;
+		font-weight: 500;
+		letter-spacing: 0.02em;
+		opacity: 0.7;
+	}
+
+	/* ── Problem ── */
+	.biz-problem {
+		max-width: 780px;
+		margin: 0 auto;
+		padding: 3rem 2rem 4rem;
+	}
+
+	.biz-problem h2 {
+		font-weight: 700;
+		font-size: clamp(1.5rem, 3.5vw, 2rem);
+		line-height: 1.25;
+		letter-spacing: -0.025em;
+		margin-bottom: 1.5rem;
+	}
+
+	.biz-problem p {
+		color: var(--text-muted);
+		font-size: 1rem;
+		line-height: 1.75;
+		margin-bottom: 1.25rem;
+		max-width: 680px;
+	}
+
+	.biz-problem p strong {
+		color: var(--text-strong);
+	}
+
+	/* ── Comparison Table ── */
+	.biz-compare {
+		max-width: 720px;
+		margin: 0 auto;
+		padding: 0 2rem 4rem;
+	}
+
+	.biz-compare-wrap {
+		border-radius: 12px;
+		overflow: hidden;
+		border: 1px solid var(--border);
+	}
+
+	.biz-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.9rem;
+	}
+
+	.biz-table thead {
+		background: var(--text-strong);
+		color: var(--level0);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.biz-table thead {
+			background: var(--level2);
+			color: var(--text-strong);
+		}
+	}
+
+	.biz-table th {
+		padding: 0.9rem 1.25rem;
+		text-align: left;
+		font-weight: 600;
+		font-size: 0.8rem;
+		letter-spacing: 0.03em;
+	}
+
+	.biz-table td {
+		padding: 0.85rem 1.25rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.biz-table tbody tr:last-child td {
+		border-bottom: none;
+	}
+
+	.biz-table tbody tr:nth-child(even) {
+		background: var(--level1);
+	}
+
+	.biz-table-feature {
+		font-weight: 500;
+		color: var(--text-muted);
+	}
+
+	.biz-check {
+		color: var(--text-strong);
+		font-weight: 700;
+		font-size: 1rem;
+	}
+
+	.biz-cross {
+		color: var(--text-muted);
+		font-weight: 400;
+		font-size: 1rem;
+		opacity: 0.5;
+	}
+
+	/* ── How It Works ── */
+	.biz-how {
+		background: var(--text-strong);
+		color: var(--level0);
+		padding: 5rem 2rem;
+		margin-left: -24px;
+		margin-right: -24px;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.biz-how {
+			background: var(--level1);
+			color: var(--text-strong);
+			border-top: 1px solid var(--border);
+			border-bottom: 1px solid var(--border);
+		}
+	}
+
+	.biz-how-inner {
+		max-width: 800px;
+		margin: 0 auto;
+	}
+
+	.biz-how h2 {
+		font-weight: 700;
+		font-size: clamp(1.5rem, 3.5vw, 2rem);
+		line-height: 1.25;
+		letter-spacing: -0.025em;
+		margin-bottom: 3rem;
+	}
+
+	.biz-steps {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 2.5rem;
+	}
+
+	.biz-step-num {
+		font-weight: 700;
+		font-size: 2rem;
+		color: var(--text-muted);
+		margin-bottom: 0.75rem;
+		line-height: 1;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.biz-step h3 {
+		font-weight: 600;
+		font-size: 1rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.biz-step p {
+		color: rgba(255, 255, 255, 0.5);
+		font-size: 0.9rem;
+		line-height: 1.6;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.biz-step p {
+			color: var(--text-muted);
+		}
+	}
+
+	/* ── Benefits ── */
+	.biz-benefits {
+		max-width: 800px;
+		margin: 0 auto;
+		padding: 5rem 2rem;
+	}
+
+	.biz-benefits h2 {
+		font-weight: 700;
+		font-size: clamp(1.5rem, 3.5vw, 2rem);
+		line-height: 1.25;
+		letter-spacing: -0.025em;
+		margin-bottom: 3rem;
+	}
+
+	.biz-benefits-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1.5rem;
+	}
+
+	.biz-benefit-card {
+		background: var(--level1);
+		border-radius: 12px;
+		padding: 1.75rem;
+		border: 1px solid var(--border);
+	}
+
+	.biz-benefit-card h3 {
+		font-weight: 600;
+		font-size: 0.95rem;
+		margin-bottom: 0.4rem;
+	}
+
+	.biz-benefit-card p {
+		color: var(--text-muted);
+		font-size: 0.9rem;
+		line-height: 1.65;
+	}
+
+	/* ── Enterprise Features ── */
+	.biz-enterprise {
+		background: var(--level1);
+		padding: 5rem 2rem;
+		border-top: 1px solid var(--border);
+		border-bottom: 1px solid var(--border);
+		margin-left: -24px;
+		margin-right: -24px;
+	}
+
+	.biz-enterprise-inner {
+		max-width: 800px;
+		margin: 0 auto;
+	}
+
+	.biz-enterprise h2 {
+		font-weight: 700;
+		font-size: clamp(1.5rem, 3.5vw, 2rem);
+		line-height: 1.25;
+		letter-spacing: -0.025em;
+		margin-bottom: 0.75rem;
+	}
+
+	.biz-enterprise-lead {
+		color: var(--text-muted);
+		font-size: 1rem;
+		line-height: 1.7;
+		max-width: 600px;
+		margin-bottom: 2.5rem;
+	}
+
+	.biz-features-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1.5rem;
+	}
+
+	.biz-feature-card {
+		background: var(--level0);
+		border-radius: 12px;
+		padding: 2rem;
+		border: 1px solid var(--border);
+	}
+
+	.biz-feature-icon {
+		margin-right: 0.4rem;
+	}
+
+	.biz-feature-card h3 {
+		font-weight: 600;
+		font-size: 1rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.biz-feature-card p {
+		color: var(--text-muted);
+		font-size: 0.9rem;
+		line-height: 1.65;
+	}
+
+	/* ── AI Multiplier ── */
+	.biz-multiplier {
+		max-width: 780px;
+		margin: 0 auto;
+		padding: 5rem 2rem;
+	}
+
+	.biz-multiplier h2 {
+		font-weight: 700;
+		font-size: clamp(1.5rem, 3.5vw, 2rem);
+		line-height: 1.25;
+		letter-spacing: -0.025em;
+		margin-bottom: 1.5rem;
+	}
+
+	.biz-multiplier > p {
+		color: var(--text-muted);
+		font-size: 1rem;
+		line-height: 1.75;
+		margin-bottom: 1.25rem;
+		max-width: 680px;
+	}
+
+	.biz-stats {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1.5rem;
+		margin: 2rem 0 0.5rem;
+	}
+
+	.biz-stat {
+		border-left: 2px solid var(--text-strong);
+		padding: 0.5rem 0 0.5rem 1.25rem;
+	}
+
+	.biz-stat-number {
+		font-weight: 700;
+		font-size: 1.8rem;
+		line-height: 1;
+		margin-bottom: 0.3rem;
+		letter-spacing: -0.02em;
+	}
+
+	.biz-stat-label {
+		color: var(--text-muted);
+		font-size: 0.85rem;
+		line-height: 1.4;
+	}
+
+	.biz-stats-note {
+		font-size: 0.75rem;
+		color: var(--text-muted);
+		opacity: 0.6;
+		margin-top: 0.75rem;
+	}
+
+	/* ── Testimonial ── */
+	.biz-trust {
+		background: var(--level1);
+		padding: 4rem 2rem;
+		text-align: center;
+		border-top: 1px solid var(--border);
+		border-bottom: 1px solid var(--border);
+		margin-left: -24px;
+		margin-right: -24px;
+	}
+
+	.biz-trust-inner {
+		max-width: 620px;
+		margin: 0 auto;
+	}
+
+	.biz-trust blockquote {
+		font-size: 1.35rem;
+		font-style: normal;
+		font-weight: 500;
+		line-height: 1.5;
+		margin-bottom: 1.25rem;
+		letter-spacing: -0.01em;
+	}
+
+	.biz-trust cite {
+		font-style: normal;
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		font-weight: 500;
+	}
+
+	/* ── Open Source ── */
+	.biz-oss {
+		max-width: 720px;
+		margin: 0 auto;
+		padding: 4rem 2rem;
+		text-align: center;
+	}
+
+	.biz-oss-box {
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		padding: 2.5rem 2rem;
+		background: var(--level0);
+	}
+
+	.biz-oss h3 {
+		font-weight: 700;
+		font-size: 1.25rem;
+		margin-bottom: 0.75rem;
+		letter-spacing: -0.02em;
+	}
+
+	.biz-oss p {
+		color: var(--text-muted);
+		font-size: 0.95rem;
+		line-height: 1.7;
+		max-width: 520px;
+		margin: 0 auto;
+	}
+
+	/* ── CTA ── */
+	.biz-cta {
+		background: var(--text-strong);
+		color: var(--level0);
+		padding: 5rem 2rem;
+		text-align: center;
+		margin-left: -24px;
+		margin-right: -24px;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.biz-cta {
+			background: var(--level1);
+			color: var(--text-strong);
+			border-top: 1px solid var(--border);
+		}
+	}
+
+	.biz-cta h2 {
+		font-weight: 700;
+		font-size: clamp(1.8rem, 4vw, 2.4rem);
+		line-height: 1.15;
+		letter-spacing: -0.03em;
+		margin-bottom: 1rem;
+	}
+
+	.biz-cta > p {
+		color: rgba(255, 255, 255, 0.5);
+		font-size: 1.05rem;
+		margin-bottom: 2rem;
+		max-width: 460px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.biz-cta > p {
+			color: var(--text-muted);
+		}
+	}
+
+	.biz-cta-btn {
+		display: inline-block;
+		background: var(--level0);
+		color: var(--text-strong);
+		border: none;
+		padding: 0.9rem 2.25rem;
+		border-radius: 8px;
+		font-weight: 600;
+		font-size: 1rem;
+		cursor: pointer;
+		transition: opacity 0.15s;
+		text-decoration: none;
+	}
+
+	.biz-cta-btn:hover {
+		opacity: 0.9;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.biz-cta-btn {
+			background: var(--primary-button-bg);
+			color: var(--primary-button-fg);
+		}
+	}
+
+	.biz-cta-note {
+		margin-top: 1rem;
+		font-size: 0.8rem;
+		color: rgba(255, 255, 255, 0.3);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.biz-cta-note {
+			color: var(--text-muted);
+			opacity: 0.5;
+		}
+	}
+
+	/* ── Responsive ── */
+	@media (max-width: 720px) {
+		.biz-hero {
+			padding: 4rem 1.5rem 3rem;
+		}
+
+		.biz-steps {
+			grid-template-columns: 1fr;
+			gap: 2rem;
+		}
+
+		.biz-benefits-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.biz-features-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.biz-stats {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
+
+		.biz-table {
+			font-size: 0.85rem;
+		}
+
+		.biz-table th,
+		.biz-table td {
+			padding: 0.7rem 0.8rem;
+		}
+
+		.biz-how,
+		.biz-enterprise,
+		.biz-trust,
+		.biz-cta {
+			margin-left: -18px;
+			margin-right: -18px;
+		}
+	}
+</style>

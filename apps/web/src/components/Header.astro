@@ -6,17 +6,20 @@ import DownloadButton from './DownloadButton.astro';
 
 interface Props {
 	locale: Locale;
+	variant?: 'default' | 'business';
 }
 
-const { locale } = Astro.props;
+const { locale, variant = 'default' } = Astro.props;
 const i18n = t(locale);
+const isBusiness = variant === 'business';
+const calendarUrl = 'https://calendar.app.google/j64iosi7sjJretxd9';
 ---
 
 <div class="site-header-wrapper">
 	<header class="site-header">
-		<a href={localePath(locale, '/')} class="logo">
+		<a href={isBusiness ? localePath(locale, '/business') : localePath(locale, '/')} class="logo">
 			<span class="logo-mark" aria-hidden="true"></span>
-			<span>Voquill</span>
+			<span>{isBusiness ? 'Voquill for Business' : 'Voquill'}</span>
 		</a>
 		<nav aria-label="Primary navigation">
 			<a href={localePath(locale, '/#overview')}>{i18n.navDemo}</a>
@@ -28,22 +31,29 @@ const i18n = t(locale);
 				target="_blank"
 				rel="noopener noreferrer">{i18n.navDocs}</a
 			>
-			<a
-				href="https://docs.voquill.com/enterprise/overview"
-				target="_blank"
-				rel="noopener noreferrer">{i18n.navEnterprise}</a
-			>
+			<a href={localePath(locale, '/business')} class={isBusiness ? 'nav-active' : ''}>{i18n.navBusiness}</a>
 		</nav>
 		<div class="header-actions">
-			<a
-				href="https://github.com/voquill/voquill"
-				target="_blank"
-				rel="noopener noreferrer"
-				class="btn-secondary btn-small"
-				data-track="GitHub"
-				><span class="github-icon" aria-hidden="true"></span>{i18n.github}</a
-			>
-			<DownloadButton class="btn-primary btn-small" label={i18n.download} locale={locale} />
+			{isBusiness ? (
+				<a
+					href={calendarUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="btn-primary btn-small"
+					data-track="BusinessContact"
+				>Book a call</a>
+			) : (
+				<>
+					<a
+						href="https://github.com/voquill/voquill"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="btn-secondary btn-small"
+						data-track="GitHub"
+					><span class="github-icon" aria-hidden="true"></span>{i18n.github}</a>
+					<DownloadButton class="btn-primary btn-small" label={i18n.download} locale={locale} />
+				</>
+			)}
 		</div>
 		<button class="mobile-menu-btn" aria-label="Open menu">
 			<svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -126,6 +136,11 @@ const i18n = t(locale);
 
 	.site-header nav a:hover {
 		opacity: 1;
+	}
+
+	.site-header nav a.nav-active {
+		opacity: 1;
+		font-weight: 700;
 	}
 
 	.header-actions {

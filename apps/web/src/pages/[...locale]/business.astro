@@ -1,0 +1,31 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import BusinessPage from '../../components/BusinessPage.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import { defaultLocale, type Locale } from '../../types/locale';
+import { t } from '../../i18n/translations';
+export { getLocaleStaticPaths as getStaticPaths } from '../../utils/paths';
+
+const locale = (Astro.params.locale ?? defaultLocale) as Locale;
+const i18n = t(locale);
+---
+
+<Layout
+	title="Voquill for Business | On-Prem Voice-to-Text"
+	description="State-of-the-art voice-to-text deployed inside your cloud. Your audio never leaves your network. Open-source, on-premise, enterprise-grade."
+	lang={locale}
+>
+	<Fragment slot="head">
+		<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18059615608"></script>
+		<script is:inline>
+			window.dataLayer = window.dataLayer || [];
+			function gtag(){dataLayer.push(arguments);}
+			gtag('js', new Date());
+			gtag('config', 'AW-18059615608');
+		</script>
+	</Fragment>
+	<Header locale={locale} variant="business" />
+	<BusinessPage locale={locale} />
+	<SiteFooter locale={locale} />
+</Layout>

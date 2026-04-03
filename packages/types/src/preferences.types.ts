@@ -28,6 +28,7 @@ export type UserPreferences = {
   ignoreUpdateDialog: boolean;
   incognitoModeEnabled: boolean;
   incognitoModeIncludeInStats: boolean;
+  dictationLimitMinutes: number;
   dictationPillVisibility: DictationPillVisibility;
   realtimeOutputEnabled: boolean;
   remoteOutputEnabled: boolean;

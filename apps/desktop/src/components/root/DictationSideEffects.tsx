@@ -56,6 +56,12 @@ import {
 } from "../../utils/analytics.utils";
 import { getIsAssistantModeEnabled } from "../../utils/assistant-mode.utils";
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
+import {
+  DEFAULT_DICTATION_LIMIT_MINUTES,
+  getDictationRecordingTimerDurations,
+  getEffectiveDictationLimitMinutes,
+  shouldEnableDictationLimit,
+} from "../../utils/dictation-limit.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import { createId } from "../../utils/id.utils";
 import {
@@ -68,7 +74,6 @@ import {
   syncHotkeyCombosToNative,
 } from "../../utils/keyboard.utils";
 import { getLogger } from "../../utils/log.utils";
-import { minutesToMilliseconds } from "../../utils/time.utils";
 import {
   getActiveManualToneIds,
   getManuallySelectedToneId,
@@ -80,13 +85,10 @@ import {
   getIsDictationUnlocked,
   getMyPreferredMicrophone,
   getMyPrimaryDictationLanguage,
+  getMyUserPreferences,
   getTranscriptionPrefs,
 } from "../../utils/user.utils";
 import { surfaceMainWindow } from "../../utils/window.utils";
-
-// These limits are here to help prevent people from accidentally leaving their mic on
-const RECORDING_WARNING_DURATION_MS = minutesToMilliseconds(4);
-const RECORDING_AUTO_STOP_DURATION_MS = minutesToMilliseconds(5);
 
 type StartRecordingResponse = {
   sampleRate: number;
@@ -456,37 +458,57 @@ export const DictationSideEffects = () => {
   const startRecordingTimers = useCallback(() => {
     clearRecordingTimers();
 
-    recordingWarningTimerRef.current = setTimeout(() => {
-      getLogger().warning("Recording duration warning (4 min)");
-      showToast({
-        title: intl.formatMessage({
-          defaultMessage: "Recording ending soon",
-        }),
-        message: intl.formatMessage({
-          defaultMessage:
-            "Audio recording will automatically stop in 60 seconds.",
-        }),
-        toastType: "info",
-        duration: 5_000,
-      });
-    }, RECORDING_WARNING_DURATION_MS);
+    const state = getAppState();
+    const preferences = getMyUserPreferences(state);
+    const transcriptionPrefs = getTranscriptionPrefs(state);
 
-    recordingAutoStopTimerRef.current = setTimeout(() => {
-      getLogger().warning("Recording auto-stopped (5 min limit)");
-      showToast({
-        title: intl.formatMessage({
-          defaultMessage: "Recording stopped",
-        }),
-        message: intl.formatMessage({
-          defaultMessage:
-            "Audio recording was automatically stopped due to duration limit.",
-        }),
-        toastType: "info",
-        duration: 5_000,
-      });
+    const dictationLimitMinutes = shouldEnableDictationLimit(
+      transcriptionPrefs.mode,
+    )
+      ? getEffectiveDictationLimitMinutes(preferences)
+      : DEFAULT_DICTATION_LIMIT_MINUTES;
+    const { warningDurationMs, autoStopDurationMs } =
+      getDictationRecordingTimerDurations(dictationLimitMinutes);
 
-      stopRecording();
-    }, RECORDING_AUTO_STOP_DURATION_MS);
+    if (warningDurationMs !== null) {
+      recordingWarningTimerRef.current = setTimeout(() => {
+        getLogger().warning(
+          `Recording duration warning (${dictationLimitMinutes} min limit)`,
+        );
+        showToast({
+          title: intl.formatMessage({
+            defaultMessage: "Recording ending soon",
+          }),
+          message: intl.formatMessage({
+            defaultMessage:
+              "Audio recording will automatically stop in 60 seconds.",
+          }),
+          toastType: "info",
+          duration: 5_000,
+        });
+      }, warningDurationMs);
+    }
+
+    if (autoStopDurationMs !== null) {
+      recordingAutoStopTimerRef.current = setTimeout(() => {
+        getLogger().warning(
+          `Recording auto-stopped (${dictationLimitMinutes} min limit)`,
+        );
+        showToast({
+          title: intl.formatMessage({
+            defaultMessage: "Recording stopped",
+          }),
+          message: intl.formatMessage({
+            defaultMessage:
+              "Audio recording was automatically stopped due to duration limit.",
+          }),
+          toastType: "info",
+          duration: 5_000,
+        });
+
+        stopRecording();
+      }, autoStopDurationMs);
+    }
   }, [stopRecording, intl, clearRecordingTimers]);
 
   const startRecording = useCallback(

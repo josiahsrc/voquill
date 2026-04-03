@@ -9,7 +9,7 @@ export const koTranslations = {
     navPricing: "요금제",
     navBlog: "블로그",
     navDocs: "문서",
-    navEnterprise: "기업용",
+    navBusiness: "비즈니스",
     github: "GitHub",
     download: "다운로드",
     heroHeading: "키보드가 당신을 붙잡고 있습니다.",
