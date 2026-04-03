@@ -260,7 +260,11 @@ const startNewServerStreaming = async (
         console.log("[NewServer WebSocket] Received:", msg.type);
 
         if (msg.type === "error") {
-          console.error("[NewServer WebSocket] Server error:", msg.code, msg.message);
+          console.error(
+            "[NewServer WebSocket] Server error:",
+            msg.code,
+            msg.message,
+          );
           const error = new Error(`${msg.code}: ${msg.message}`);
           if (finalizeRejecter) {
             settleFinalize(
