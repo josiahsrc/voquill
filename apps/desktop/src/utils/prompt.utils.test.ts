@@ -95,6 +95,8 @@ describe("buildPostProcessingPrompt", () => {
     );
     expect(result).toContain("<transcript>");
     expect(result).toContain("Hello world");
-    expect(result).toContain("Process the transcript according to the instructions");
+    expect(result).toContain(
+      "Process the transcript according to the instructions",
+    );
   });
 });
