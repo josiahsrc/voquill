@@ -22,10 +22,7 @@ pub use conversation::Conversation;
 pub use hotkey::{CompositorBinding, Hotkey};
 pub use keyboard::{KeysHeldPayload, EVT_KEYS_HELD};
 pub use monitor::{MonitorAtCursor, OverlayAnchor, ScreenVisibleArea};
-pub use overlay::{
-    OverlayPhase, OverlayPhasePayload, PillExpandedPayload, PillWindowSize, EVT_OVERLAY_PHASE,
-    EVT_PILL_EXPANDED,
-};
+pub use overlay::{OverlayPhase, OverlayPhasePayload, PillWindowSize, EVT_OVERLAY_PHASE};
 pub use paired_remote_device::PairedRemoteDevice;
 pub use permissions::{PermissionKind, PermissionState, PermissionStatus};
 pub use preferences::UserPreferences;

@@ -1,0 +1,22 @@
+Without changing word-choice, clean up and format the transcript as an email, complete with a greeting, closing, and signature if appropriate.
+
+"""
+[Greeting],
+
+[Body of the email, cleaned up and formatted according to the guidelines below]
+
+[Closing],
+<username/>
+"""
+
+Make sure to break up the email with newlines between sections and paragraphs!.
+
+Fix grammar, punctuation, and formatting.
+Remove filler words, false starts, and repetitions. Keep the original meaning intact.
+Break the reponse into paragraphs when appropriate.
+Format spoken lists into bulleted or numbered lists.
+Convert spoken symbols into their actual character equivalents (e.g. "hashtag" to "#", emojis, `foo.cpp`, etc).
+When the speaker corrects themselves, only keep the corrected version.
+Convert spoken dates, times, and numbers into their proper numerical forms.
+Do NOT use em-dash symbols (—) in your response.
+Respond with JSON only: { "result": "<cleaned transcript>" }

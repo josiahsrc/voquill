@@ -7,6 +7,7 @@ import {
 } from "../../actions/user.actions";
 import { useAppStore } from "../../store";
 import { getAllowsChangePostProcessing } from "../../utils/enterprise.utils";
+import { getEffectivePostProcessingMode } from "../../utils/user.utils";
 import { ManagedByOrgNotice } from "../common/ManagedByOrgNotice";
 import { type PostProcessingMode } from "../../types/ai.types";
 import {
@@ -30,6 +31,7 @@ export const AIPostProcessingConfiguration = ({
   const postProcessing = useAppStore(
     (state) => state.settings.aiPostProcessing,
   );
+  const effectiveMode = useAppStore(getEffectivePostProcessingMode);
   const allowChange = useAppStore(getAllowsChangePostProcessing);
 
   const handleModeChange = useCallback((mode: PostProcessingMode) => {
@@ -47,7 +49,7 @@ export const AIPostProcessingConfiguration = ({
   return (
     <Stack spacing={3} alignItems="flex-start" sx={{ width: "100%" }}>
       <SegmentedControl<PostProcessingMode>
-        value={postProcessing.mode}
+        value={effectiveMode}
         onChange={handleModeChange}
         options={[
           ...maybeArrayElements<SegmentedControlOption<PostProcessingMode>>(
@@ -65,13 +67,13 @@ export const AIPostProcessingConfiguration = ({
         ariaLabel="Post-processing mode"
       />
 
-      {postProcessing.mode === "none" && (
+      {effectiveMode === "none" && (
         <Typography variant="body2" color="text.secondary">
           <FormattedMessage defaultMessage="No AI post-processing will run on new transcripts." />
         </Typography>
       )}
 
-      {postProcessing.mode === "api" && (
+      {effectiveMode === "api" && (
         <ApiKeyList
           selectedApiKeyId={postProcessing.selectedApiKeyId}
           onChange={handleApiKeyChange}
@@ -79,7 +81,7 @@ export const AIPostProcessingConfiguration = ({
         />
       )}
 
-      {postProcessing.mode === "cloud" && <VoquillCloudSetting />}
+      {effectiveMode === "cloud" && <VoquillCloudSetting />}
     </Stack>
   );
 };

@@ -24,7 +24,6 @@ import {
   DICTATE_HOTKEY,
   getHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
-import { flashPillTooltip } from "../../utils/overlay.utils";
 import { POLISHED_TONE_ID, EMAIL_TONE_ID } from "../../utils/tone.utils";
 import { getMyUser } from "../../utils/user.utils";
 import { DictationInstruction } from "../common/DictationInstruction";
@@ -100,7 +99,6 @@ export const TutorialForm = () => {
     }
 
     await setSelectedToneId(toneId);
-    flashPillTooltip();
   };
 
   useEffect(() => {

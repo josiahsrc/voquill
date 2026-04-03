@@ -32,6 +32,7 @@ import {
 import { useAppStore } from "../../store";
 import { CPU_DEVICE_VALUE, type TranscriptionMode } from "../../types/ai.types";
 import { getAllowsChangeTranscription } from "../../utils/enterprise.utils";
+import { getEffectiveTranscriptionMode } from "../../utils/user.utils";
 import { formatSize } from "../../utils/format.utils";
 import { type LocalSidecarDownloadSnapshot } from "../../sidecars";
 import {
@@ -121,6 +122,7 @@ export const AITranscriptionConfiguration = ({
 }: AITranscriptionConfigurationProps) => {
   const intl = useIntl();
   const transcription = useAppStore((state) => state.settings.aiTranscription);
+  const effectiveMode = useAppStore(getEffectiveTranscriptionMode);
   const allowChange = useAppStore(getAllowsChangeTranscription);
   const localTranscriptionConfig = transcription.localModelManagement;
 
@@ -143,24 +145,24 @@ export const AITranscriptionConfiguration = ({
   const showInlineModelDownloadAction = !modelSelectable;
 
   useEffect(() => {
-    if (transcription.mode !== "local") {
+    if (effectiveMode !== "local") {
       return;
     }
 
     void refreshLocalTranscriptionDevices();
-  }, [transcription.mode]);
+  }, [effectiveMode]);
 
   useEffect(() => {
-    if (transcription.mode !== "local") {
+    if (effectiveMode !== "local") {
       return;
     }
 
     void refreshLocalTranscriptionModelStatuses();
-  }, [transcription.mode, transcription.device]);
+  }, [effectiveMode, transcription.device]);
 
   useEffect(() => {
     if (
-      transcription.mode !== "local" ||
+      effectiveMode !== "local" ||
       !localTranscriptionConfig.modelStatusesLoaded
     ) {
       return;
@@ -183,7 +185,7 @@ export const AITranscriptionConfiguration = ({
     transcription,
     localTranscriptionConfig.modelStatusesLoaded,
     modelValue,
-    transcription.mode,
+    effectiveMode,
   ]);
 
   const handleModeChange = useCallback((mode: TranscriptionMode) => {
@@ -258,7 +260,7 @@ export const AITranscriptionConfiguration = ({
   return (
     <Stack spacing={3} alignItems="flex-start" sx={{ width: "100%" }}>
       <SegmentedControl<TranscriptionMode>
-        value={transcription.mode}
+        value={effectiveMode}
         onChange={handleModeChange}
         options={[
           ...maybeArrayElements<SegmentedControlOption<TranscriptionMode>>(
@@ -276,7 +278,7 @@ export const AITranscriptionConfiguration = ({
         ariaLabel="Processing mode"
       />
 
-      {transcription.mode === "local" && (
+      {effectiveMode === "local" && (
         <Stack spacing={3} sx={{ width: "100%" }}>
           <FormControl
             fullWidth
@@ -528,7 +530,7 @@ export const AITranscriptionConfiguration = ({
         </Stack>
       )}
 
-      {transcription.mode === "api" && (
+      {effectiveMode === "api" && (
         <ApiKeyList
           selectedApiKeyId={transcription.selectedApiKeyId}
           onChange={handleApiKeyChange}
@@ -536,7 +538,7 @@ export const AITranscriptionConfiguration = ({
         />
       )}
 
-      {transcription.mode === "cloud" && <VoquillCloudSetting />}
+      {effectiveMode === "cloud" && <VoquillCloudSetting />}
     </Stack>
   );
 };

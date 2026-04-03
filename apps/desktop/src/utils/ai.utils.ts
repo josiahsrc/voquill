@@ -1,12 +1,6 @@
 import type { LlmMessage, UserPreferences } from "@voquill/types";
 import { AppState } from "../state/app.state";
-import {
-  CPU_DEVICE_VALUE,
-  DEFAULT_AGENT_MODE,
-  DEFAULT_MODEL_SIZE,
-  DEFAULT_POST_PROCESSING_MODE,
-  DEFAULT_TRANSCRIPTION_MODE,
-} from "../types/ai.types";
+import { CPU_DEVICE_VALUE, DEFAULT_MODEL_SIZE } from "../types/ai.types";
 import {
   isGpuPreferredTranscriptionDevice,
   normalizeTranscriptionDevice,
@@ -56,9 +50,7 @@ export const applyAiPreferences = (
   draft: AppState,
   preferences: UserPreferences,
 ): void => {
-  const transcriptionMode =
-    preferences.transcriptionMode ?? DEFAULT_TRANSCRIPTION_MODE;
-  draft.settings.aiTranscription.mode = transcriptionMode;
+  draft.settings.aiTranscription.mode = preferences.transcriptionMode ?? null;
   draft.settings.aiTranscription.selectedApiKeyId =
     preferences.transcriptionApiKeyId ?? null;
   const normalizedDevice = normalizeTranscriptionDevice(
@@ -72,14 +64,11 @@ export const applyAiPreferences = (
     (preferences.gpuEnumerationEnabled ??
       isGpuPreferredTranscriptionDevice(normalizedDevice));
 
-  const postProcessingMode =
-    preferences.postProcessingMode ?? DEFAULT_POST_PROCESSING_MODE;
-  draft.settings.aiPostProcessing.mode = postProcessingMode;
+  draft.settings.aiPostProcessing.mode = preferences.postProcessingMode ?? null;
   draft.settings.aiPostProcessing.selectedApiKeyId =
     preferences.postProcessingApiKeyId ?? null;
 
-  const agentMode = preferences.agentMode ?? DEFAULT_AGENT_MODE;
-  draft.settings.agentMode.mode = agentMode;
+  draft.settings.agentMode.mode = preferences.agentMode ?? null;
   draft.settings.agentMode.selectedApiKeyId =
     preferences.agentModeApiKeyId ?? null;
   draft.settings.agentMode.openclawGatewayUrl =

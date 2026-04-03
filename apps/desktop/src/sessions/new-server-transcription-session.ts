@@ -121,7 +121,7 @@ const startNewServerStreaming = async (
 
       if (ws && ws.readyState === WebSocket.OPEN) {
         try {
-          ws.send(samples.buffer);
+          ws.send(samples.buffer as ArrayBuffer);
           sentChunkCount++;
           if (sentChunkCount <= 3 || sentChunkCount % 10 === 0) {
             console.log(
@@ -260,6 +260,11 @@ const startNewServerStreaming = async (
         console.log("[NewServer WebSocket] Received:", msg.type);
 
         if (msg.type === "error") {
+          console.error(
+            "[NewServer WebSocket] Server error:",
+            msg.code,
+            msg.message,
+          );
           const error = new Error(`${msg.code}: ${msg.message}`);
           if (finalizeRejecter) {
             settleFinalize(
@@ -300,7 +305,7 @@ const startNewServerStreaming = async (
           for (const samples of bufferedChunks) {
             if (ws && ws.readyState === WebSocket.OPEN && !isFinalized) {
               try {
-                ws.send(samples.buffer);
+                ws.send(samples.buffer as ArrayBuffer);
                 sentChunkCount++;
               } catch (error) {
                 console.error(

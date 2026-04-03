@@ -18,7 +18,7 @@ use crate::draw;
 use crate::gfx::{self, Ctx};
 use crate::input;
 use crate::ipc::{self, InMessage, OutMessage, Phase, Visibility};
-use crate::state::{PillState, WindowMode};
+use crate::state::{PillState, Rocket, RocketPhase, Spark, WindowMode};
 
 // ── CVDisplayLink & timing ───────────────────────────────────────
 
@@ -180,7 +180,13 @@ extern "C" fn mouse_up(_this: &Object, _sel: Sel, event: id) {
 extern "C" fn scroll_wheel(_this: &Object, _sel: Sel, event: id) {
     with_ctx(|ctx| {
         unsafe {
-            let dy: f64 = msg_send![event, deltaY];
+            let precise: bool = msg_send![event, hasPreciseScrollingDeltas];
+            let dy: f64 = if precise {
+                msg_send![event, scrollingDeltaY]
+            } else {
+                let line_dy: f64 = msg_send![event, deltaY];
+                line_dy * 30.0
+            };
             input::handle_scroll(&ctx.state, dy);
         }
     });
@@ -278,6 +284,21 @@ fn perform_tick() {
                 InMessage::StyleInfo { count, name } => {
                     ctx.state.style_count.set(count);
                     *ctx.state.style_name.borrow_mut() = name;
+                }
+                InMessage::FlashMessage { message } => {
+                    *ctx.state.flash_message.borrow_mut() = message;
+                    ctx.state.flash_visible.set(true);
+                    ctx.state.flash_timer.set(FLASH_DURATION);
+                }
+                InMessage::Fireworks { message } => {
+                    *ctx.state.flash_message.borrow_mut() = message;
+                    ctx.state.flash_visible.set(true);
+                    ctx.state.flash_timer.set(FIREWORKS_TOTAL_DURATION);
+
+                    ctx.state.fireworks_active.set(true);
+                    ctx.state.fireworks_elapsed.set(0.0);
+                    ctx.state.fireworks_next_launch.set(0);
+                    ctx.state.fireworks_rockets.borrow_mut().clear();
                 }
                 InMessage::Visibility { visibility } => {
                     ctx.state.visibility.set(visibility);
@@ -489,10 +510,126 @@ fn tick(state: &PillState, dt: f64) {
     // Shimmer phase
     state.shimmer_phase.set((state.shimmer_phase.get() + SHIMMER_SPEED * frame_scale) % 1.0);
 
+    // Fireworks
+    tick_fireworks(state, dt);
+
+    // Flash message timer
+    if state.flash_visible.get() {
+        let remaining = state.flash_timer.get() - dt;
+        if remaining <= 0.0 {
+            state.flash_visible.set(false);
+            state.flash_timer.set(0.0);
+        } else {
+            state.flash_timer.set(remaining);
+        }
+    }
+    let flash_target = if state.flash_visible.get() { 1.0 } else { 0.0 };
+    spring_anim(&state.flash_t, &state.flash_velocity, flash_target, SPRING_STIFFNESS, dt);
+
     // Auto-scroll to bottom
     if state.should_stick.get() && state.assistant_active.get() && !state.assistant_compact.get() {
         let max_scroll = (state.content_height.get() - state.viewport_height.get()).max(0.0);
         state.scroll_offset.set(max_scroll);
+    }
+}
+
+fn tick_fireworks(state: &PillState, dt: f64) {
+    if !state.fireworks_active.get() {
+        return;
+    }
+
+    let elapsed = state.fireworks_elapsed.get() + dt;
+    state.fireworks_elapsed.set(elapsed);
+
+    let ww = state.draw_width.get();
+    let wh = state.draw_height.get();
+    let (_, pill_y, _, _) = draw::pill_position(state, ww, wh);
+    let origin_x = ww / 2.0;
+    let origin_y = pill_y - FLASH_GAP - FLASH_HEIGHT / 2.0;
+
+    // Launch rockets on schedule
+    let mut next = state.fireworks_next_launch.get();
+    let mut rockets = state.fireworks_rockets.borrow_mut();
+
+    while next < FIREWORK_LAUNCHES.len() && elapsed >= FIREWORK_LAUNCHES[next].time {
+        let launch = &FIREWORK_LAUNCHES[next];
+        let angle_rad = launch.angle_deg.to_radians();
+        let color = FIREWORK_COLORS[next % FIREWORK_COLORS.len()];
+        rockets.push(Rocket {
+            x: origin_x,
+            y: origin_y,
+            vx: launch.speed * angle_rad.sin(),
+            vy: -launch.speed * angle_rad.cos(),
+            trail: vec![(origin_x, origin_y)],
+            fuse: launch.fuse,
+            phase: RocketPhase::Rising,
+            num_sparks: launch.num_sparks,
+            launch_index: next,
+            sparks: Vec::new(),
+            trail_alpha: 1.0,
+            color,
+        });
+        next += 1;
+    }
+    state.fireworks_next_launch.set(next);
+
+    for rocket in rockets.iter_mut() {
+        match rocket.phase {
+            RocketPhase::Rising => {
+                rocket.vy += FIREWORKS_GRAVITY * dt;
+                rocket.x += rocket.vx * dt;
+                rocket.y += rocket.vy * dt;
+
+                rocket.trail.push((rocket.x, rocket.y));
+                if rocket.trail.len() > FIREWORKS_TRAIL_MAX {
+                    rocket.trail.remove(0);
+                }
+
+                rocket.fuse -= dt;
+                if rocket.fuse <= 0.0 {
+                    rocket.phase = RocketPhase::Exploding;
+                    let offset = rocket.launch_index as f64 * 0.7;
+                    for i in 0..rocket.num_sparks {
+                        let n = rocket.num_sparks.max(1) as f64;
+                        let angle = TAU * i as f64 / n + offset;
+                        let speed_t = ((i * 7 + 3) % rocket.num_sparks.max(1)) as f64 / n;
+                        let speed = FIREWORKS_SPARK_BASE_SPEED * (0.6 + 0.8 * speed_t);
+                        rocket.sparks.push(Spark {
+                            x: rocket.x,
+                            y: rocket.y,
+                            vx: speed * angle.cos(),
+                            vy: speed * angle.sin(),
+                            life: 1.0,
+                        });
+                    }
+                }
+            }
+            RocketPhase::Exploding => {
+                for spark in rocket.sparks.iter_mut() {
+                    let drag = (-FIREWORKS_SPARK_DRAG * dt).exp();
+                    spark.vx *= drag;
+                    spark.vy *= drag;
+                    spark.vy += FIREWORKS_GRAVITY * 0.3 * dt;
+                    spark.x += spark.vx * dt;
+                    spark.y += spark.vy * dt;
+                    spark.life -= dt / FIREWORKS_SPARK_LIFE;
+                }
+
+                rocket.trail_alpha -= FIREWORKS_TRAIL_FADE_RATE * dt;
+                if rocket.trail_alpha < 0.0 {
+                    rocket.trail_alpha = 0.0;
+                }
+            }
+        }
+    }
+
+    rockets.retain(|r| match r.phase {
+        RocketPhase::Rising => true,
+        RocketPhase::Exploding => r.trail_alpha > 0.01 || r.sparks.iter().any(|s| s.life > 0.0),
+    });
+
+    if elapsed >= FIREWORKS_TOTAL_DURATION && rockets.is_empty() {
+        state.fireworks_active.set(false);
     }
 }
 
@@ -686,6 +823,15 @@ unsafe fn setup(receiver: Receiver<InMessage>, embedded: bool) {
         should_stick: Cell::new(true),
         click_regions: RefCell::new(Vec::new()),
         entry_text: RefCell::new(String::new()),
+        flash_message: RefCell::new(String::new()),
+        flash_visible: Cell::new(false),
+        flash_t: Cell::new(0.0),
+        flash_velocity: Cell::new(0.0),
+        flash_timer: Cell::new(0.0),
+        fireworks_active: Cell::new(false),
+        fireworks_elapsed: Cell::new(0.0),
+        fireworks_next_launch: Cell::new(0),
+        fireworks_rockets: RefCell::new(Vec::new()),
     });
 
     // Store in thread-local

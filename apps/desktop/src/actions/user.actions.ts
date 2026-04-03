@@ -11,8 +11,6 @@ import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import { CloudUserRepo } from "../repos/user.repo";
 import { getAppState, produceAppState } from "../store";
 import {
-  DEFAULT_POST_PROCESSING_MODE,
-  DEFAULT_TRANSCRIPTION_MODE,
   type PostProcessingMode,
   type TranscriptionMode,
 } from "../types/ai.types";
@@ -83,11 +81,11 @@ const updateUser = async (
 
 export const createDefaultPreferences = (): UserPreferences => ({
   userId: LOCAL_USER_ID,
-  transcriptionMode: DEFAULT_TRANSCRIPTION_MODE,
+  transcriptionMode: null,
   transcriptionApiKeyId: null,
   transcriptionDevice: null,
   transcriptionModelSize: null,
-  postProcessingMode: DEFAULT_POST_PROCESSING_MODE,
+  postProcessingMode: null,
   postProcessingApiKeyId: null,
   postProcessingOllamaUrl: null,
   postProcessingOllamaModel: null,
@@ -509,10 +507,10 @@ export const clearGotStartedAt = async (): Promise<void> => {
   }, "Failed to clear got started timestamp. Please try again.");
 };
 
-export const markFeatureSeen = async (feature: string): Promise<void> => {
-  await updateUserPreferences((preferences) => {
-    preferences.lastSeenFeature = feature;
-  }, "Failed to save feature seen status. Please try again.");
+export const markFeatureSeen = (featureDate: string): void => {
+  produceAppState((draft) => {
+    draft.local.featureSeenAt = featureDate;
+  });
 };
 
 export const setIgnoreUpdateDialog = async (ignore: boolean): Promise<void> => {

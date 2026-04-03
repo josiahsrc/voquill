@@ -2,6 +2,7 @@ import { Box } from "@mui/material";
 import Router from "../../router";
 import { useAppStore } from "../../store";
 import { AppSideEffects } from "./AppSideEffects";
+import { AffordancesSideEffects } from "./AffordancesSideEffects";
 import { DictationSideEffects } from "./DictationSideEffects";
 import { KeyPressSideEffects } from "./KeyPressSideEffects";
 import { MigratorSideEffects } from "./MigratorSideEffects";
@@ -22,6 +23,7 @@ export const AppWithLoading = () => {
       <UpdateDialog />
       <MigratorSideEffects />
       <DictationSideEffects />
+      <AffordancesSideEffects />
       {isCloud && <SessionSideEffects />}
       <Box sx={{ height: "100vh", width: "100vw", overflow: "hidden" }}>
         {initialized ? <Router /> : <LoadingApp />}

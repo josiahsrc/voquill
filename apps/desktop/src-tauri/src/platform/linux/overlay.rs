@@ -4,10 +4,6 @@ use crate::pill_process;
 const BINARY_NAME: &str = "voquill-gtk-pill";
 const PACKAGE_DIR: &str = "rust_gtk_pill";
 
-pub fn should_use_native_overlays() -> bool {
-    true
-}
-
 pub fn try_create_native_overlays(app: &tauri::AppHandle) -> bool {
     let Some(pill_path) = resolve_pill_binary_path(app) else {
         log::warn!("GTK pill binary not found");

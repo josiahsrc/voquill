@@ -1,16 +1,22 @@
 use sqlx::sqlite::SqlitePoolOptions;
 use tauri::{Manager, RunEvent, WindowEvent};
 use tauri_plugin_log::{Target, TargetKind, TimezoneStrategy};
+use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 
 const AUTOSTART_HIDDEN_ARG: &str = "--voquill-autostart-hidden";
 
 fn handle_run_event(app_handle: &tauri::AppHandle, event: RunEvent) {
-    let _ = (&app_handle, &event);
-    #[cfg(target_os = "macos")]
-    if let RunEvent::Reopen { .. } = event {
-        if let Some(window) = app_handle.get_webview_window("main") {
-            let _ = crate::platform::window::surface_main_window(&window);
+    match &event {
+        RunEvent::ExitRequested { .. } => {
+            let _ = app_handle.save_window_state(StateFlags::SIZE | StateFlags::POSITION);
         }
+        #[cfg(target_os = "macos")]
+        RunEvent::Reopen { .. } => {
+            if let Some(window) = app_handle.get_webview_window("main") {
+                let _ = crate::platform::window::surface_main_window(&window);
+            }
+        }
+        _ => {}
     }
 }
 
@@ -67,10 +73,16 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(
+            tauri_plugin_window_state::Builder::new()
+                .with_state_flags(StateFlags::SIZE | StateFlags::POSITION)
+                .build(),
+        )
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 if window.label() == "main" {
+                    let _ = window.app_handle().save_window_state(StateFlags::SIZE | StateFlags::POSITION);
                     let _ = window.hide();
                     #[cfg(target_os = "macos")]
                     {
@@ -139,36 +151,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 // Pre-warm audio output for instant chime playback
                 crate::system::audio_feedback::warm_audio_output();
 
-                // Important: Even if native overlays fail, do not fall back to using the Tauri windows
-                // overlay. Systems that use native overlays to NOT take well to Tauri driven overlays.
-                let use_native_overlays = crate::overlay::should_use_native_overlays();
-                if use_native_overlays {
-                    crate::overlay::try_create_native_overlays(app_handle);
-                } else {
-                    crate::overlay::ensure_pill_overlay_window(app_handle)
-                        .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-
-                    crate::overlay::ensure_toast_overlay_window(app_handle)
-                        .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-
-                    if let Some(pill_window) =
-                        app_handle.get_webview_window(crate::overlay::PILL_OVERLAY_LABEL)
-                    {
-                        let _ = crate::platform::window::show_overlay_no_focus(&pill_window);
-                        let _ =
-                            crate::platform::window::set_overlay_click_through(&pill_window, true);
-                    }
-
-                    if let Some(toast_window) =
-                        app_handle.get_webview_window(crate::overlay::TOAST_OVERLAY_LABEL)
-                    {
-                        let _ = crate::platform::window::show_overlay_no_focus(&toast_window);
-                        let _ =
-                            crate::platform::window::set_overlay_click_through(&toast_window, true);
-                    }
-
-                    crate::overlay::start_cursor_follower(app_handle.clone());
-                }
+                crate::overlay::try_create_native_overlays(app_handle);
             }
 
             if crate::platform::get_hotkey_strategy() == "bridge" {
@@ -219,10 +202,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::storage_upload_data,
             crate::commands::storage_get_download_url,
             crate::commands::surface_main_window,
-            crate::commands::set_toast_overlay_click_through,
             crate::commands::set_pill_window_size,
-            crate::commands::restore_overlay_focus,
-            crate::commands::set_overlay_focusable,
             crate::commands::paste,
             crate::commands::transcription_create,
             crate::commands::transcription_list,
@@ -251,7 +231,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::tone_delete,
             crate::commands::clear_local_data,
             crate::commands::set_phase,
-            crate::commands::set_pill_hover_enabled,
             crate::commands::set_pill_visibility,
             crate::commands::notify_pill_style_info,
             crate::commands::sync_native_pill_assistant,

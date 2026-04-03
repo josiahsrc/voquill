@@ -122,6 +122,13 @@ const extractPunctuation = (
   return { word: wordOnly, leadingPunctuation, trailingPunctuation };
 };
 
+export const sanitizeIndentation = (text: string): string => {
+  return text
+    .split("\n")
+    .map((line) => line.trimStart())
+    .join("\n");
+};
+
 export const applyReplacements = (
   text: string,
   rules: ReplacementRule[],

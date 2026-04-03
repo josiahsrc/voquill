@@ -4,8 +4,52 @@ use crate::commands::{ScreenContextInfo, TextFieldInfo};
 use core_foundation::array::{CFArrayGetCount, CFArrayGetValueAtIndex};
 use core_foundation::base::{CFGetTypeID, CFRelease, CFTypeRef, TCFType};
 use core_foundation::string::{CFString, CFStringGetTypeID, CFStringRef};
+use std::ffi::c_void;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr;
+
+extern "C" {
+    fn dispatch_sync_f(queue: *mut c_void, context: *mut c_void, work: extern "C" fn(*mut c_void));
+    static _dispatch_main_q: u8;
+}
+
+fn run_on_main_thread<F, R>(f: F) -> R
+where
+    F: FnOnce() -> R + Send,
+    R: Send,
+{
+    struct Context<F, R> {
+        f: Option<F>,
+        result: Option<R>,
+    }
+
+    extern "C" fn trampoline<F, R>(ctx: *mut c_void)
+    where
+        F: FnOnce() -> R,
+    {
+        unsafe {
+            let ctx = &mut *(ctx as *mut Context<F, R>);
+            let f = ctx.f.take().unwrap();
+            ctx.result = Some(f());
+        }
+    }
+
+    let mut ctx = Context {
+        f: Some(f),
+        result: None,
+    };
+
+    unsafe {
+        let main_q = &_dispatch_main_q as *const u8 as *mut c_void;
+        dispatch_sync_f(
+            main_q,
+            &mut ctx as *mut Context<F, R> as *mut c_void,
+            trampoline::<F, R>,
+        );
+    }
+
+    ctx.result.unwrap()
+}
 
 // AXUIElement types and functions from ApplicationServices framework
 type AXUIElementRef = CFTypeRef;
@@ -758,10 +802,12 @@ unsafe fn gather_screen_context(element: CFTypeRef, depth: usize) -> String {
 
 pub fn insert_text_at_cursor(text: &str) -> Result<(), String> {
     let text = text.to_string();
-    catch_unwind(AssertUnwindSafe(move || unsafe {
-        insert_text_at_cursor_impl(&text)
-    }))
-    .unwrap_or_else(|_| Err("accessibility insert panicked".to_string()))
+    run_on_main_thread(move || {
+        catch_unwind(AssertUnwindSafe(move || unsafe {
+            insert_text_at_cursor_impl(&text)
+        }))
+        .unwrap_or_else(|_| Err("accessibility insert panicked".to_string()))
+    })
 }
 
 unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {

@@ -1245,15 +1245,6 @@ pub fn surface_main_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn set_toast_overlay_click_through(app: AppHandle, click_through: bool) -> Result<(), String> {
-    let Some(window) = app.get_webview_window(crate::overlay::TOAST_OVERLAY_LABEL) else {
-        return Ok(());
-    };
-
-    crate::platform::window::set_overlay_click_through(&window, click_through)
-}
-
-#[tauri::command]
 pub fn set_pill_window_size(
     app: AppHandle,
     size: crate::domain::PillWindowSize,
@@ -1266,23 +1257,6 @@ pub fn set_pill_window_size(
 #[tauri::command]
 pub fn sync_native_pill_assistant(app: AppHandle, payload: String) {
     crate::platform::overlay::notify_assistant_state(&app, &payload);
-}
-
-#[tauri::command]
-pub fn set_overlay_focusable(app: AppHandle, focusable: bool) -> Result<(), String> {
-    let Some(window) = app.get_webview_window(crate::overlay::PILL_OVERLAY_LABEL) else {
-        return Ok(());
-    };
-
-    crate::platform::window::set_overlay_focusable(&window, focusable)
-}
-
-#[tauri::command]
-pub fn restore_overlay_focus() {
-    #[cfg(target_os = "windows")]
-    {
-        crate::platform::windows::window::restore_foreground_window();
-    }
 }
 
 #[tauri::command]
@@ -1326,11 +1300,6 @@ pub fn set_phase(
 
     app.emit_to(EventTarget::any(), EVT_OVERLAY_PHASE, payload)
         .map_err(|err| err.to_string())
-}
-
-#[tauri::command]
-pub fn set_pill_hover_enabled(enabled: bool, overlay_state: State<'_, crate::state::OverlayState>) {
-    overlay_state.set_pill_hover_enabled(enabled);
 }
 
 #[tauri::command]

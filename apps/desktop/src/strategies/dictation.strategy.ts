@@ -1,5 +1,5 @@
-import type { Nullable } from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
+import type { Nullable } from "@voquill/types";
 import { showErrorSnackbar, showSnackbar } from "../actions/app.actions";
 import { showToast } from "../actions/toast.actions";
 import {
@@ -7,7 +7,6 @@ import {
   type PostProcessMetadata,
 } from "../actions/transcribe.actions";
 import { getIntl } from "../i18n";
-import { routeTranscriptOutput } from "../utils/output-routing.utils";
 import { getAppState } from "../store";
 import type { OverlayPhase } from "../types/overlay.types";
 import type {
@@ -17,12 +16,17 @@ import type {
 } from "../types/strategy.types";
 import { getLogger } from "../utils/log.utils";
 import { getMemberExceedsLimitByState } from "../utils/member.utils";
+import { routeTranscriptOutput } from "../utils/output-routing.utils";
 import {
   applyReplacements,
   applySymbolConversions,
 } from "../utils/string.utils";
 import { getToneIdToUse, VERBATIM_TONE_ID } from "../utils/tone.utils";
-import { getMyUserPreferences } from "../utils/user.utils";
+import {
+  getEffectivePostProcessingMode,
+  getEffectiveTranscriptionMode,
+  getMyUserPreferences,
+} from "../utils/user.utils";
 import { BaseStrategy } from "./base.strategy";
 
 export class DictationStrategy extends BaseStrategy {
@@ -97,8 +101,8 @@ export class DictationStrategy extends BaseStrategy {
   validateAvailability(): Nullable<StrategyValidationError> {
     const state = getAppState();
 
-    const transcriptionMode = state.settings.aiTranscription.mode;
-    const generativeMode = state.settings.aiPostProcessing.mode;
+    const transcriptionMode = getEffectiveTranscriptionMode(state);
+    const generativeMode = getEffectivePostProcessingMode(state);
     const isCloud = transcriptionMode === "cloud" || generativeMode === "cloud";
     if (isCloud && getMemberExceedsLimitByState(state)) {
       return {

@@ -16,10 +16,7 @@ import {
 import {
   type AgentMode,
   CPU_DEVICE_VALUE,
-  DEFAULT_AGENT_MODE,
   DEFAULT_MODEL_SIZE,
-  DEFAULT_POST_PROCESSING_MODE,
-  DEFAULT_TRANSCRIPTION_MODE,
   type PostProcessingMode,
   type TranscriptionMode,
 } from "../types/ai.types";
@@ -45,7 +42,7 @@ export type LocalTranscriptionModelManagementState = {
 };
 
 export type SettingsTranscriptionState = {
-  mode: TranscriptionMode;
+  mode: TranscriptionMode | null;
   modelSize: string;
   device: string;
   availableDevices: LocalSidecarDevice[];
@@ -56,12 +53,12 @@ export type SettingsTranscriptionState = {
 };
 
 export type SettingsGenerativeState = {
-  mode: PostProcessingMode;
+  mode: PostProcessingMode | null;
   selectedApiKeyId: string | null;
 };
 
 export type SettingsAgentModeState = Omit<SettingsGenerativeState, "mode"> & {
-  mode: AgentMode;
+  mode: AgentMode | null;
   openclawGatewayUrl: string | null;
   openclawToken: string | null;
 };
@@ -139,7 +136,7 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   diagnosticsDialogOpen: false,
   mobileAppDialogOpen: false,
   aiTranscription: {
-    mode: DEFAULT_TRANSCRIPTION_MODE,
+    mode: null,
     modelSize: DEFAULT_MODEL_SIZE,
     device: CPU_DEVICE_VALUE,
     availableDevices: [],
@@ -155,11 +152,11 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
     },
   },
   aiPostProcessing: {
-    mode: DEFAULT_POST_PROCESSING_MODE,
+    mode: null,
     selectedApiKeyId: null,
   },
   agentMode: {
-    mode: DEFAULT_AGENT_MODE,
+    mode: null,
     selectedApiKeyId: null,
     openclawGatewayUrl: null,
     openclawToken: null,

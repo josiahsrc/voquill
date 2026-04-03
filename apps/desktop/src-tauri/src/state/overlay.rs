@@ -14,7 +14,6 @@ const SIZE_ASSISTANT_TYPING: u8 = 3;
 
 pub struct OverlayState {
     phase: AtomicU8,
-    pill_hover_enabled: AtomicU8,
     pill_window_size: AtomicU8,
     audio_levels: Mutex<Vec<f32>>,
 }
@@ -29,7 +28,6 @@ impl OverlayState {
     pub fn new() -> Self {
         Self {
             phase: AtomicU8::new(PHASE_IDLE),
-            pill_hover_enabled: AtomicU8::new(0),
             pill_window_size: AtomicU8::new(SIZE_DICTATION),
             audio_levels: Mutex::new(Vec::new()),
         }
@@ -68,15 +66,6 @@ impl OverlayState {
 
     pub fn is_idle(&self) -> bool {
         self.phase.load(Ordering::Relaxed) == PHASE_IDLE
-    }
-
-    pub fn set_pill_hover_enabled(&self, enabled: bool) {
-        self.pill_hover_enabled
-            .store(if enabled { 1 } else { 0 }, Ordering::Relaxed);
-    }
-
-    pub fn is_pill_hover_enabled(&self) -> bool {
-        self.pill_hover_enabled.load(Ordering::Relaxed) != 0
     }
 
     pub fn set_pill_window_size(&self, size: PillWindowSize) {

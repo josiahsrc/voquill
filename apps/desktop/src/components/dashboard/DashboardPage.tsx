@@ -34,7 +34,14 @@ export default function DashboardPage() {
           <DashboardMenu />
         </Box>
         <Box
-          sx={{ flexGrow: 1, minWidth: 0, height: "100%", overflowY: "auto" }}
+          sx={{
+            flexGrow: 1,
+            minWidth: 0,
+            height: "100%",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }}
         >
           <Outlet />
         </Box>

@@ -1,6 +1,7 @@
 import { getEffectiveAuth } from "./auth.utils";
 
-export const NEW_SERVER_URL = "https://api.voquill.com";
+export const NEW_SERVER_URL: string =
+  import.meta.env.VITE_NEW_SERVER_URL ?? "https://api.voquill.com";
 
 export async function getNewServerAuthHeaders(): Promise<
   Record<string, string>

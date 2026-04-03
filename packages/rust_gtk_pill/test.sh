@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 cargo build --quiet 2>&1
 
-MODE="${1:-both}"  # dictation | assistant | both
+MODE="${1:-both}"  # dictation | assistant | flash | fireworks | both
 
 emit_levels() {
   local duration=$1 base_amp=${2:-0.4} variance=${3:-0.4}
@@ -119,6 +119,49 @@ run_assistant() {
   sleep 1
 }
 
+run_flash() {
+  echo '--- Flash: showing pill with flash messages ---' >&2
+  echo '{"type":"visibility","visibility":"persistent"}'
+  sleep 1
+
+  echo '--- Flash: short message ---' >&2
+  echo '{"type":"flash_message","message":"Copied to clipboard"}'
+  sleep 4
+
+  echo '--- Flash: during recording ---' >&2
+  echo '{"type":"phase","phase":"recording"}'
+  emit_levels 1 0.4 0.4
+  echo '{"type":"flash_message","message":"Style changed to Casual"}'
+  emit_levels 3 0.35 0.45
+  echo '{"type":"phase","phase":"idle"}'
+  sleep 2
+
+  echo '--- Flash: longer message ---' >&2
+  echo '{"type":"flash_message","message":"Your trial has been extended by 7 days"}'
+  sleep 4
+
+  echo '--- Flash: back to tooltip after flash ---' >&2
+  echo '{"type":"style_info","count":3,"name":"Professional"}'
+  echo '{"type":"phase","phase":"recording"}'
+  emit_levels 2 0.4 0.4
+  echo '{"type":"phase","phase":"idle"}'
+  sleep 2
+}
+
+run_fireworks() {
+  echo '--- Fireworks: celebration ---' >&2
+  echo '{"type":"visibility","visibility":"persistent"}'
+  sleep 0.5
+
+  echo '--- Fireworks: launching ---' >&2
+  echo '{"type":"fireworks","message":"Congratulations!"}'
+  sleep 9
+
+  echo '--- Fireworks: second round ---' >&2
+  echo '{"type":"fireworks","message":"You did it!"}'
+  sleep 9
+}
+
 run_keyboard() {
   echo '--- Keyboard: typing mode (Ctrl-C to quit) ---' >&2
   echo '{"type":"visibility","visibility":"persistent"}'
@@ -137,6 +180,12 @@ run_keyboard() {
       ;;
     assistant)
       run_assistant
+      ;;
+    flash)
+      run_flash
+      ;;
+    fireworks)
+      run_fireworks
       ;;
     keyboard)
       run_keyboard

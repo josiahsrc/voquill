@@ -275,9 +275,12 @@ function resolveGpuBuildState(target) {
 
 // --- Native pill overlays (platform-specific) ---
 // macOS pill is linked directly as a Rust library dependency (no sidecar needed).
-// Linux GTK pill is still built as a separate binary.
+// Linux GTK pill and Windows pill are built as separate binaries.
 if (isLinuxTarget(targetTriple)) {
   buildNativePill("rust_gtk_pill", "voquill-gtk-pill");
+}
+if (isWindowsTarget(targetTriple)) {
+  buildNativePill("rust_windows_pill", "voquill-windows-pill");
 }
 
 function buildNativePill(packageDir, binaryName) {
@@ -328,16 +331,18 @@ function buildNativePill(packageDir, binaryName) {
     pillTargetDir,
     ...(buildTarget ? [buildTarget] : []),
     buildProfile,
-    binaryName,
+    `${binaryName}${executableSuffix}`,
   );
 
   const resourcesDir = join(desktopDir, "src-tauri", "resources");
   mkdirSync(resourcesDir, { recursive: true });
-  const pillDestPath = join(resourcesDir, binaryName);
+  const pillDestPath = join(resourcesDir, `${binaryName}${executableSuffix}`);
 
   if (existsSync(pillSourcePath)) {
     copyFileSync(pillSourcePath, pillDestPath);
-    chmodSync(pillDestPath, 0o755);
+    if (!isWindowsTarget(targetTriple)) {
+      chmodSync(pillDestPath, 0o755);
+    }
     console.log(`[sidecar] Prepared ${binaryName}: ${pillDestPath}`);
   } else {
     console.warn(
