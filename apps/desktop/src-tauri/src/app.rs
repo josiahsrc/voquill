@@ -1,16 +1,22 @@
 use sqlx::sqlite::SqlitePoolOptions;
 use tauri::{Manager, RunEvent, WindowEvent};
 use tauri_plugin_log::{Target, TargetKind, TimezoneStrategy};
+use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 
 const AUTOSTART_HIDDEN_ARG: &str = "--voquill-autostart-hidden";
 
 fn handle_run_event(app_handle: &tauri::AppHandle, event: RunEvent) {
-    let _ = (&app_handle, &event);
-    #[cfg(target_os = "macos")]
-    if let RunEvent::Reopen { .. } = event {
-        if let Some(window) = app_handle.get_webview_window("main") {
-            let _ = crate::platform::window::surface_main_window(&window);
+    match &event {
+        RunEvent::ExitRequested { .. } => {
+            let _ = app_handle.save_window_state(StateFlags::SIZE | StateFlags::POSITION);
         }
+        #[cfg(target_os = "macos")]
+        RunEvent::Reopen { .. } => {
+            if let Some(window) = app_handle.get_webview_window("main") {
+                let _ = crate::platform::window::surface_main_window(&window);
+            }
+        }
+        _ => {}
     }
 }
 
@@ -67,10 +73,16 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(
+            tauri_plugin_window_state::Builder::new()
+                .with_state_flags(StateFlags::SIZE | StateFlags::POSITION)
+                .build(),
+        )
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 if window.label() == "main" {
+                    let _ = window.app_handle().save_window_state(StateFlags::SIZE | StateFlags::POSITION);
                     let _ = window.hide();
                     #[cfg(target_os = "macos")]
                     {

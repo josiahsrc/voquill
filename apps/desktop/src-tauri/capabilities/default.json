@@ -40,6 +40,7 @@
       ]
     },
     "shell:allow-kill",
+    "window-state:default",
     "shell:allow-stdin-write",
     {
       "identifier": "http:default",

@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import {
   ApiKeyProvider,
   DictationPillVisibility,
@@ -6,7 +7,6 @@ import {
   UserPreferences,
 } from "@voquill/types";
 import { countWords, getRec } from "@voquill/utilities";
-import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { detectLocale, matchSupportedLocale } from "../i18n";
 import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
@@ -426,4 +426,15 @@ export const getDictationSpeed = (state: AppState): DictationSpeed | null => {
 
   if (count === 0) return null;
   return { wpm: Math.round(totalWpm / count), sampleCount: count };
+};
+
+export const getUsingCloudPrefs = (state: AppState): boolean => {
+  const transcriptionPrefs = getTranscriptionPrefs(state);
+  const generativePrefs = getGenerativePrefs(state);
+  const agentModePrefs = getAgentModePrefs(state);
+  return (
+    transcriptionPrefs.mode === "cloud" ||
+    generativePrefs.mode === "cloud" ||
+    agentModePrefs.mode === "cloud"
+  );
 };
