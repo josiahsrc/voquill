@@ -618,6 +618,10 @@ export const DictationSideEffects = () => {
     recordStreak();
     getLogger().info("Starting dictation recording");
     trackDictationStart();
+    produceAppState((draft) => {
+      draft.local.lastDictatedAt = Date.now();
+    });
+
     await startRecording({ mode: "dictate" });
   }, [startRecording]);
 
