@@ -93,6 +93,17 @@ pub(crate) struct Rocket {
     pub(crate) color: (f64, f64, f64),
 }
 
+#[derive(Debug, Clone)]
+pub(crate) struct FlameTongue {
+    pub(crate) base_x: f64,
+    pub(crate) height: f64,
+    pub(crate) width: f64,
+    pub(crate) phase: f64,
+    pub(crate) speed: f64,
+    pub(crate) life: f64,
+    pub(crate) max_life: f64,
+}
+
 pub(crate) struct PillState {
     pub(crate) phase: Cell<Phase>,
     pub(crate) visibility: Cell<Visibility>,
@@ -159,6 +170,12 @@ pub(crate) struct PillState {
     pub(crate) fireworks_elapsed: Cell<f64>,
     pub(crate) fireworks_next_launch: Cell<usize>,
     pub(crate) fireworks_rockets: RefCell<Vec<Rocket>>,
+
+    // Flame
+    pub(crate) flame_active: Cell<bool>,
+    pub(crate) flame_elapsed: Cell<f64>,
+    pub(crate) flame_spawn_accum: Cell<f64>,
+    pub(crate) flame_tongues: RefCell<Vec<FlameTongue>>,
 }
 
 impl PillState {

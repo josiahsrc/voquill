@@ -53,6 +53,9 @@ extern "C" {
         c: CGContextRef, x: f64, y: f64, radius: f64,
         start_angle: f64, end_angle: f64, clockwise: i32,
     );
+    fn CGContextAddCurveToPoint(
+        c: CGContextRef, cp1x: f64, cp1y: f64, cp2x: f64, cp2y: f64, x: f64, y: f64,
+    );
     fn CGContextAddRect(c: CGContextRef, rect: CGRect);
     fn CGContextClosePath(c: CGContextRef);
     fn CGContextBeginPath(c: CGContextRef);
@@ -153,6 +156,10 @@ impl Ctx {
 
     pub fn line_to(&self, x: f64, y: f64) {
         unsafe { CGContextAddLineToPoint(self.cg, x, y); }
+    }
+
+    pub fn curve_to(&self, cp1x: f64, cp1y: f64, cp2x: f64, cp2y: f64, x: f64, y: f64) {
+        unsafe { CGContextAddCurveToPoint(self.cg, cp1x, cp1y, cp2x, cp2y, x, y); }
     }
 
     pub fn arc(&self, cx: f64, cy: f64, r: f64, start: f64, end: f64) {

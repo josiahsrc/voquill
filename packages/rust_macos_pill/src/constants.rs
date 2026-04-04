@@ -154,5 +154,15 @@ pub(crate) const FIREWORK_LAUNCHES: &[FireworkLaunch] = &[
     FireworkLaunch { time: 6.4, angle_deg:  35.0, speed: 140.0, fuse: 0.55, num_sparks: 11 },
 ];
 
+// ── Flame ───────────────────────────────────────────────────────
+pub(crate) const FLAME_TOTAL_DURATION: f64 = 5.0;
+pub(crate) const FLAME_TONGUE_COUNT: usize = 7;
+pub(crate) const FLAME_MIN_HEIGHT: f64 = 12.0;
+pub(crate) const FLAME_MAX_HEIGHT: f64 = 32.0;
+pub(crate) const FLAME_MIN_WIDTH: f64 = 8.0;
+pub(crate) const FLAME_MAX_WIDTH: f64 = 18.0;
+pub(crate) const FLAME_SWAY_AMOUNT: f64 = 4.0;
+pub(crate) const FLAME_FLICKER_SPEED: f64 = 6.0;
+
 // ── Thinking shimmer ──────────────────────────────────────────────
 pub(crate) const SHIMMER_SPEED: f64 = 0.01;
