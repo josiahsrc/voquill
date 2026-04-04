@@ -287,7 +287,8 @@ export const recordStreak = async (): Promise<void> => {
   );
 
   const info = getStreakInfo(newStreak);
-  if (info) {
+  const isEnabled = !getAppState().local.disablePillRewards;
+  if (info && isEnabled) {
     const [mode, message] = info;
     if (mode === "fireworks") {
       sendPillFireworks(message);
