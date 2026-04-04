@@ -61,6 +61,10 @@ const linkHref = href ?? downloadPageHref;
 			keys: ['darwin-universal'],
 		},
 		{
+			match: function (n) { return /\.pkg$/i.test(n); },
+			keys: ['darwin-universal-pkg'],
+		},
+		{
 			match: function (n) { return /darwin.*\.app\.tar\.gz$/i.test(n); },
 			keys: ['darwin-aarch64', 'darwin-x86_64'],
 		},
@@ -203,6 +207,15 @@ const linkHref = href ?? downloadPageHref;
 						signature: '',
 					};
 				}
+			}
+		}
+		for (var k = 0; k < assets.length; k++) {
+			if (/\.dmg$/i.test(assets[k].name) && !assets[k].name.toLowerCase().includes('gpu')) {
+				platforms['darwin-universal'] = {
+					url: assets[k].browser_download_url,
+					signature: '',
+				};
+				break;
 			}
 		}
 		if (Object.keys(platforms).length === 0) return undefined;

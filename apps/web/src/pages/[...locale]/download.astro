@@ -155,7 +155,12 @@ const structuredData = [
 			'darwin-universal': {
 				platform: 'mac',
 				label: 'macOS (Universal)',
-				description: 'Installer for all macOS architectures',
+				description: '.dmg installer',
+			},
+			'darwin-universal-pkg': {
+				platform: 'mac',
+				label: 'macOS (Universal)',
+				description: '.pkg installer',
 			},
 			'windows-x86_64-portable': {
 				platform: 'windows',
@@ -201,6 +206,10 @@ const structuredData = [
 			{
 				match: (n: string) => /\.dmg$/i.test(n),
 				keys: ['darwin-universal'],
+			},
+			{
+				match: (n: string) => /\.pkg$/i.test(n),
+				keys: ['darwin-universal-pkg'],
 			},
 			{
 				match: (n: string) => /darwin.*\.app\.tar\.gz$/i.test(n),
@@ -284,6 +293,15 @@ const structuredData = [
 							signature: '',
 						};
 					}
+				}
+			}
+			for (var k = 0; k < assets.length; k++) {
+				if (/\.dmg$/i.test(assets[k].name) && !assets[k].name.toLowerCase().includes('gpu')) {
+					platforms['darwin-universal'] = {
+						url: assets[k].browser_download_url,
+						signature: '',
+					};
+					break;
 				}
 			}
 			if (Object.keys(platforms).length === 0) return undefined;
