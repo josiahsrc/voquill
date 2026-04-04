@@ -29,6 +29,10 @@ pub(crate) fn draw_all(cr: &cairo::Context, state: &PillState) {
         draw_tooltip(cr, state, ww, pill_area_top);
     }
 
+    if !state.assistant_active.get() && state.flame_active.get() {
+        draw_flame(cr, state, ww, wh);
+    }
+
     draw_pill(cr, state, ww, wh);
 
     if state.assistant_active.get() {
@@ -331,10 +335,15 @@ fn draw_flash_message(cr: &cairo::Context, state: &PillState, ww: f64, wh: f64) 
         return;
     }
 
-    cr.select_font_face("sans-serif", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
-    cr.set_font_size(12.0);
-    let text_extents = cr.text_extents(&message).unwrap();
-    let flash_w = (text_extents.width() + FLASH_PADDING_H * 2.0).max(80.0);
+    let layout = pangocairo::functions::create_layout(cr);
+    let font_desc = pango::FontDescription::from_string("sans bold 12");
+    layout.set_font_description(Some(&font_desc));
+    layout.set_text(&message);
+    let (text_w, text_h) = layout.pixel_size();
+    let text_w = text_w as f64;
+    let text_h = text_h as f64;
+
+    let flash_w = (text_w + FLASH_PADDING_H * 2.0).max(80.0);
 
     let scale = FLASH_MIN_SCALE + (1.0 - FLASH_MIN_SCALE) * flash_t;
     let alpha = flash_t;
@@ -356,14 +365,105 @@ fn draw_flash_message(cr: &cairo::Context, state: &PillState, ww: f64, wh: f64) 
     let _ = cr.fill();
 
     cr.set_source_rgba(1.0, 1.0, 1.0, 0.9 * alpha);
-    cr.select_font_face("sans-serif", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
-    cr.set_font_size(12.0);
-    let tx = full_x + (flash_w - text_extents.width()) / 2.0 - text_extents.x_bearing();
-    let ty = full_y + (FLASH_HEIGHT - text_extents.height()) / 2.0 - text_extents.y_bearing();
+    let tx = full_x + (flash_w - text_w) / 2.0;
+    let ty = full_y + (FLASH_HEIGHT - text_h) / 2.0;
     cr.move_to(tx, ty);
-    let _ = cr.show_text(&message);
+    pangocairo::functions::show_layout(cr, &layout);
 
     cr.restore().ok();
+}
+
+// ── Flame ────────────────────────────────────────────────────────
+
+fn draw_flame_tongue(
+    cr: &cairo::Context, cx: f64, base_y: f64, h: f64, hw: f64, sway: f64,
+    gradient_stops: &[(f64, f64, f64, f64, f64)],
+) {
+    let tip_x = cx + sway;
+    let tip_y = base_y - h;
+    let base_r = hw.min(h * 0.15);
+
+    cr.save().ok();
+    cr.new_sub_path();
+    cr.move_to(cx - hw, base_y - base_r);
+    cr.curve_to(
+        cx - hw * 1.15, base_y - h * 0.35,
+        cx - hw * 0.12 + sway * 0.3, base_y - h * 0.72,
+        tip_x, tip_y,
+    );
+    cr.curve_to(
+        cx + hw * 0.12 + sway * 0.3, base_y - h * 0.72,
+        cx + hw * 1.15, base_y - h * 0.35,
+        cx + hw, base_y - base_r,
+    );
+    cr.arc(cx, base_y - base_r, hw, 0.0, PI);
+    cr.close_path();
+    cr.clip();
+
+    let gradient = cairo::LinearGradient::new(cx, base_y, cx, tip_y);
+    for &(offset, r, g, b, a) in gradient_stops {
+        gradient.add_color_stop_rgba(offset, r, g, b, a);
+    }
+    cr.set_source(&gradient).ok();
+    let _ = cr.paint();
+
+    cr.restore().ok();
+}
+
+fn draw_flame(cr: &cairo::Context, state: &PillState, ww: f64, wh: f64) {
+    let elapsed = state.flame_elapsed.get();
+    let tongues = state.flame_tongues.borrow();
+    if tongues.is_empty() {
+        return;
+    }
+
+    let (_, pill_y, _, pill_h) = pill_position(state, ww, wh);
+    let base_y = pill_y + pill_h * 0.35;
+
+    let fade_in = (elapsed / 0.3).clamp(0.0, 1.0);
+    let fade_out = ((FLAME_TOTAL_DURATION - elapsed) / 0.8).clamp(0.0, 1.0);
+    let alpha = fade_in * fade_out;
+    if alpha < 0.01 {
+        return;
+    }
+
+    for tongue in tongues.iter() {
+        let flicker = (tongue.phase.sin() * 0.5 + 0.5) * 0.25 + 0.75;
+        let flicker2 = ((tongue.phase * 1.6 + 0.8).sin() * 0.5 + 0.5) * 0.15 + 0.85;
+        let h = tongue.height * flicker * flicker2;
+        let w = tongue.width * (0.85 + 0.15 * flicker);
+        let hw = w / 2.0;
+
+        let sway = tongue.phase.sin() * FLAME_SWAY
+            + (tongue.phase * 1.7 + 1.0).sin() * FLAME_SWAY * 0.4;
+
+        let cx = tongue.base_x + sway * 0.3;
+
+        draw_flame_tongue(cr, cx, base_y, h * 1.2, hw * 1.5, sway * 1.1,
+            &[
+                (0.0, 0.7, 0.7, 0.7, alpha * 0.15),
+                (0.4, 0.4, 0.4, 0.4, alpha * 0.08),
+                (1.0, 0.0, 0.0, 0.0, 0.0),
+            ],
+        );
+
+        draw_flame_tongue(cr, cx, base_y, h, hw, sway,
+            &[
+                (0.0, 1.0, 1.0, 1.0, alpha * 0.85),
+                (0.25, 1.0, 1.0, 1.0, alpha * 0.65),
+                (0.55, 0.8, 0.8, 0.8, alpha * 0.3),
+                (1.0, 0.0, 0.0, 0.0, 0.0),
+            ],
+        );
+
+        draw_flame_tongue(cr, cx, base_y, h * 0.55, hw * 0.35, sway * 0.5,
+            &[
+                (0.0, 1.0, 1.0, 1.0, alpha * 0.95),
+                (0.5, 1.0, 1.0, 1.0, alpha * 0.5),
+                (1.0, 1.0, 1.0, 1.0, 0.0),
+            ],
+        );
+    }
 }
 
 // ── Fireworks ────────────────────────────────────────────────────
