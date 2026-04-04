@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { AppTarget } from "@voquill/types";
+import { delayed } from "@voquill/utilities";
 import { secondsToMilliseconds } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIntl } from "react-intl";
@@ -426,6 +427,7 @@ export const DictationSideEffects = () => {
       return;
     }
 
+    delayed(2000).then(() => recordStreak());
     getLogger().info("stopRecording entered");
     isStoppingRef.current = true;
     setIsStopping(true);
@@ -626,7 +628,6 @@ export const DictationSideEffects = () => {
       return;
     }
 
-    recordStreak();
     getLogger().info("Starting dictation recording");
     trackDictationStart();
     produceAppState((draft) => {
@@ -655,7 +656,6 @@ export const DictationSideEffects = () => {
       });
     }
 
-    recordStreak();
     getLogger().info("Starting agent recording");
     trackAgentStart();
     await startRecording({ mode: "agent" });

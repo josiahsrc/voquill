@@ -7,6 +7,7 @@ import {
   UserPreferences,
 } from "@voquill/types";
 import dayjs from "dayjs";
+import { getIntl } from "../i18n";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import { CloudUserRepo } from "../repos/user.repo";
 import { getAppState, produceAppState } from "../store";
@@ -14,17 +15,20 @@ import {
   type PostProcessingMode,
   type TranscriptionMode,
 } from "../types/ai.types";
+import { AsyncLock } from "../utils/async-lock.utils";
+import {
+  DEFAULT_DICTATION_LIMIT_MINUTES,
+  normalizeDictationLimitMinutes,
+} from "../utils/dictation-limit.utils";
+import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
 import {
   isGpuPreferredTranscriptionDevice,
   normalizeLocalWhisperModel,
   normalizeTranscriptionDevice,
   supportsGpuTranscriptionDevice,
 } from "../utils/local-transcription.utils";
-import {
-  DEFAULT_DICTATION_LIMIT_MINUTES,
-  normalizeDictationLimitMinutes,
-} from "../utils/dictation-limit.utils";
 import { getLogger } from "../utils/log.utils";
+import { sendPillFireworks, sendPillFlame } from "../utils/overlay.utils";
 import {
   getMyEffectiveUserId,
   getMyUser,
@@ -35,7 +39,6 @@ import {
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 import { setLocalStorageValue } from "./local-storage.actions";
-import { AsyncLock } from "../utils/async-lock.utils";
 
 const userSaveLock = new AsyncLock();
 
@@ -163,6 +166,101 @@ const getCurrentDateString = (): string => dayjs().format("YYYY-MM-DD");
 const getYesterdayDateString = (): string =>
   dayjs().subtract(1, "day").format("YYYY-MM-DD");
 
+type StreakInfo = ["flame" | "fireworks", string] | null;
+
+const getStreakInfo = (streak: number): StreakInfo => {
+  if (getIsEnterpriseEnabled()) {
+    return null;
+  }
+
+  const intl = getIntl();
+
+  if (streak === 1) {
+    return [
+      "flame",
+      intl.formatMessage({ defaultMessage: "Let the streak begin! 🔥" }),
+    ];
+  }
+
+  if (streak === 2) {
+    return [
+      "flame",
+      intl.formatMessage({ defaultMessage: "2 days in a row! ✌️" }),
+    ];
+  }
+
+  if (streak === 3) {
+    return [
+      "flame",
+      intl.formatMessage({ defaultMessage: "3 days strong! 💪" }),
+    ];
+  }
+
+  if (streak === 5) {
+    return [
+      "flame",
+      intl.formatMessage({ defaultMessage: "High five! 5 days! 🖐️" }),
+    ];
+  }
+
+  if (streak === 7) {
+    return [
+      "fireworks",
+      intl.formatMessage({ defaultMessage: "A full week! 🎉" }),
+    ];
+  }
+
+  if (streak === 10) {
+    return [
+      "fireworks",
+      intl.formatMessage({ defaultMessage: "Double digits! 🔥" }),
+    ];
+  }
+
+  if (streak === 30) {
+    return [
+      "fireworks",
+      intl.formatMessage({ defaultMessage: "One month! Unstoppable! 🚀" }),
+    ];
+  }
+
+  if (streak === 50) {
+    return [
+      "fireworks",
+      intl.formatMessage({ defaultMessage: "50 days! Legend! 🏆" }),
+    ];
+  }
+
+  if (streak === 100) {
+    return [
+      "fireworks",
+      intl.formatMessage({ defaultMessage: "100 days! 💯" }),
+    ];
+  }
+
+  if (streak % 100 === 0) {
+    return [
+      "fireworks",
+      intl.formatMessage(
+        { defaultMessage: "{streak} days! Incredible! 🌟" },
+        { streak },
+      ),
+    ];
+  }
+
+  if (streak % 10 === 0) {
+    return [
+      "fireworks",
+      intl.formatMessage(
+        { defaultMessage: "{streak} day streak! 🎉" },
+        { streak },
+      ),
+    ];
+  }
+
+  return null;
+};
+
 export const recordStreak = async (): Promise<void> => {
   const state = getAppState();
   const user = getMyUser(state);
@@ -177,15 +275,26 @@ export const recordStreak = async (): Promise<void> => {
 
   const yesterday = getYesterdayDateString();
   const isConsecutive = user.streakRecordedAt === yesterday;
+  const newStreak = isConsecutive ? (user.streak ?? 0) + 1 : 1;
 
   await updateUser(
     (u) => {
-      u.streak = isConsecutive ? (u.streak ?? 0) + 1 : 1;
+      u.streak = newStreak;
       u.streakRecordedAt = today;
     },
     "Unable to update streak. User not found.",
     "Failed to update streak. Please try again.",
   );
+
+  const info = getStreakInfo(newStreak);
+  if (info) {
+    const [mode, message] = info;
+    if (mode === "fireworks") {
+      sendPillFireworks(message);
+    } else {
+      sendPillFlame(message);
+    }
+  }
 };
 
 export const addWordsToCurrentUser = async (
