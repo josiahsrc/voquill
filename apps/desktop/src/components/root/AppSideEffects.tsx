@@ -1,16 +1,18 @@
+import { getVersion } from "@tauri-apps/api/app";
+import { invoke } from "@tauri-apps/api/core";
 import {
   EnterpriseConfig,
   EnterpriseLicense,
   Member,
   Nullable,
+  Term,
   User,
 } from "@voquill/types";
 import { getRec, listify } from "@voquill/utilities";
-import { getVersion } from "@tauri-apps/api/app";
-import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { isEqual } from "lodash-es";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useIntl } from "react-intl";
 import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { loadPairedRemoteDevices } from "../../actions/paired-remote-device.actions";
@@ -33,6 +35,7 @@ import {
 } from "../../actions/user.actions";
 import { useAsyncData, useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync, useKeyDownHandler } from "../../hooks/helper.hooks";
+import { useHotkeyFire } from "../../hooks/hotkey.hooks";
 import { useStreamWithSideEffects } from "../../hooks/stream.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { useToastAction } from "../../hooks/toast.hooks";
@@ -42,6 +45,7 @@ import {
   getConfigRepo,
   getEnterpriseRepo,
   getMemberRepo,
+  getTermRepo,
   getUserRepo,
 } from "../../repos";
 import { HotkeyStrategy, PasteKeybindSupport } from "../../state/app.state";
@@ -56,7 +60,10 @@ import {
   loadEnterpriseTarget,
 } from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
+import { createId } from "../../utils/id.utils";
+import { ADD_TO_DICTIONARY_HOTKEY } from "../../utils/keyboard.utils";
 import { getLogger, initLogging } from "../../utils/log.utils";
+import { sendPillFlashMessage } from "../../utils/overlay.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import { getPlatform } from "../../utils/platform.utils";
 import { minutesToMilliseconds } from "../../utils/time.utils";
@@ -109,6 +116,7 @@ const TOKEN_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 const ENTERPRISE_REFRESH_INTERVAL_MS = 1000 * 60;
 
 export const AppSideEffects = () => {
+  const intl = useIntl();
   const [authReady, setAuthReady] = useState(false);
   const [streamReady, setStreamReady] = useState(false);
   const [initReady, setInitReady] = useState(false);
@@ -538,6 +546,46 @@ export const AppSideEffects = () => {
     versionData,
     isEnterprise,
   ]);
+
+  const handleAddToDictionary = useCallback(async () => {
+    try {
+      const selectedText = await invoke<string | null>("get_selected_text");
+      console.log("selected text:", selectedText);
+      if (!selectedText?.trim()) {
+        return;
+      }
+
+      const text = selectedText.trim();
+      const newTerm: Term = {
+        id: createId(),
+        createdAt: new Date().toISOString(),
+        sourceValue: text,
+        destinationValue: "",
+        isReplacement: false,
+      };
+
+      produceAppState((draft) => {
+        draft.termById[newTerm.id] = newTerm;
+        draft.dictionary.termIds = [newTerm.id, ...draft.dictionary.termIds];
+      });
+
+      await getTermRepo().createTerm(newTerm);
+      sendPillFlashMessage(
+        intl.formatMessage(
+          { defaultMessage: 'Added "{text}" to dictionary' },
+          { text },
+        ),
+      );
+    } catch (error) {
+      getLogger().error(`Failed to add to dictionary: ${error}`);
+    }
+  }, [intl]);
+
+  useHotkeyFire({
+    actionName: ADD_TO_DICTIONARY_HOTKEY,
+    isDisabled: false,
+    onFire: handleAddToDictionary,
+  });
 
   // You cannot refresh the page in Tauri, here's a hotkey to help with that
   useKeyDownHandler({

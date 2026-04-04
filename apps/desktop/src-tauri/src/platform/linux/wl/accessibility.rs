@@ -2,6 +2,7 @@ use std::{thread, time::Duration};
 
 pub fn get_selected_text() -> Option<String> {
     let previous = super::input::clipboard_get().ok();
+    let _ = super::input::clipboard_set("");
 
     super::input::simulate_copy_keystroke().ok()?;
     thread::sleep(Duration::from_millis(50));
