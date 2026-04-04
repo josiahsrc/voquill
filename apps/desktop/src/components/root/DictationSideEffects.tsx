@@ -84,6 +84,7 @@ import {
 import {
   getEffectivePillVisibility,
   getIsDictationUnlocked,
+  getIsOnboarded,
   getMyPreferredMicrophone,
   getMyPrimaryDictationLanguage,
   getMyUserPreferences,
@@ -427,7 +428,11 @@ export const DictationSideEffects = () => {
       return;
     }
 
-    delayed(2000).then(() => recordStreak());
+    const hasOnboarded = getIsOnboarded(getAppState());
+    if (hasOnboarded) {
+      delayed(2000).then(() => recordStreak());
+    }
+
     getLogger().info("stopRecording entered");
     isStoppingRef.current = true;
     setIsStopping(true);
