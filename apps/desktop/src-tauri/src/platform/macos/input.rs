@@ -4,6 +4,7 @@ use std::{thread, time::Duration};
 
 use super::accessibility;
 
+const KEY_C: CGKeyCode = 8;
 const KEY_SPACE: CGKeyCode = 49;
 const KEY_V: CGKeyCode = 9;
 
@@ -49,6 +50,29 @@ fn paste_via_clipboard(text: &str) -> Result<(), String> {
         thread::sleep(Duration::from_millis(10));
         simulate_keypress(KEY_SPACE, CGEventFlags::empty())?;
     }
+
+    Ok(())
+}
+
+pub(crate) fn simulate_cmd_c() -> Result<(), String> {
+    // Use a private event source so physically-held modifier keys (e.g. Fn from the
+    // hotkey combo) don't contaminate the synthetic Cmd+C event.
+    let source = CGEventSource::new(CGEventSourceStateID::Private)
+        .map_err(|_| "failed to create event source")?;
+
+    let flags = CGEventFlags::CGEventFlagCommand;
+
+    let key_down = CGEvent::new_keyboard_event(source.clone(), KEY_C, true)
+        .map_err(|_| "failed to create key-down event")?;
+    key_down.set_flags(flags);
+    key_down.post(CGEventTapLocation::HID);
+
+    thread::sleep(Duration::from_millis(10));
+
+    let key_up = CGEvent::new_keyboard_event(source, KEY_C, false)
+        .map_err(|_| "failed to create key-up event")?;
+    key_up.set_flags(flags);
+    key_up.post(CGEventTapLocation::HID);
 
     Ok(())
 }

@@ -880,38 +880,25 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {
 }
 
 pub fn get_selected_text() -> Option<String> {
-    catch_unwind(AssertUnwindSafe(|| unsafe { get_selected_text_impl() })).unwrap_or_else(|_| {
-        log::error!("get_selected_text panicked, returning None");
-        None
-    })
+    use std::{thread, time::Duration};
+
+    // Wait for hotkey modifier keys to physically release before simulating Cmd+C
+    thread::sleep(Duration::from_millis(50));
+
+    let mut clipboard = arboard::Clipboard::new().ok()?;
+    let previous = crate::platform::SavedClipboard::save(&mut clipboard);
+    clipboard.clear().ok();
+
+    super::input::simulate_cmd_c().ok()?;
+    thread::sleep(Duration::from_millis(100));
+
+    let selected = clipboard.get_text().ok();
+
+    thread::spawn(move || {
+        thread::sleep(Duration::from_millis(100));
+        previous.restore();
+    });
+
+    selected.filter(|s| !s.is_empty())
 }
 
-unsafe fn get_selected_text_impl() -> Option<String> {
-    let ax_focused_ui_element = CFString::new("AXFocusedUIElement");
-    let ax_selected_text = CFString::new("AXSelectedText");
-
-    let system_wide = AXUIElementCreateSystemWide();
-    if system_wide.is_null() {
-        return None;
-    }
-
-    let mut focused_element: CFTypeRef = ptr::null();
-    let result = AXUIElementCopyAttributeValue(
-        system_wide,
-        ax_focused_ui_element.as_concrete_TypeRef(),
-        &mut focused_element,
-    );
-
-    CFRelease(system_wide);
-
-    if result != AX_ERROR_SUCCESS || focused_element.is_null() {
-        return None;
-    }
-
-    let selected_text =
-        get_string_attribute(focused_element, ax_selected_text.as_concrete_TypeRef());
-
-    CFRelease(focused_element);
-
-    selected_text.filter(|s| !s.is_empty())
-}

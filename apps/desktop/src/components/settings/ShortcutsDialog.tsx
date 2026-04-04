@@ -13,6 +13,7 @@ import { produceAppState, useAppStore } from "../../store";
 import { getIsAssistantModeEnabled } from "../../utils/assistant-mode.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
+  ADD_TO_DICTIONARY_HOTKEY,
   AGENT_DICTATE_HOTKEY,
   CANCEL_TRANSCRIPTION_HOTKEY,
   DICTATE_HOTKEY,
@@ -80,6 +81,13 @@ export const ShortcutsDialog = () => {
             <FormattedMessage defaultMessage="Open the current assistant conversation in the main window." />
           }
           actionName={OPEN_CHAT_HOTKEY}
+        />
+        <HotkeySetting
+          title={<FormattedMessage defaultMessage="Add to dictionary" />}
+          description={
+            <FormattedMessage defaultMessage="Add the currently selected text to your dictionary." />
+          }
+          actionName={ADD_TO_DICTIONARY_HOTKEY}
         />
         {isManualStyling && (
           <HotkeySetting

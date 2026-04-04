@@ -1,8 +1,7 @@
-- The macOS pill now renders on top of full screen windows.
-- Wayland support on Linux, including native setup UI and paste fixes.
-- Global paste keybinding on Linux — configure a custom shortcut to paste from Voquill anywhere.
-- Model providers now dynamically show the latest available models.
-- Air Dictation (alpha) — use your phone as a remote mic for desktop dictation.
-- Fixed audio dimming on Windows.
-- Fixed pill style switching and standard pill sizing across platforms.
-- Various improvements and bug fixes.
+- Significant improvements to AI text clean up (available to Voquill cloud users, you will feel the difference immediately)
+- New pill affordances that feel awesome (keep your streak going to see them)
+- You can now configure the max dictation time (community mode only)
+- Windows now uses a native pill similar to MacOS and Linux
+- Voquill now remembers your window size and position for when you reopen it
+- Add words to dictionary via a hotkey
+- Various improvements and bug fixes

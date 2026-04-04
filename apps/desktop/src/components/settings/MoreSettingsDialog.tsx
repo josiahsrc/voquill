@@ -55,6 +55,7 @@ export const MoreSettingsDialog = () => {
     canChangeStylingMode,
     showDictationLimitSetting,
     dictationLimitMinutes,
+    disablePillRewards,
   ] = useAppStore((state) => {
     const prefs = getMyUserPreferences(state);
     const transcriptionPrefs = getTranscriptionPrefs(state);
@@ -69,6 +70,7 @@ export const MoreSettingsDialog = () => {
       getAllowChangeStylingMode(state),
       shouldEnableDictationLimit(transcriptionPrefs.mode),
       getEffectiveDictationLimitMinutes(prefs),
+      state.local.disablePillRewards,
     ] as const;
   });
   const [dictationLimitInput, setDictationLimitInput] = useState(
@@ -142,6 +144,14 @@ export const MoreSettingsDialog = () => {
 
   const handleToggleRealtimeOutput = (event: ChangeEvent<HTMLInputElement>) => {
     void setRealtimeOutputEnabled(event.target.checked);
+  };
+
+  const handleToggleDisablePillRewards = (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    produceAppState((draft) => {
+      draft.local.disablePillRewards = !event.target.checked;
+    });
   };
 
   const handleDictationLimitChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -259,6 +269,20 @@ export const MoreSettingsDialog = () => {
                 edge="end"
                 checked={realtimeOutputEnabled}
                 onChange={handleToggleRealtimeOutput}
+              />
+            }
+          />
+
+          <SettingSection
+            title={<FormattedMessage defaultMessage="Streak celebrations" />}
+            description={
+              <FormattedMessage defaultMessage="Show flame and firework animations on the dictation pill for streak milestones." />
+            }
+            action={
+              <Switch
+                edge="end"
+                checked={!disablePillRewards}
+                onChange={handleToggleDisablePillRewards}
               />
             }
           />

@@ -427,10 +427,14 @@ fn is_container_control_type(control_type: i32) -> bool {
 }
 
 pub fn get_selected_text() -> Option<String> {
-    try_get_selected_text().ok().flatten()
+    if let Ok(Some(text)) = try_get_selected_text_uia() {
+        return Some(text);
+    }
+
+    get_selected_text_clipboard()
 }
 
-fn try_get_selected_text() -> Result<Option<String>, windows::core::Error> {
+fn try_get_selected_text_uia() -> Result<Option<String>, windows::core::Error> {
     unsafe {
         let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
 
@@ -461,4 +465,24 @@ fn try_get_selected_text() -> Result<Option<String>, windows::core::Error> {
 
         Ok(None)
     }
+}
+
+fn get_selected_text_clipboard() -> Option<String> {
+    use std::{thread, time::Duration};
+
+    let mut clipboard = arboard::Clipboard::new().ok()?;
+    let previous = crate::platform::SavedClipboard::save(&mut clipboard);
+    clipboard.clear().ok();
+
+    super::input::simulate_copy_keystroke();
+    thread::sleep(Duration::from_millis(50));
+
+    let selected = clipboard.get_text().ok();
+
+    thread::spawn(move || {
+        thread::sleep(Duration::from_millis(100));
+        previous.restore();
+    });
+
+    selected.filter(|s| !s.is_empty())
 }

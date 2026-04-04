@@ -74,6 +74,7 @@ pub enum InMessage {
     WindowSize { size: String },
     FlashMessage { message: String },
     Fireworks { message: String },
+    Flame { message: String },
     AssistantState {
         active: bool,
         input_mode: String,

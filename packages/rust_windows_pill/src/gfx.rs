@@ -362,6 +362,68 @@ impl Gfx {
         }
     }
 
+    pub(crate) fn fill_flame_tongue(
+        &self, cx: f64, base_y: f64, h: f64, hw: f64, sway: f64,
+        stops: &[(f64, f64, f64, f64, f64)],
+    ) {
+        if h < 0.5 || hw < 0.5 { return; }
+        let tip_x = cx + sway;
+        let tip_y = base_y - h;
+        let base_r = hw.min(h * 0.15);
+
+        unsafe {
+            let geom = self.factory.CreatePathGeometry().unwrap();
+            let sink = geom.Open().unwrap();
+
+            sink.BeginFigure(vec2(cx - hw, base_y - base_r), D2D1_FIGURE_BEGIN_FILLED);
+
+            // Left edge bezier to tip
+            sink.AddBezier(&D2D1_BEZIER_SEGMENT {
+                point1: vec2(cx - hw * 1.15, base_y - h * 0.35),
+                point2: vec2(cx - hw * 0.12 + sway * 0.3, base_y - h * 0.72),
+                point3: vec2(tip_x, tip_y),
+            });
+
+            // Right edge bezier from tip back down
+            sink.AddBezier(&D2D1_BEZIER_SEGMENT {
+                point1: vec2(cx + hw * 0.12 + sway * 0.3, base_y - h * 0.72),
+                point2: vec2(cx + hw * 1.15, base_y - h * 0.35),
+                point3: vec2(cx + hw, base_y - base_r),
+            });
+
+            // Rounded bottom arc from right to left
+            sink.AddArc(&D2D1_ARC_SEGMENT {
+                point: vec2(cx - hw, base_y - base_r),
+                size: D2D_SIZE_F { width: hw as f32, height: hw as f32 },
+                rotationAngle: 0.0,
+                sweepDirection: D2D1_SWEEP_DIRECTION_CLOCKWISE,
+                arcSize: D2D1_ARC_SIZE_SMALL,
+            });
+
+            sink.EndFigure(D2D1_FIGURE_END_CLOSED);
+            sink.Close().ok();
+
+            let d2d_stops: Vec<D2D1_GRADIENT_STOP> = stops.iter().map(|(pos, r, g, b, a)| {
+                D2D1_GRADIENT_STOP {
+                    position: *pos as f32,
+                    color: color(*r, *g, *b, *a),
+                }
+            }).collect();
+
+            let stop_col = self.rt.CreateGradientStopCollection(&d2d_stops, D2D1_GAMMA_2_2, D2D1_EXTEND_MODE_CLAMP).unwrap();
+            let brush = self.rt.CreateLinearGradientBrush(
+                &D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES {
+                    startPoint: vec2(cx, base_y),
+                    endPoint: vec2(cx, tip_y),
+                },
+                None,
+                &stop_col,
+            ).unwrap();
+
+            self.rt.FillGeometry(&geom, &brush, None);
+        }
+    }
+
     fn text_format(&self, size: f64, bold: bool, italic: bool) -> IDWriteTextFormat {
         unsafe {
             let weight = if bold { DWRITE_FONT_WEIGHT_BOLD } else { DWRITE_FONT_WEIGHT_NORMAL };

@@ -419,7 +419,7 @@ export const getEffectivePillVisibility = (
     return visibility;
   }
 
-  return "while_active";
+  return "persistent";
 };
 
 const SILENCE_PADDING_MS = 1500;

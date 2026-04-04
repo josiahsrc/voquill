@@ -5,6 +5,7 @@ use std::{thread, time::Duration};
 pub fn get_selected_text() -> Option<String> {
     let mut clipboard = Clipboard::new().ok()?;
     let previous = clipboard.get_text().ok();
+    clipboard.clear().ok();
 
     let mut enigo = Enigo::new();
     enigo.key_up(Key::Shift);
