@@ -14,6 +14,7 @@ use crate::draw;
 use crate::gfx::Gfx;
 use crate::input;
 use crate::ipc::{self, InMessage, OutMessage, Phase, Visibility};
+use crate::state;
 use crate::state::{ClickAction, PillState, Rocket, RocketPhase, Spark, WindowMode};
 
 const TIMER_CURSOR: usize = 2;
@@ -120,6 +121,9 @@ pub fn run(receiver: Receiver<InMessage>) {
         fireworks_elapsed: Cell::new(0.0),
         fireworks_next_launch: Cell::new(0),
         fireworks_rockets: RefCell::new(Vec::new()),
+        flame_active: Cell::new(false),
+        flame_elapsed: Cell::new(0.0),
+        flame_tongues: RefCell::new(Vec::new()),
     };
 
     STATE.with(|s| *s.borrow_mut() = Some(state));
@@ -365,6 +369,15 @@ fn process_message(msg: InMessage, state: &PillState, _hwnd: HWND) {
             state.fireworks_next_launch.set(0);
             state.fireworks_rockets.borrow_mut().clear();
         }
+        InMessage::Flame { message } => {
+            *state.flash_message.borrow_mut() = message;
+            state.flash_visible.set(true);
+            state.flash_timer.set(FLAME_TOTAL_DURATION);
+
+            state.flame_active.set(true);
+            state.flame_elapsed.set(0.0);
+            state.flame_tongues.borrow_mut().clear();
+        }
         InMessage::Visibility { visibility } => {
             state.visibility.set(visibility);
         }
@@ -473,6 +486,7 @@ fn tick(state: &PillState, dt: f64) {
     state.shimmer_phase.set((state.shimmer_phase.get() + SHIMMER_SPEED * frame_scale) % 1.0);
 
     tick_fireworks(state, dt);
+    tick_flame(state, dt);
 
     if state.flash_visible.get() {
         let remaining = state.flash_timer.get() - dt;
@@ -579,6 +593,54 @@ fn tick_fireworks(state: &PillState, dt: f64) {
 
     if elapsed >= FIREWORKS_TOTAL_DURATION && rockets.is_empty() {
         state.fireworks_active.set(false);
+    }
+}
+
+fn tick_flame(state: &PillState, dt: f64) {
+    if !state.flame_active.get() {
+        return;
+    }
+    let elapsed = state.flame_elapsed.get() + dt;
+    state.flame_elapsed.set(elapsed);
+
+    let ww = state.draw_width.get();
+    let wh = state.draw_height.get();
+    let (pill_x, _, pill_w, _) = draw::pill_position(state, ww, wh);
+
+    let mut tongues = state.flame_tongues.borrow_mut();
+
+    if tongues.is_empty() {
+        let inset = pill_w * 0.12;
+        let usable = pill_w - inset * 2.0;
+        for i in 0..FLAME_TONGUE_COUNT {
+            let t = if FLAME_TONGUE_COUNT > 1 {
+                i as f64 / (FLAME_TONGUE_COUNT - 1) as f64
+            } else {
+                0.5
+            };
+            let hash = (i as u64).wrapping_mul(2654435761);
+            let h_t = (hash % 1000) as f64 / 1000.0;
+            let w_t = ((hash >> 10) % 1000) as f64 / 1000.0;
+            let phase = ((hash >> 20) % 1000) as f64 / 1000.0 * TAU;
+            let speed_var = ((hash >> 30) % 1000) as f64 / 1000.0;
+
+            tongues.push(state::FlameTongue {
+                base_x: pill_x + inset + usable * t,
+                height: FLAME_MIN_HEIGHT + (FLAME_MAX_HEIGHT - FLAME_MIN_HEIGHT) * h_t,
+                width: FLAME_MIN_WIDTH + (FLAME_MAX_WIDTH - FLAME_MIN_WIDTH) * w_t,
+                phase,
+                speed: FLAME_SPEED_BASE * (0.8 + 0.4 * speed_var),
+            });
+        }
+    }
+
+    for tongue in tongues.iter_mut() {
+        tongue.phase += tongue.speed * dt;
+    }
+
+    if elapsed >= FLAME_TOTAL_DURATION {
+        state.flame_active.set(false);
+        tongues.clear();
     }
 }
 
