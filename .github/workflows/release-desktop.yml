@@ -366,10 +366,14 @@ jobs:
           Write-Host "Copied VC++ Runtime DLLs to src-tauri:"
           Get-ChildItem $srcTauri -Filter "*.dll" | ForEach-Object { Write-Host "  $($_.Name)" }
 
-          # Add DLLs to bundle.resources in tauri.conf.json
+          # Add DLLs to bundle.resources in tauri.conf.json (append to existing entries)
           $configPath = Join-Path $srcTauri "tauri.conf.json"
           $config = Get-Content $configPath -Raw | ConvertFrom-Json -Depth 20
-          $config.bundle.resources = @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
+          $existingResources = @()
+          if ($config.bundle.resources) {
+            $existingResources = @($config.bundle.resources)
+          }
+          $config.bundle.resources = $existingResources + @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
           $config | ConvertTo-Json -Depth 20 | Set-Content $configPath -Encoding UTF8
 
           Write-Host "Updated tauri.conf.json with bundle.resources"
