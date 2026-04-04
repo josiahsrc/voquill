@@ -28,6 +28,10 @@ pub(crate) fn draw_all(ctx: &Ctx, state: &PillState, view_w: f64, view_h: f64) {
         draw_tooltip(ctx, state, ww, pill_area_top);
     }
 
+    if !state.assistant_active.get() && state.flame_active.get() {
+        draw_flame(ctx, state, ww, wh);
+    }
+
     draw_pill(ctx, state, ww, wh);
 
     if state.assistant_active.get() {
@@ -36,10 +40,6 @@ pub(crate) fn draw_all(ctx: &Ctx, state: &PillState, view_w: f64, view_h: f64) {
 
     if !state.assistant_active.get() {
         draw_cancel_button(ctx, state, ww, wh);
-
-        if !state.flame_tongues.borrow().is_empty() {
-            draw_flame(ctx, state, ww, wh);
-        }
 
         if !state.fireworks_rockets.borrow().is_empty() {
             draw_fireworks(ctx, state, ww, wh);
@@ -367,123 +367,100 @@ fn draw_flash_message(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
     ctx.restore();
 }
 
-// ── Fireworks ────────────────────────────────────────────────────
+// ── Flame ────────────────────────────────────────────────────────
+
+fn draw_flame_tongue(ctx: &Ctx, cx: f64, base_y: f64, h: f64, hw: f64, sway: f64,
+    gradient_stops: &[(f64, f64, f64, f64, f64)],
+) {
+    use std::f64::consts::PI;
+    let tip_x = cx + sway;
+    let tip_y = base_y - h;
+    let base_r = hw.min(h * 0.15);
+
+    ctx.save();
+    ctx.new_sub_path();
+    // Start at left side, just above the rounded base
+    ctx.move_to(cx - hw, base_y - base_r);
+    // Left edge: bulges out slightly in lower third, then narrows to tip
+    ctx.curve_to(
+        cx - hw * 1.15, base_y - h * 0.35,
+        cx - hw * 0.12 + sway * 0.3, base_y - h * 0.72,
+        tip_x, tip_y,
+    );
+    // Right edge: mirror, tip back down to base
+    ctx.curve_to(
+        cx + hw * 0.12 + sway * 0.3, base_y - h * 0.72,
+        cx + hw * 1.15, base_y - h * 0.35,
+        cx + hw, base_y - base_r,
+    );
+    // Rounded bottom: arc from right to left
+    ctx.arc(cx, base_y - base_r, hw, 0.0, PI);
+    ctx.close_path();
+    ctx.clip();
+    ctx.draw_gradient_raw(cx, base_y, cx, tip_y, gradient_stops);
+    ctx.restore();
+}
 
 fn draw_flame(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
+    let elapsed = state.flame_elapsed.get();
     let tongues = state.flame_tongues.borrow();
+    if tongues.is_empty() {
+        return;
+    }
+
     let (_, pill_y, _, pill_h) = pill_position(state, ww, wh);
-    let base_y = pill_y + pill_h * 0.3;
+    let base_y = pill_y + pill_h * 0.35;
+
+    let fade_in = (elapsed / 0.3).clamp(0.0, 1.0);
+    let fade_out = ((FLAME_TOTAL_DURATION - elapsed) / 0.8).clamp(0.0, 1.0);
+    let alpha = fade_in * fade_out;
+    if alpha < 0.01 {
+        return;
+    }
 
     for tongue in tongues.iter() {
-        if tongue.life <= 0.0 {
-            continue;
-        }
-
-        // Fade in over first 0.3s, fade out over last 1.0s
-        let fade_in = ((tongue.max_life - tongue.life) / 0.3).clamp(0.0, 1.0);
-        let fade_out = (tongue.life / 1.0).clamp(0.0, 1.0);
-        let alpha = fade_in * fade_out;
-        if alpha < 0.01 {
-            continue;
-        }
-
-        let flicker = (tongue.phase.sin() * 0.5 + 0.5) * 0.3 + 0.7;
-        let h = tongue.height * flicker * alpha;
-        let w = tongue.width * (0.8 + 0.2 * flicker);
-
-        let sway = tongue.phase.sin() * FLAME_SWAY_AMOUNT
-            + (tongue.phase * 1.7).sin() * FLAME_SWAY_AMOUNT * 0.5;
-
-        let cx = tongue.base_x + sway;
-        let tip_y = base_y - h;
+        let flicker = (tongue.phase.sin() * 0.5 + 0.5) * 0.25 + 0.75;
+        let flicker2 = ((tongue.phase * 1.6 + 0.8).sin() * 0.5 + 0.5) * 0.15 + 0.85;
+        let h = tongue.height * flicker * flicker2;
+        let w = tongue.width * (0.85 + 0.15 * flicker);
         let hw = w / 2.0;
 
-        // Outer glow tongue (larger, more transparent)
-        let glow_hw = hw * 1.5;
-        let glow_h = h * 1.15;
-        let glow_tip_y = base_y - glow_h;
-        ctx.save();
-        ctx.new_sub_path();
-        ctx.move_to(cx - glow_hw, base_y);
-        ctx.curve_to(
-            cx - glow_hw, base_y - glow_h * 0.5,
-            cx - glow_hw * 0.2, glow_tip_y + glow_h * 0.15,
-            cx + sway * 0.3, glow_tip_y,
-        );
-        ctx.curve_to(
-            cx + glow_hw * 0.2, glow_tip_y + glow_h * 0.15,
-            cx + glow_hw, base_y - glow_h * 0.5,
-            cx + glow_hw, base_y,
-        );
-        ctx.close_path();
-        ctx.clip();
-        ctx.draw_gradient_raw(
-            cx, base_y, cx, glow_tip_y,
+        let sway = tongue.phase.sin() * FLAME_SWAY
+            + (tongue.phase * 1.7 + 1.0).sin() * FLAME_SWAY * 0.4;
+
+        let cx = tongue.base_x + sway * 0.3;
+
+        // Layer 1: outer glow — wide, soft, dim
+        draw_flame_tongue(ctx, cx, base_y, h * 1.2, hw * 1.5, sway * 1.1,
             &[
-                (0.0, 0.85, 0.85, 0.85, alpha * 0.2),
-                (0.5, 0.4, 0.4, 0.4, alpha * 0.1),
+                (0.0, 0.7, 0.7, 0.7, alpha * 0.15),
+                (0.4, 0.4, 0.4, 0.4, alpha * 0.08),
                 (1.0, 0.0, 0.0, 0.0, 0.0),
             ],
         );
-        ctx.restore();
 
-        // Core tongue (bright white → transparent)
-        ctx.save();
-        ctx.new_sub_path();
-        ctx.move_to(cx - hw, base_y);
-        ctx.curve_to(
-            cx - hw, base_y - h * 0.5,
-            cx - hw * 0.15, tip_y + h * 0.12,
-            cx + sway * 0.3, tip_y,
-        );
-        ctx.curve_to(
-            cx + hw * 0.15, tip_y + h * 0.12,
-            cx + hw, base_y - h * 0.5,
-            cx + hw, base_y,
-        );
-        ctx.close_path();
-        ctx.clip();
-        ctx.draw_gradient_raw(
-            cx, base_y, cx, tip_y,
+        // Layer 2: main flame body
+        draw_flame_tongue(ctx, cx, base_y, h, hw, sway,
             &[
-                (0.0, 1.0, 1.0, 1.0, alpha * 0.9),
-                (0.3, 1.0, 1.0, 1.0, alpha * 0.7),
-                (0.6, 0.7, 0.7, 0.7, alpha * 0.35),
+                (0.0, 1.0, 1.0, 1.0, alpha * 0.85),
+                (0.25, 1.0, 1.0, 1.0, alpha * 0.65),
+                (0.55, 0.8, 0.8, 0.8, alpha * 0.3),
                 (1.0, 0.0, 0.0, 0.0, 0.0),
             ],
         );
-        ctx.restore();
 
-        // Inner bright core (narrow, very bright)
-        let inner_hw = hw * 0.35;
-        let inner_h = h * 0.6;
-        let inner_tip_y = base_y - inner_h;
-        ctx.save();
-        ctx.new_sub_path();
-        ctx.move_to(cx - inner_hw, base_y);
-        ctx.curve_to(
-            cx - inner_hw, base_y - inner_h * 0.5,
-            cx - inner_hw * 0.1, inner_tip_y + inner_h * 0.1,
-            cx + sway * 0.15, inner_tip_y,
-        );
-        ctx.curve_to(
-            cx + inner_hw * 0.1, inner_tip_y + inner_h * 0.1,
-            cx + inner_hw, base_y - inner_h * 0.5,
-            cx + inner_hw, base_y,
-        );
-        ctx.close_path();
-        ctx.clip();
-        ctx.draw_gradient_raw(
-            cx, base_y, cx, inner_tip_y,
+        // Layer 3: inner bright core — narrow, hot white
+        draw_flame_tongue(ctx, cx, base_y, h * 0.55, hw * 0.35, sway * 0.5,
             &[
-                (0.0, 1.0, 1.0, 1.0, alpha * 1.0),
-                (0.5, 1.0, 1.0, 1.0, alpha * 0.6),
-                (1.0, 0.9, 0.9, 0.9, 0.0),
+                (0.0, 1.0, 1.0, 1.0, alpha * 0.95),
+                (0.5, 1.0, 1.0, 1.0, alpha * 0.5),
+                (1.0, 1.0, 1.0, 1.0, 0.0),
             ],
         );
-        ctx.restore();
     }
 }
+
+// ── Fireworks ────────────────────────────────────────────────────
 
 fn draw_fireworks(ctx: &Ctx, state: &PillState, _ww: f64, _wh: f64) {
     let rockets = state.fireworks_rockets.borrow();

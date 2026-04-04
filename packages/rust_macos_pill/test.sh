@@ -168,11 +168,11 @@ run_flame() {
   sleep 0.5
 
   echo '--- Flame: igniting ---' >&2
-  echo '{"type":"flame","message":"On fire!"}'
+  echo '{"type":"flame","message":"2 day streak 🔥"}'
   sleep 7
 
   echo '--- Flame: second round ---' >&2
-  echo '{"type":"flame","message":"Still burning!"}'
+  echo '{"type":"flame","message":"10 day streak! 🎉"}'
   sleep 7
 }
 

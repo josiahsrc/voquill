@@ -100,8 +100,6 @@ pub(crate) struct FlameTongue {
     pub(crate) width: f64,
     pub(crate) phase: f64,
     pub(crate) speed: f64,
-    pub(crate) life: f64,
-    pub(crate) max_life: f64,
 }
 
 pub(crate) struct PillState {
@@ -174,7 +172,6 @@ pub(crate) struct PillState {
     // Flame
     pub(crate) flame_active: Cell<bool>,
     pub(crate) flame_elapsed: Cell<f64>,
-    pub(crate) flame_spawn_accum: Cell<f64>,
     pub(crate) flame_tongues: RefCell<Vec<FlameTongue>>,
 }
 

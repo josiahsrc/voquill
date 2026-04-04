@@ -307,7 +307,6 @@ fn perform_tick() {
 
                     ctx.state.flame_active.set(true);
                     ctx.state.flame_elapsed.set(0.0);
-                    ctx.state.flame_spawn_accum.set(0.0);
                     ctx.state.flame_tongues.borrow_mut().clear();
                 }
                 InMessage::Visibility { visibility } => {
@@ -650,7 +649,6 @@ fn tick_flame(state: &PillState, dt: f64) {
     if !state.flame_active.get() {
         return;
     }
-
     let elapsed = state.flame_elapsed.get() + dt;
     state.flame_elapsed.set(elapsed);
 
@@ -660,9 +658,8 @@ fn tick_flame(state: &PillState, dt: f64) {
 
     let mut tongues = state.flame_tongues.borrow_mut();
 
-    // Spawn tongues once at the start, distributed along the pill
-    if tongues.is_empty() && elapsed < 0.1 {
-        let inset = pill_w * 0.08;
+    if tongues.is_empty() {
+        let inset = pill_w * 0.12;
         let usable = pill_w - inset * 2.0;
         for i in 0..FLAME_TONGUE_COUNT {
             let t = if FLAME_TONGUE_COUNT > 1 {
@@ -681,22 +678,18 @@ fn tick_flame(state: &PillState, dt: f64) {
                 height: FLAME_MIN_HEIGHT + (FLAME_MAX_HEIGHT - FLAME_MIN_HEIGHT) * h_t,
                 width: FLAME_MIN_WIDTH + (FLAME_MAX_WIDTH - FLAME_MIN_WIDTH) * w_t,
                 phase,
-                speed: FLAME_FLICKER_SPEED * (0.7 + 0.6 * speed_var),
-                life: FLAME_TOTAL_DURATION,
-                max_life: FLAME_TOTAL_DURATION,
+                speed: FLAME_SPEED_BASE * (0.8 + 0.4 * speed_var),
             });
         }
     }
 
-    // Animate each tongue
     for tongue in tongues.iter_mut() {
         tongue.phase += tongue.speed * dt;
-        tongue.life -= dt;
     }
-    tongues.retain(|t| t.life > 0.0);
 
-    if elapsed >= FLAME_TOTAL_DURATION && tongues.is_empty() {
+    if elapsed >= FLAME_TOTAL_DURATION {
         state.flame_active.set(false);
+        tongues.clear();
     }
 }
 
@@ -901,7 +894,6 @@ unsafe fn setup(receiver: Receiver<InMessage>, embedded: bool) {
         fireworks_rockets: RefCell::new(Vec::new()),
         flame_active: Cell::new(false),
         flame_elapsed: Cell::new(0.0),
-        flame_spawn_accum: Cell::new(0.0),
         flame_tongues: RefCell::new(Vec::new()),
     });
 
