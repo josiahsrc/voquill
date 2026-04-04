@@ -23,6 +23,10 @@ pub(crate) fn draw_all(gfx: &mut Gfx, state: &PillState) {
         draw_tooltip(gfx, state, ww, pill_area_top);
     }
 
+    if !state.assistant_active.get() && state.flame_active.get() {
+        draw_flame(gfx, state, ww, wh);
+    }
+
     draw_pill(gfx, state, ww, wh);
 
     if state.assistant_active.get() {
@@ -292,6 +296,67 @@ fn draw_flash_message(gfx: &mut Gfx, state: &PillState, ww: f64, wh: f64) {
         12.0, true, [1.0, 1.0, 1.0, 0.9 * alpha]);
 
     gfx.restore();
+}
+
+// ── Flame ────────────────────────────────────────────────────────
+
+fn draw_flame(gfx: &Gfx, state: &PillState, ww: f64, wh: f64) {
+    let elapsed = state.flame_elapsed.get();
+    let tongues = state.flame_tongues.borrow();
+    if tongues.is_empty() {
+        return;
+    }
+
+    let (_, pill_y, _, pill_h) = pill_position(state, ww, wh);
+    let base_y = pill_y + pill_h * 0.35;
+
+    let fade_in = (elapsed / 0.3).clamp(0.0, 1.0);
+    let fade_out = ((FLAME_TOTAL_DURATION - elapsed) / 0.8).clamp(0.0, 1.0);
+    let alpha = fade_in * fade_out;
+    if alpha < 0.01 {
+        return;
+    }
+
+    for tongue in tongues.iter() {
+        let flicker = (tongue.phase.sin() * 0.5 + 0.5) * 0.25 + 0.75;
+        let flicker2 = ((tongue.phase * 1.6 + 0.8).sin() * 0.5 + 0.5) * 0.15 + 0.85;
+        let h = tongue.height * flicker * flicker2;
+        let w = tongue.width * (0.85 + 0.15 * flicker);
+        let hw = w / 2.0;
+
+        let sway = tongue.phase.sin() * FLAME_SWAY
+            + (tongue.phase * 1.7 + 1.0).sin() * FLAME_SWAY * 0.4;
+
+        let cx = tongue.base_x + sway * 0.3;
+
+        // Layer 1: outer glow — wide, soft, dim
+        gfx.fill_flame_tongue(cx, base_y, h * 1.2, hw * 1.5, sway * 1.1,
+            &[
+                (0.0, 0.7, 0.7, 0.7, alpha * 0.15),
+                (0.4, 0.4, 0.4, 0.4, alpha * 0.08),
+                (1.0, 0.0, 0.0, 0.0, 0.0),
+            ],
+        );
+
+        // Layer 2: main flame body
+        gfx.fill_flame_tongue(cx, base_y, h, hw, sway,
+            &[
+                (0.0, 1.0, 1.0, 1.0, alpha * 0.85),
+                (0.25, 1.0, 1.0, 1.0, alpha * 0.65),
+                (0.55, 0.8, 0.8, 0.8, alpha * 0.3),
+                (1.0, 0.0, 0.0, 0.0, 0.0),
+            ],
+        );
+
+        // Layer 3: inner bright core — narrow, hot white
+        gfx.fill_flame_tongue(cx, base_y, h * 0.55, hw * 0.35, sway * 0.5,
+            &[
+                (0.0, 1.0, 1.0, 1.0, alpha * 0.95),
+                (0.5, 1.0, 1.0, 1.0, alpha * 0.5),
+                (1.0, 1.0, 1.0, 1.0, 0.0),
+            ],
+        );
+    }
 }
 
 // ── Fireworks ────────────────────────────────────────────────────

@@ -106,6 +106,14 @@ function Run-Fireworks {
     Start-Sleep -Seconds 9
 }
 
+function Run-Flame {
+    Write-Host "--- Flame ---" -ForegroundColor Cyan
+    Send '{"type":"visibility","visibility":"persistent"}'
+    Start-Sleep -Milliseconds 500
+    Send '{"type":"flame","message":"On fire!"}'
+    Start-Sleep -Seconds 7
+}
+
 function Run-Keyboard {
     Write-Host "--- Keyboard: typing mode (Ctrl-C to quit) ---" -ForegroundColor Cyan
     Send '{"type":"visibility","visibility":"persistent"}'
@@ -123,6 +131,7 @@ try {
         "assistant"  { Run-Assistant }
         "flash"      { Run-Flash }
         "fireworks"  { Run-Fireworks }
+        "flame"      { Run-Flame }
         "keyboard"   { Run-Keyboard }
         default {
             Run-Dictation

@@ -10,7 +10,7 @@ use gtk_layer_shell::LayerShell;
 
 use crate::constants::*;
 use crate::ipc::{self, InMessage, OutMessage, Phase, Visibility};
-use crate::state::{PillState, Rocket, RocketPhase, Spark, WindowMode};
+use crate::state::{FlameTongue, PillState, Rocket, RocketPhase, Spark, WindowMode};
 use crate::{draw, input, x11};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -148,6 +148,9 @@ pub fn run(receiver: Receiver<InMessage>) {
         fireworks_elapsed: Cell::new(0.0),
         fireworks_next_launch: Cell::new(0),
         fireworks_rockets: RefCell::new(Vec::new()),
+        flame_active: Cell::new(false),
+        flame_elapsed: Cell::new(0.0),
+        flame_tongues: RefCell::new(Vec::new()),
         alloc_width: Cell::new(0.0),
         alloc_height: Cell::new(0.0),
     });
@@ -324,6 +327,15 @@ pub fn run(receiver: Receiver<InMessage>) {
                     state_tick.fireworks_elapsed.set(0.0);
                     state_tick.fireworks_next_launch.set(0);
                     state_tick.fireworks_rockets.borrow_mut().clear();
+                }
+                InMessage::Flame { message } => {
+                    *state_tick.flash_message.borrow_mut() = message;
+                    state_tick.flash_visible.set(true);
+                    state_tick.flash_timer.set(FLAME_TOTAL_DURATION);
+
+                    state_tick.flame_active.set(true);
+                    state_tick.flame_elapsed.set(0.0);
+                    state_tick.flame_tongues.borrow_mut().clear();
                 }
                 InMessage::Visibility { visibility } => {
                     state_tick.visibility.set(visibility);
@@ -598,6 +610,9 @@ fn tick(state: &PillState) {
     // Fireworks
     tick_fireworks(state);
 
+    // Flame
+    tick_flame(state);
+
     // Flash message timer
     if state.flash_visible.get() {
         let remaining = state.flash_timer.get() - SPRING_DT;
@@ -715,6 +730,54 @@ fn tick_fireworks(state: &PillState) {
 
     if elapsed >= FIREWORKS_TOTAL_DURATION && rockets.is_empty() {
         state.fireworks_active.set(false);
+    }
+}
+
+fn tick_flame(state: &PillState) {
+    if !state.flame_active.get() {
+        return;
+    }
+    let dt = SPRING_DT;
+    let elapsed = state.flame_elapsed.get() + dt;
+    state.flame_elapsed.set(elapsed);
+
+    let (_, _, pill_w, _) = draw::pill_position(state, state.draw_width.get(), state.draw_height.get());
+
+    let mut tongues = state.flame_tongues.borrow_mut();
+
+    if tongues.is_empty() {
+        let inset = pill_w * 0.12;
+        let usable = pill_w - inset * 2.0;
+        for i in 0..FLAME_TONGUE_COUNT {
+            let t = if FLAME_TONGUE_COUNT > 1 {
+                i as f64 / (FLAME_TONGUE_COUNT - 1) as f64
+            } else {
+                0.5
+            };
+            let base_x = (state.draw_width.get() - pill_w) / 2.0 + inset + usable * t;
+
+            let h_t = 1.0 - (t - 0.5).abs() * 2.0;
+            let w_t = h_t;
+            let phase = t * std::f64::consts::PI * 2.0;
+            let speed_var = (i as f64 * 2.3 + 1.0).sin() * 0.5 + 0.5;
+
+            tongues.push(FlameTongue {
+                base_x,
+                height: FLAME_MIN_HEIGHT + (FLAME_MAX_HEIGHT - FLAME_MIN_HEIGHT) * h_t,
+                width: FLAME_MIN_WIDTH + (FLAME_MAX_WIDTH - FLAME_MIN_WIDTH) * w_t,
+                phase,
+                speed: FLAME_SPEED_BASE * (0.8 + 0.4 * speed_var),
+            });
+        }
+    }
+
+    for tongue in tongues.iter_mut() {
+        tongue.phase += tongue.speed * dt;
+    }
+
+    if elapsed >= FLAME_TOTAL_DURATION {
+        state.flame_active.set(false);
+        tongues.clear();
     }
 }
 

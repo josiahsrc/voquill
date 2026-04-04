@@ -65,6 +65,15 @@ impl ClickRegion {
     }
 }
 
+#[derive(Debug, Clone)]
+pub(crate) struct FlameTongue {
+    pub(crate) base_x: f64,
+    pub(crate) height: f64,
+    pub(crate) width: f64,
+    pub(crate) phase: f64,
+    pub(crate) speed: f64,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum WindowMode {
     Dictation,
@@ -158,6 +167,11 @@ pub(crate) struct PillState {
     pub(crate) fireworks_elapsed: Cell<f64>,
     pub(crate) fireworks_next_launch: Cell<usize>,
     pub(crate) fireworks_rockets: RefCell<Vec<Rocket>>,
+
+    // Flame
+    pub(crate) flame_active: Cell<bool>,
+    pub(crate) flame_elapsed: Cell<f64>,
+    pub(crate) flame_tongues: RefCell<Vec<FlameTongue>>,
 
     // Actual window allocation (used by PlainWayland for fullscreen overlay positioning)
     pub(crate) alloc_width: Cell<f64>,
