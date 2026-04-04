@@ -41,7 +41,7 @@ export const OutOfWordsCard = ({
     <Box
       sx={{
         p: 3,
-        borderRadius: 2,
+        borderRadius: 1,
         background: "linear-gradient(135deg, #1976d258 0%, #1565c03f 100%)",
       }}
     >

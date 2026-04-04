@@ -25,6 +25,7 @@ import { TranscriptionRow } from "../transcriptions/TranscriptRow";
 import { GettingStartedList } from "./GettingStartedList";
 import { HomeSideEffects } from "./HomeSideEffects";
 import { OutOfWordsCard } from "./OutOfWordsCard";
+import { TrialExtensionCard } from "./TrialExtensionCard";
 
 function StatCard({
   value,
@@ -92,6 +93,7 @@ export default function HomePage() {
           <DictationInstruction />
         </Box>
 
+        <TrialExtensionCard />
         {showUpgradeCard && (
           <OutOfWordsCard wordsRemaining={freeWordsRemaining} />
         )}
