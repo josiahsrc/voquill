@@ -5,34 +5,20 @@ import {
   MoreVert,
   PublicOutlined,
 } from "@mui/icons-material";
-import {
-  IconButton,
-  Radio,
-  Stack,
-  ToggleButton,
-  ToggleButtonGroup,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { IconButton, Radio, Stack, Tooltip, Typography } from "@mui/material";
 import { getRec } from "@voquill/utilities";
 import { useCallback, useMemo } from "react";
 import { FormattedMessage } from "react-intl";
 import { openToneEditorDialog } from "../../actions/tone.actions";
 import {
   deselectActiveTone,
-  setRealtimeOutputEnabled,
   setSelectedToneId,
 } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
 import {
   getActiveManualToneIds,
   getManuallySelectedToneId,
-  VERBATIM_TONE_ID,
 } from "../../utils/tone.utils";
-import {
-  getMyUserPreferences,
-  getTranscriptionSupportsStreaming,
-} from "../../utils/user.utils";
 import { ListTile } from "../common/ListTile";
 import {
   MenuPopoverBuilder,
@@ -63,13 +49,6 @@ export const ManualStylingRow = ({ id }: ManualStylingRowProps) => {
   const activeToneCount = useAppStore(
     (state) => getActiveManualToneIds(state).length,
   );
-  const isVerbatim = id === VERBATIM_TONE_ID;
-  const supportsStreaming = useAppStore(getTranscriptionSupportsStreaming);
-  const realtimeOutputEnabled = useAppStore(
-    (state) => getMyUserPreferences(state)?.realtimeOutputEnabled ?? false,
-  );
-  const showModeToggle = isVerbatim && supportsStreaming;
-
   const handleEdit = useCallback(() => {
     openToneEditorDialog({ mode: "edit", toneId: id });
   }, [id]);
@@ -140,45 +119,6 @@ export const ManualStylingRow = ({ id }: ManualStylingRowProps) => {
 
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
 
-  const modeToggle = showModeToggle ? (
-    <Tooltip
-      disableInteractive
-      title={
-        <FormattedMessage defaultMessage="Realtime streams words as you speak. Bulk outputs text all at once and is better if you're switching between pages frequently." />
-      }
-    >
-      <ToggleButtonGroup
-        exclusive
-        size="small"
-        value={realtimeOutputEnabled ? "realtime" : "bulk"}
-        onChange={(e, value) => {
-          if (!value) return;
-          e.stopPropagation();
-          void setRealtimeOutputEnabled(value === "realtime");
-        }}
-        onClick={stopPropagation}
-        onMouseDown={stopPropagation}
-        sx={{
-          height: 24,
-          "& .MuiToggleButton-root": {
-            py: 0,
-            px: 1,
-            fontSize: "0.7rem",
-            textTransform: "none",
-            lineHeight: 1,
-          },
-        }}
-      >
-        <ToggleButton value="realtime">
-          <FormattedMessage defaultMessage="Realtime" />
-        </ToggleButton>
-        <ToggleButton value="bulk">
-          <FormattedMessage defaultMessage="Bulk" />
-        </ToggleButton>
-      </ToggleButtonGroup>
-    </Tooltip>
-  ) : null;
-
   const trailing = (
     <Stack
       direction="row"
@@ -187,7 +127,6 @@ export const ManualStylingRow = ({ id }: ManualStylingRowProps) => {
       onClick={stopPropagation}
       onMouseDown={stopPropagation}
     >
-      {modeToggle}
       {isGlobal && (
         <Tooltip
           disableInteractive

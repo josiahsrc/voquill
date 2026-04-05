@@ -137,12 +137,9 @@ export const checkForAppUpdates = async (): Promise<boolean> => {
     if (shouldAutoShowDialog && !isMacOS()) {
       const intl = getIntl();
       await showToast({
-        title: intl.formatMessage({
-          defaultMessage: "New update available",
-        }),
         message: intl.formatMessage(
           {
-            defaultMessage: "Version {version} is ready to install.",
+            defaultMessage: "Version {version} is ready to install",
           },
           { version: update.version },
         ),

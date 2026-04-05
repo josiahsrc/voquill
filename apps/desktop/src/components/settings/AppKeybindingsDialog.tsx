@@ -11,16 +11,21 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useMemo } from "react";
 import { AppTarget } from "@voquill/types";
+import { useMemo } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { setAppTargetPasteKeybind } from "../../actions/app-target.actions";
+import { updateUserPreferences } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
+import { getMyUserPreferences } from "../../utils/user.utils";
 import { StorageImage } from "../common/StorageImage";
 
 export const AppKeybindingsDialog = () => {
   const open = useAppStore((state) => state.settings.appKeybindingsDialogOpen);
   const appTargets = useAppStore((state) => state.appTargetById);
+  const defaultPasteKeybind = useAppStore(
+    (state) => getMyUserPreferences(state)?.pasteKeybind ?? "ctrl+v",
+  );
 
   const sortedTargets = useMemo(
     () =>
@@ -36,6 +41,13 @@ export const AppKeybindingsDialog = () => {
     });
   };
 
+  const handleDefaultChange = (event: SelectChangeEvent<string>) => {
+    const value = event.target.value;
+    void updateUserPreferences((prefs) => {
+      prefs.pasteKeybind = value === "ctrl+v" ? null : value;
+    });
+  };
+
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>
@@ -45,6 +57,44 @@ export const AppKeybindingsDialog = () => {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           <FormattedMessage defaultMessage="Different applications use different keyboard shortcuts for pasting. Select the keybind that works best for each app." />
         </Typography>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{
+            backgroundColor: "level1",
+            mb: 2,
+            borderRadius: 1,
+            px: 1.5,
+            py: 1,
+          }}
+        >
+          <Stack sx={{ minWidth: 0 }}>
+            <Typography variant="body2">
+              <FormattedMessage defaultMessage="Default paste binding" />
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              <FormattedMessage defaultMessage="Used for unregistered apps and as the default for new apps" />
+            </Typography>
+          </Stack>
+          <Select
+            value={defaultPasteKeybind}
+            onChange={handleDefaultChange}
+            size="small"
+            variant="outlined"
+            sx={{ minWidth: 170, flexShrink: 0 }}
+          >
+            <MenuItem value="ctrl+v">
+              <FormattedMessage defaultMessage="Default (Ctrl+V)" />
+            </MenuItem>
+            <MenuItem value="ctrl+shift+v">
+              <FormattedMessage defaultMessage="Terminal (Ctrl+Shift+V)" />
+            </MenuItem>
+            <MenuItem value="shift+insert">
+              <FormattedMessage defaultMessage="Shift+Insert" />
+            </MenuItem>
+          </Select>
+        </Stack>
         {sortedTargets.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
             <FormattedMessage defaultMessage="No apps registered yet. Start dictating in an app and it will appear here." />

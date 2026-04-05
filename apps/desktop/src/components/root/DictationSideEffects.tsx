@@ -259,11 +259,6 @@ export const DictationSideEffects = () => {
       if (message) {
         playAlertSound();
         showToast({
-          title:
-            message.title ||
-            intl.formatMessage({
-              defaultMessage: "Recording stopped",
-            }),
           message: String(message.body),
           toastType: "error",
           duration: 8_000,
@@ -317,10 +312,9 @@ export const DictationSideEffects = () => {
         } catch (error) {
           getLogger().error(`Failed to stop recording: ${error}`);
           showToast({
-            title: intl.formatMessage({
+            message: intl.formatMessage({
               defaultMessage: "Failed to stop recording",
             }),
-            message: String(error),
             toastType: "error",
             duration: 8_000,
           });
@@ -483,12 +477,8 @@ export const DictationSideEffects = () => {
           `Recording duration warning (${dictationLimitMinutes} min limit)`,
         );
         showToast({
-          title: intl.formatMessage({
-            defaultMessage: "Recording ending soon",
-          }),
           message: intl.formatMessage({
-            defaultMessage:
-              "Audio recording will automatically stop in 60 seconds.",
+            defaultMessage: "Recording will stop in 60 seconds",
           }),
           toastType: "info",
           duration: 5_000,
@@ -502,12 +492,8 @@ export const DictationSideEffects = () => {
           `Recording auto-stopped (${dictationLimitMinutes} min limit)`,
         );
         showToast({
-          title: intl.formatMessage({
-            defaultMessage: "Recording stopped",
-          }),
           message: intl.formatMessage({
-            defaultMessage:
-              "Audio recording was automatically stopped due to duration limit.",
+            defaultMessage: "Recording stopped: duration limit reached",
           }),
           toastType: "info",
           duration: 5_000,
@@ -607,10 +593,9 @@ export const DictationSideEffects = () => {
         );
 
         showToast({
-          title: intl.formatMessage({
+          message: intl.formatMessage({
             defaultMessage: "Recording failed",
           }),
-          message: String(error),
           toastType: "error",
           duration: 8_000,
         });
@@ -696,12 +681,8 @@ export const DictationSideEffects = () => {
     }, CANCEL_PROMPT_DURATION);
 
     void showToast({
-      title: intl.formatMessage({
-        defaultMessage: "Cancel transcription?",
-      }),
       message: intl.formatMessage({
-        defaultMessage:
-          "Press the 'cancel' hotkey again to discard the transcript.",
+        defaultMessage: "Press cancel again to discard transcript",
       }),
       toastType: "info",
       action: "confirm_cancel_transcription",

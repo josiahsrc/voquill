@@ -13,6 +13,7 @@ import {
   getActiveManualToneIds,
   getManuallySelectedToneId,
 } from "../utils/tone.utils";
+import { getMyUserPreferences } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 import { setSelectedToneId } from "./user.actions";
 
@@ -127,13 +128,15 @@ export const tryRegisterCurrentAppTarget = async (): Promise<
     }
 
     try {
+      const defaultPasteKeybind =
+        getMyUserPreferences(getAppState())?.pasteKeybind ?? null;
       await getLogger().stopwatch("upsert_app_target", async () => {
         await upsertAppTarget({
           id: appTargetId,
           name: appName,
           toneId: existingApp?.toneId ?? null,
           iconPath: iconPath ?? existingApp?.iconPath ?? null,
-          pasteKeybind: existingApp?.pasteKeybind ?? null,
+          pasteKeybind: existingApp?.pasteKeybind ?? defaultPasteKeybind,
         });
       });
     } catch (error) {

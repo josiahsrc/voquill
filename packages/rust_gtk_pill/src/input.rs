@@ -7,6 +7,55 @@ use crate::constants::*;
 use crate::draw::pill_position;
 use crate::state::{ClickAction, PillState};
 
+pub(crate) fn is_over_pill_area(state: &PillState, x: f64, y: f64) -> bool {
+    let (ox, oy) = state.content_offset();
+    let x = x - ox;
+    let y = y - oy;
+    let dw = state.draw_width.get();
+    let dh = state.draw_height.get();
+
+    if state.assistant_active.get() || state.panel_open_t.get() > 0.1 {
+        return x >= 0.0 && x <= dw && y >= 0.0 && y <= dh;
+    }
+
+    let pill_area_top = dh - PILL_AREA_HEIGHT;
+    let pill_w = EXPANDED_PILL_WIDTH;
+    let pill_x = (dw - pill_w) / 2.0;
+
+    // Pill area (with padding)
+    let pad = if state.hovered.get() { 24.0 } else { 8.0 };
+    let (px, py, pw, ph) = pill_position(state, dw, dh);
+    if x >= px - pad && x <= px + pw + pad && y >= py - pad && y <= py + ph + pad {
+        return true;
+    }
+
+    // Tooltip
+    if state.tooltip_t.get() > 0.1 {
+        let tooltip_w = state.tooltip_width.get();
+        let tooltip_x = (dw - tooltip_w) / 2.0;
+        let tooltip_y = pill_area_top - TOOLTIP_GAP - TOOLTIP_HEIGHT;
+        if x >= tooltip_x && x <= tooltip_x + tooltip_w
+            && y >= tooltip_y && y <= tooltip_y + TOOLTIP_HEIGHT
+        {
+            return true;
+        }
+    }
+
+    // Cancel button
+    if state.phase.get() != Phase::Idle {
+        let btn_x = pill_x + pill_w - CANCEL_BUTTON_SIZE / 2.0 + 2.0;
+        let pill_y = pill_area_top + (PILL_AREA_HEIGHT - EXPANDED_PILL_HEIGHT) / 2.0;
+        let btn_y = pill_y - CANCEL_BUTTON_SIZE / 2.0 - 2.0;
+        if x >= btn_x && x <= btn_x + CANCEL_BUTTON_SIZE
+            && y >= btn_y && y <= btn_y + CANCEL_BUTTON_SIZE
+        {
+            return true;
+        }
+    }
+
+    false
+}
+
 pub(crate) fn handle_click(state: &PillState, x: f64, y: f64) {
     let (ox, oy) = state.content_offset();
     let x = x - ox;
@@ -65,6 +114,15 @@ pub(crate) fn handle_click(state: &PillState, x: f64, y: f64) {
                         ipc::send(&OutMessage::TypedMessage { text });
                         *state.entry_text.borrow_mut() = String::new();
                     }
+                }
+                ClickAction::FlashAction => {
+                    if let Some(ref action) = *state.flash_action.borrow() {
+                        ipc::send(&OutMessage::ToastAction { action: action.clone() });
+                    }
+                    state.flash_visible.set(false);
+                    state.flash_timer.set(0.0);
+                    *state.flash_action.borrow_mut() = None;
+                    *state.flash_action_label.borrow_mut() = None;
                 }
             }
             return;
@@ -126,6 +184,7 @@ pub(crate) fn set_expanded_input_region(gdk_window: &gdk::Window, state: &PillSt
             if state.phase.get() != Phase::Idle {
                 union_cancel_button(&region, ox, oy, dw, dh);
             }
+            union_flash_action(&region, state, ox, oy, dw, dh);
             gdk_window.input_shape_combine_region(&region, 0, 0);
         } else {
             let rect = cairo::RectangleInt::new(
@@ -137,7 +196,31 @@ pub(crate) fn set_expanded_input_region(gdk_window: &gdk::Window, state: &PillSt
             if state.phase.get() != Phase::Idle {
                 union_cancel_button(&region, ox, oy, dw, dh);
             }
+            union_flash_action(&region, state, ox, oy, dw, dh);
             gdk_window.input_shape_combine_region(&region, 0, 0);
+        }
+    }
+}
+
+fn union_flash_action(
+    region: &cairo::Region,
+    state: &PillState,
+    ox: f64, oy: f64, dw: f64, dh: f64,
+) {
+    if state.flash_action.borrow().is_none() || state.flash_t.get() < 0.5 {
+        return;
+    }
+    // Use the click regions registered by draw code for exact coordinates
+    let regions = state.click_regions.borrow();
+    for r in regions.iter() {
+        if matches!(r.action, ClickAction::FlashAction) {
+            let rect = cairo::RectangleInt::new(
+                (ox + r.x) as i32,
+                (oy + r.y) as i32,
+                r.w.ceil() as i32,
+                r.h.ceil() as i32,
+            );
+            let _ = region.union_rectangle(&rect);
         }
     }
 }
@@ -182,6 +265,7 @@ pub(crate) fn update_input_region(gdk_window: &gdk::Window, state: &PillState) {
             pill_h.ceil() as i32,
         );
         let region = cairo::Region::create_rectangle(&rect);
+        union_flash_action(&region, state, ox, oy, dw, dh);
         gdk_window.input_shape_combine_region(&region, 0, 0);
     }
 }

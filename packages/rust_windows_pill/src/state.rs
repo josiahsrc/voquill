@@ -48,6 +48,7 @@ pub(crate) enum ClickAction {
     PermissionAlwaysAllow(String),
     SendButton,
     InputField,
+    FlashAction,
 }
 
 #[derive(Debug, Clone)]
@@ -95,7 +96,7 @@ impl WindowMode {
 
 #[derive(Debug, Clone)]
 pub(crate) struct FlameTongue {
-    pub(crate) base_x: f64,
+    pub(crate) t: f64,
     pub(crate) height: f64,
     pub(crate) width: f64,
     pub(crate) phase: f64,
@@ -151,11 +152,19 @@ pub(crate) struct PillState {
 
     pub(crate) entry_text: RefCell<String>,
 
+    // Cancel button animation
+    pub(crate) cancel_t: Cell<f64>,
+    pub(crate) cancel_velocity: Cell<f64>,
+
+    // Flash message / toast
     pub(crate) flash_message: RefCell<String>,
     pub(crate) flash_visible: Cell<bool>,
     pub(crate) flash_t: Cell<f64>,
     pub(crate) flash_velocity: Cell<f64>,
     pub(crate) flash_timer: Cell<f64>,
+    pub(crate) flash_is_error: Cell<bool>,
+    pub(crate) flash_action: RefCell<Option<String>>,
+    pub(crate) flash_action_label: RefCell<Option<String>>,
 
     pub(crate) fireworks_active: Cell<bool>,
     pub(crate) fireworks_elapsed: Cell<f64>,

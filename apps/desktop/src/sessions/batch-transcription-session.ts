@@ -60,8 +60,7 @@ export class BatchTranscriptionSession implements TranscriptionSession {
       if (message) {
         warnings.push(`Transcription failed: ${message}`);
         showToast({
-          title: "Transcription failed",
-          message,
+          message: "Transcription failed",
           toastType: "error",
         });
       }

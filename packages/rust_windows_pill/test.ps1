@@ -91,11 +91,94 @@ function Run-Assistant {
 }
 
 function Run-Flash {
-    Write-Host "--- Flash ---" -ForegroundColor Cyan
+    Write-Host "--- Flash: info toast (no action) ---" -ForegroundColor Cyan
     Send '{"type":"visibility","visibility":"persistent"}'
     Start-Sleep -Seconds 1
-    Send '{"type":"flash_message","message":"Copied to clipboard"}'
+    Send '{"type":"toast","message":"Copied to clipboard","toast_type":"info","duration":null,"action":null,"action_label":null}'
     Start-Sleep -Seconds 4
+
+    Write-Host "--- Flash: during recording ---" -ForegroundColor Cyan
+    Send '{"type":"phase","phase":"recording"}'
+    Emit-Levels 1 0.4 0.4
+    Send '{"type":"toast","message":"Style changed to Casual","toast_type":"info","duration":null,"action":null,"action_label":null}'
+    Emit-Levels 3 0.35 0.45
+    Send '{"type":"phase","phase":"idle"}'
+    Start-Sleep -Seconds 2
+
+    Write-Host "--- Flash: longer message ---" -ForegroundColor Cyan
+    Send '{"type":"toast","message":"Your trial has been extended by 7 days","toast_type":"info","duration":null,"action":null,"action_label":null}'
+    Start-Sleep -Seconds 4
+
+    Write-Host "--- Flash: info with action button ---" -ForegroundColor Cyan
+    Send '{"type":"toast","message":"Version 2.1.0 is ready to install","toast_type":"info","duration":8.0,"action":"surface_window","action_label":"Open"}'
+    Start-Sleep -Seconds 10
+
+    Write-Host "--- Flash: error with action button ---" -ForegroundColor Cyan
+    Send '{"type":"toast","message":"Chat request failed","toast_type":"error","duration":5.0,"action":"open_agent_settings","action_label":"Fix"}'
+    Start-Sleep -Seconds 7
+
+    Write-Host "--- Flash: cancel action ---" -ForegroundColor Cyan
+    Send '{"type":"toast","message":"Press cancel again to discard transcript","toast_type":"info","duration":5.0,"action":"confirm_cancel_transcription","action_label":"Yes, cancel"}'
+    Start-Sleep -Seconds 7
+
+    Write-Host "--- Flash: dismiss test ---" -ForegroundColor Cyan
+    Send '{"type":"toast","message":"This will be dismissed early","toast_type":"info","duration":10.0,"action":"upgrade","action_label":"Upgrade"}'
+    Start-Sleep -Seconds 3
+    Send '{"type":"dismiss_toast"}'
+    Start-Sleep -Seconds 2
+
+    Write-Host "--- Flash: back to tooltip ---" -ForegroundColor Cyan
+    Send '{"type":"style_info","count":3,"name":"Professional"}'
+    Send '{"type":"phase","phase":"recording"}'
+    Emit-Levels 2 0.4 0.4
+    Send '{"type":"phase","phase":"idle"}'
+    Start-Sleep -Seconds 2
+}
+
+function Run-Toast {
+    Write-Host "--- Toast: info, no action, default duration ---" -ForegroundColor Cyan
+    Send '{"type":"visibility","visibility":"persistent"}'
+    Start-Sleep -Seconds 1
+    Send '{"type":"toast","message":"Added \"hello\" to dictionary","toast_type":"info","duration":null,"action":null,"action_label":null}'
+    Start-Sleep -Seconds 4
+
+    Write-Host "--- Toast: error, no action ---" -ForegroundColor Cyan
+    Send '{"type":"toast","message":"Recording failed","toast_type":"error","duration":null,"action":null,"action_label":null}'
+    Start-Sleep -Seconds 4
+
+    Write-Host "--- Toast: info with action button (click it!) ---" -ForegroundColor Cyan
+    Send '{"type":"toast","message":"Version 2.1.0 is ready to install","toast_type":"info","duration":8.0,"action":"surface_window","action_label":"Open"}'
+    Start-Sleep -Seconds 10
+
+    Write-Host "--- Toast: error with action button ---" -ForegroundColor Cyan
+    Send '{"type":"toast","message":"Chat request failed","toast_type":"error","duration":5.0,"action":"open_agent_settings","action_label":"Fix"}'
+    Start-Sleep -Seconds 7
+
+    Write-Host "--- Toast: info with cancel action ---" -ForegroundColor Cyan
+    Send '{"type":"toast","message":"Press cancel again to discard transcript","toast_type":"info","duration":5.0,"action":"confirm_cancel_transcription","action_label":"Yes, cancel"}'
+    Start-Sleep -Seconds 7
+
+    Write-Host "--- Toast: info with upgrade action ---" -ForegroundColor Cyan
+    Send '{"type":"toast","message":"Upgrade to continue without limits","toast_type":"info","duration":8.0,"action":"upgrade","action_label":"Upgrade"}'
+    Start-Sleep -Seconds 10
+
+    Write-Host "--- Toast: custom short duration (1.5s) ---" -ForegroundColor Cyan
+    Send '{"type":"toast","message":"Saved","toast_type":"info","duration":1.5,"action":null,"action_label":null}'
+    Start-Sleep -Seconds 3
+
+    Write-Host "--- Toast: custom long duration (10s) + dismiss ---" -ForegroundColor Cyan
+    Send '{"type":"toast","message":"Recording will stop in 60 seconds","toast_type":"info","duration":10.0,"action":null,"action_label":null}'
+    Start-Sleep -Seconds 5
+    Send '{"type":"dismiss_toast"}'
+    Start-Sleep -Seconds 3
+
+    Write-Host "--- Toast: during recording with action ---" -ForegroundColor Cyan
+    Send '{"type":"phase","phase":"recording"}'
+    Emit-Levels 1 0.4 0.4
+    Send '{"type":"toast","message":"Recording stopped: duration limit reached","toast_type":"info","duration":5.0,"action":"surface_window","action_label":"Open"}'
+    Emit-Levels 3 0.35 0.45
+    Send '{"type":"phase","phase":"idle"}'
+    Start-Sleep -Seconds 3
 }
 
 function Run-Fireworks {
@@ -114,6 +197,40 @@ function Run-Flame {
     Start-Sleep -Seconds 7
 }
 
+function Run-FlameBug {
+    Write-Host "--- Flame bug: tongues spread wide when pill is expanded ---" -ForegroundColor Cyan
+    Send '{"type":"visibility","visibility":"persistent"}'
+    Start-Sleep -Milliseconds 500
+
+    Write-Host "--- Flame bug: normal flame (pill collapsed) for comparison ---" -ForegroundColor Cyan
+    Send '{"type":"flame","message":"Normal flame (collapsed pill)"}'
+    Start-Sleep -Seconds 6
+
+    Write-Host "--- Flame bug: starting recording to expand the pill ---" -ForegroundColor Cyan
+    Send '{"type":"phase","phase":"recording"}'
+    Emit-Levels 1 0.4 0.4
+
+    Write-Host "--- Flame bug: firing flame WHILE pill is expanded (recording) ---" -ForegroundColor Cyan
+    Send '{"type":"flame","message":"Wide flame (expanded pill)"}'
+    Start-Sleep -Seconds 2
+
+    Write-Host "--- Flame bug: stopping recording - pill contracts but tongues stay wide ---" -ForegroundColor Cyan
+    Send '{"type":"phase","phase":"idle"}'
+    Start-Sleep -Seconds 5
+
+    Write-Host "--- Flame bug: loading phase (also expands pill) ---" -ForegroundColor Cyan
+    Send '{"type":"phase","phase":"loading"}'
+    Start-Sleep -Milliseconds 500
+
+    Write-Host "--- Flame bug: firing flame during loading ---" -ForegroundColor Cyan
+    Send '{"type":"flame","message":"Wide flame (loading)"}'
+    Start-Sleep -Milliseconds 1500
+
+    Write-Host "--- Flame bug: back to idle - tongues should look too spread out ---" -ForegroundColor Cyan
+    Send '{"type":"phase","phase":"idle"}'
+    Start-Sleep -Seconds 5
+}
+
 function Run-Keyboard {
     Write-Host "--- Keyboard: typing mode (Ctrl-C to quit) ---" -ForegroundColor Cyan
     Send '{"type":"visibility","visibility":"persistent"}'
@@ -130,8 +247,10 @@ try {
         "dictation"  { Run-Dictation }
         "assistant"  { Run-Assistant }
         "flash"      { Run-Flash }
+        "toast"      { Run-Toast }
         "fireworks"  { Run-Fireworks }
         "flame"      { Run-Flame }
+        "flame_bug"  { Run-FlameBug }
         "keyboard"   { Run-Keyboard }
         default {
             Run-Dictation

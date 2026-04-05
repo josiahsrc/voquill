@@ -5,17 +5,6 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voquill</title>
-    <script>
-      (function () {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get("toast-overlay") === "1") {
-          document.documentElement.dataset.overlay = "true";
-        }
-        if (params.get("pill-overlay") === "1") {
-          document.documentElement.dataset.overlay = "true";
-        }
-      })();
-    </script>
     <style>
       :root {
         color-scheme: light dark;
@@ -30,11 +19,6 @@
         body {
           background-color: #fff;
         }
-      }
-
-      :root[data-overlay="true"],
-      :root[data-overlay="true"] body {
-        background-color: transparent;
       }
 
       .firebase-emulator-warning {

@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 cargo build --quiet 2>&1
 
-MODE="${1:-both}"  # dictation | assistant | flash | fireworks | both
+MODE="${1:-both}"  # dictation | assistant | flash | toast | fireworks | flame | flame_bug | both
 
 emit_levels() {
   local duration=$1 base_amp=${2:-0.4} variance=${3:-0.4}
@@ -88,21 +88,99 @@ run_assistant() {
 }
 
 run_flash() {
-  echo '--- Flash: showing pill with flash messages ---' >&2
+  echo '--- Flash: showing pill with toast messages ---' >&2
   echo '{"type":"visibility","visibility":"persistent"}'
   sleep 1
 
-  echo '--- Flash: short message ---' >&2
-  echo '{"type":"flash_message","message":"Copied to clipboard"}'
+  echo '--- Flash: info toast (no action) ---' >&2
+  echo '{"type":"toast","message":"Copied to clipboard","toast_type":"info","duration":null,"action":null,"action_label":null}'
   sleep 4
 
   echo '--- Flash: during recording ---' >&2
   echo '{"type":"phase","phase":"recording"}'
   emit_levels 1 0.4 0.4
-  echo '{"type":"flash_message","message":"Style changed to Casual"}'
+  echo '{"type":"toast","message":"Style changed to Casual","toast_type":"info","duration":null,"action":null,"action_label":null}'
   emit_levels 3 0.35 0.45
   echo '{"type":"phase","phase":"idle"}'
   sleep 2
+
+  echo '--- Flash: longer message ---' >&2
+  echo '{"type":"toast","message":"Your trial has been extended by 7 days","toast_type":"info","duration":null,"action":null,"action_label":null}'
+  sleep 4
+
+  echo '--- Flash: info with action button ---' >&2
+  echo '{"type":"toast","message":"Version 2.1.0 is ready to install","toast_type":"info","duration":8.0,"action":"surface_window","action_label":"Open"}'
+  sleep 10
+
+  echo '--- Flash: error with action button ---' >&2
+  echo '{"type":"toast","message":"Chat request failed","toast_type":"error","duration":5.0,"action":"open_agent_settings","action_label":"Fix"}'
+  sleep 7
+
+  echo '--- Flash: cancel action ---' >&2
+  echo '{"type":"toast","message":"Press cancel again to discard transcript","toast_type":"info","duration":5.0,"action":"confirm_cancel_transcription","action_label":"Yes, cancel"}'
+  sleep 7
+
+  echo '--- Flash: dismiss test ---' >&2
+  echo '{"type":"toast","message":"This will be dismissed early","toast_type":"info","duration":10.0,"action":"upgrade","action_label":"Upgrade"}'
+  sleep 3
+  echo '{"type":"dismiss_toast"}'
+  sleep 2
+
+  echo '--- Flash: back to tooltip after flash ---' >&2
+  echo '{"type":"style_info","count":3,"name":"Professional"}'
+  echo '{"type":"phase","phase":"recording"}'
+  emit_levels 2 0.4 0.4
+  echo '{"type":"phase","phase":"idle"}'
+  sleep 2
+}
+
+run_toast() {
+  echo '--- Toast: all parameter combinations ---' >&2
+  echo '{"type":"visibility","visibility":"persistent"}'
+  sleep 1
+
+  echo '--- Toast: info, no action, default duration ---' >&2
+  echo '{"type":"toast","message":"Added \"hello\" to dictionary","toast_type":"info","duration":null,"action":null,"action_label":null}'
+  sleep 4
+
+  echo '--- Toast: error, no action ---' >&2
+  echo '{"type":"toast","message":"Recording failed","toast_type":"error","duration":null,"action":null,"action_label":null}'
+  sleep 4
+
+  echo '--- Toast: info with action button (click it!) ---' >&2
+  echo '{"type":"toast","message":"Version 2.1.0 is ready to install","toast_type":"info","duration":8.0,"action":"surface_window","action_label":"Open"}'
+  sleep 10
+
+  echo '--- Toast: error with action button ---' >&2
+  echo '{"type":"toast","message":"Chat request failed","toast_type":"error","duration":5.0,"action":"open_agent_settings","action_label":"Fix"}'
+  sleep 7
+
+  echo '--- Toast: info with cancel action ---' >&2
+  echo '{"type":"toast","message":"Press cancel again to discard transcript","toast_type":"info","duration":5.0,"action":"confirm_cancel_transcription","action_label":"Yes, cancel"}'
+  sleep 7
+
+  echo '--- Toast: info with upgrade action ---' >&2
+  echo '{"type":"toast","message":"Upgrade to continue without limits","toast_type":"info","duration":8.0,"action":"upgrade","action_label":"Upgrade"}'
+  sleep 10
+
+  echo '--- Toast: custom short duration (1.5s) ---' >&2
+  echo '{"type":"toast","message":"Saved","toast_type":"info","duration":1.5,"action":null,"action_label":null}'
+  sleep 3
+
+  echo '--- Toast: custom long duration (10s) ---' >&2
+  echo '{"type":"toast","message":"Recording will stop in 60 seconds","toast_type":"info","duration":10.0,"action":null,"action_label":null}'
+  sleep 5
+  echo '--- Toast: dismiss mid-way ---' >&2
+  echo '{"type":"dismiss_toast"}'
+  sleep 3
+
+  echo '--- Toast: during recording with action ---' >&2
+  echo '{"type":"phase","phase":"recording"}'
+  emit_levels 1 0.4 0.4
+  echo '{"type":"toast","message":"Recording stopped: duration limit reached","toast_type":"info","duration":5.0,"action":"surface_window","action_label":"Open"}'
+  emit_levels 3 0.35 0.45
+  echo '{"type":"phase","phase":"idle"}'
+  sleep 3
 }
 
 run_fireworks() {
@@ -113,6 +191,54 @@ run_fireworks() {
   echo '--- Fireworks: launching ---' >&2
   echo '{"type":"fireworks","message":"Congratulations!"}'
   sleep 9
+}
+
+run_flame() {
+  echo '--- Flame: pill on fire ---' >&2
+  echo '{"type":"visibility","visibility":"persistent"}'
+  sleep 0.5
+
+  echo '--- Flame: igniting ---' >&2
+  echo '{"type":"flame","message":"2 day streak 🔥"}'
+  sleep 7
+
+  echo '--- Flame: second round ---' >&2
+  echo '{"type":"flame","message":"10 day streak! 🎉"}'
+  sleep 7
+}
+
+run_flame_bug() {
+  echo '--- Flame bug: tongues spread wide when pill is expanded ---' >&2
+  echo '{"type":"visibility","visibility":"persistent"}'
+  sleep 0.5
+
+  echo '--- Flame bug: normal flame (pill collapsed) for comparison ---' >&2
+  echo '{"type":"flame","message":"Normal flame (collapsed pill)"}'
+  sleep 6
+
+  echo '--- Flame bug: starting recording to expand the pill ---' >&2
+  echo '{"type":"phase","phase":"recording"}'
+  emit_levels 1 0.4 0.4
+
+  echo '--- Flame bug: firing flame WHILE pill is expanded (recording) ---' >&2
+  echo '{"type":"flame","message":"Wide flame (expanded pill) 🔥"}'
+  sleep 2
+
+  echo '--- Flame bug: stopping recording — pill contracts but tongues stay wide ---' >&2
+  echo '{"type":"phase","phase":"idle"}'
+  sleep 5
+
+  echo '--- Flame bug: loading phase (also expands pill) ---' >&2
+  echo '{"type":"phase","phase":"loading"}'
+  sleep 0.5
+
+  echo '--- Flame bug: firing flame during loading ---' >&2
+  echo '{"type":"flame","message":"Wide flame (loading) 🔥"}'
+  sleep 1.5
+
+  echo '--- Flame bug: back to idle — tongues should look too spread out ---' >&2
+  echo '{"type":"phase","phase":"idle"}'
+  sleep 5
 }
 
 run_keyboard() {
@@ -137,8 +263,17 @@ run_keyboard() {
     flash)
       run_flash
       ;;
+    toast)
+      run_toast
+      ;;
     fireworks)
       run_fireworks
+      ;;
+    flame)
+      run_flame
+      ;;
+    flame_bug)
+      run_flame_bug
       ;;
     keyboard)
       run_keyboard

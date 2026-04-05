@@ -103,13 +103,10 @@ export class AgentStrategy extends BaseStrategy {
       };
     } catch (error) {
       getLogger().error(`Chat message failed: ${error}`);
-      const errorMessage =
-        error instanceof Error ? error.message : "An error occurred.";
       await showToast({
-        title: getIntl().formatMessage({
+        message: getIntl().formatMessage({
           defaultMessage: "Chat request failed",
         }),
-        message: errorMessage,
         toastType: "error",
       });
       return {

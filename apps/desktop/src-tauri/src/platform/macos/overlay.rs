@@ -147,6 +147,10 @@ fn start_out_reader(app: tauri::AppHandle, rx: mpsc::Receiver<OutMessage>) {
                         let _ = app.emit_to("main", "tone-switch-backward", ());
                     }
                 }
+                OutMessage::ToastAction { action } => {
+                    let payload = serde_json::json!({ "action": action });
+                    let _ = app.emit_to("main", "toast-action", payload);
+                }
                 OutMessage::Hover { .. } => {}
             }
         }

@@ -34,8 +34,6 @@ pub(crate) fn draw_all(gfx: &mut Gfx, state: &PillState) {
     }
 
     if !state.assistant_active.get() {
-        draw_cancel_button(gfx, state, ww, wh);
-
         if !state.fireworks_rockets.borrow().is_empty() {
             draw_fireworks(gfx, state);
         }
@@ -43,6 +41,8 @@ pub(crate) fn draw_all(gfx: &mut Gfx, state: &PillState) {
         if state.flash_t.get() > 0.01 {
             draw_flash_message(gfx, state, ww, wh);
         }
+
+        draw_cancel_button(gfx, state, ww, wh);
     }
 
     gfx.restore();
@@ -271,8 +271,21 @@ fn draw_flash_message(gfx: &mut Gfx, state: &PillState, ww: f64, wh: f64) {
     let message = state.flash_message.borrow();
     if message.is_empty() { return; }
 
+    let is_error = state.flash_is_error.get();
+    let action_label = state.flash_action_label.borrow();
+    let has_action = action_label.is_some();
+
     let (text_w, _) = gfx.measure_text(&message, 12.0, true);
-    let flash_w = (text_w + FLASH_PADDING_H * 2.0).max(80.0);
+
+    let action_w = if let Some(ref label) = *action_label {
+        let (aw, _) = gfx.measure_text(label, 11.0, true);
+        aw + FLASH_ACTION_PADDING_H * 2.0
+    } else {
+        0.0
+    };
+    let action_section = if has_action { FLASH_ACTION_GAP + action_w } else { 0.0 };
+
+    let flash_w = (text_w + FLASH_PADDING_H * 2.0 + action_section).max(80.0);
 
     let scale = FLASH_MIN_SCALE + (1.0 - FLASH_MIN_SCALE) * flash_t;
     let alpha = flash_t;
@@ -289,11 +302,41 @@ fn draw_flash_message(gfx: &mut Gfx, state: &PillState, ww: f64, wh: f64) {
     gfx.scale(scale, scale);
     gfx.translate(-center_x, -center_y);
 
+    // Background
+    let (bg_r, bg_g, bg_b) = if is_error { (0.35, 0.05, 0.05) } else { (0.0, 0.0, 0.0) };
     gfx.fill_rounded_rect(full_x, full_y, flash_w, FLASH_HEIGHT, FLASH_RADIUS,
-        [0.0, 0.0, 0.0, 0.92 * alpha]);
+        [bg_r, bg_g, bg_b, 0.92 * alpha]);
 
-    gfx.draw_text_centered(&message, full_x, full_y, flash_w, FLASH_HEIGHT,
-        12.0, true, [1.0, 1.0, 1.0, 0.9 * alpha]);
+    // Message text
+    if has_action {
+        let (_, th) = gfx.measure_text(&message, 12.0, true);
+        gfx.draw_text_top_left(&message, full_x + FLASH_PADDING_H,
+            full_y + (FLASH_HEIGHT - th) / 2.0,
+            12.0, true, false, [1.0, 1.0, 1.0, 0.9 * alpha]);
+    } else {
+        gfx.draw_text_centered(&message, full_x, full_y, flash_w, FLASH_HEIGHT,
+            12.0, true, [1.0, 1.0, 1.0, 0.9 * alpha]);
+    }
+
+    // Action button
+    if let Some(ref label) = *action_label {
+        let btn_x = full_x + flash_w - FLASH_PADDING_H - action_w;
+        let btn_y = full_y + (FLASH_HEIGHT - FLASH_ACTION_HEIGHT) / 2.0;
+
+        gfx.fill_rounded_rect(btn_x, btn_y, action_w, FLASH_ACTION_HEIGHT, FLASH_ACTION_RADIUS,
+            [1.0, 1.0, 1.0, 0.2 * alpha]);
+
+        gfx.draw_text_centered(label, btn_x, btn_y, action_w, FLASH_ACTION_HEIGHT,
+            11.0, true, [1.0, 1.0, 1.0, 0.95 * alpha]);
+
+        state.click_regions.borrow_mut().push(ClickRegion {
+            x: btn_x,
+            y: btn_y,
+            w: action_w,
+            h: FLASH_ACTION_HEIGHT,
+            action: ClickAction::FlashAction,
+        });
+    }
 
     gfx.restore();
 }
@@ -307,8 +350,10 @@ fn draw_flame(gfx: &Gfx, state: &PillState, ww: f64, wh: f64) {
         return;
     }
 
-    let (_, pill_y, _, pill_h) = pill_position(state, ww, wh);
+    let (pill_x, pill_y, pill_w, pill_h) = pill_position(state, ww, wh);
     let base_y = pill_y + pill_h * 0.35;
+    let inset = pill_w * 0.12;
+    let usable = pill_w - inset * 2.0;
 
     let fade_in = (elapsed / 0.3).clamp(0.0, 1.0);
     let fade_out = ((FLAME_TOTAL_DURATION - elapsed) / 0.8).clamp(0.0, 1.0);
@@ -327,7 +372,8 @@ fn draw_flame(gfx: &Gfx, state: &PillState, ww: f64, wh: f64) {
         let sway = tongue.phase.sin() * FLAME_SWAY
             + (tongue.phase * 1.7 + 1.0).sin() * FLAME_SWAY * 0.4;
 
-        let cx = tongue.base_x + sway * 0.3;
+        let base_x = pill_x + inset + usable * tongue.t;
+        let cx = base_x + sway * 0.3;
 
         // Layer 1: outer glow — wide, soft, dim
         gfx.fill_flame_tongue(cx, base_y, h * 1.2, hw * 1.5, sway * 1.1,
@@ -856,10 +902,8 @@ fn draw_keyboard_button(gfx: &mut Gfx, state: &PillState, ww: f64, wh: f64) {
 }
 
 fn draw_cancel_button(gfx: &Gfx, state: &PillState, ww: f64, wh: f64) {
-    let is_idle = state.phase.get() == Phase::Idle;
-    let hovered = state.hovered.get();
-
-    if is_idle || !hovered || state.assistant_active.get() { return; }
+    let t = state.cancel_t.get();
+    if t < 0.01 { return; }
 
     let (pill_x, pill_y, pill_w, _) = pill_position(state, ww, wh);
     let btn_x = pill_x + pill_w - CANCEL_BUTTON_SIZE / 2.0 + 2.0;
@@ -868,20 +912,25 @@ fn draw_cancel_button(gfx: &Gfx, state: &PillState, ww: f64, wh: f64) {
     let cy = btn_y + CANCEL_BUTTON_SIZE / 2.0;
     let r = (CANCEL_BUTTON_SIZE - 2.0) / 2.0;
 
-    // Filled circle background (like xmark.circle.fill)
+    let scale = 0.5 + 0.5 * t;
     let cancel_hovered = is_mouse_over(state, btn_x, btn_y, CANCEL_BUTTON_SIZE, CANCEL_BUTTON_SIZE);
     let cancel_brightness = if cancel_hovered { 0.6 } else { 0.46 };
-    gfx.fill_circle(cx, cy, r, [cancel_brightness, cancel_brightness, cancel_brightness, 1.0]);
 
-    // X mark inside
-    let s = 3.0;
-    gfx.draw_line(cx - s, cy - s, cx + s, cy + s, [1.0, 1.0, 1.0, 1.0], 1.8);
-    gfx.draw_line(cx + s, cy - s, cx - s, cy + s, [1.0, 1.0, 1.0, 1.0], 1.8);
+    // Note: Windows Gfx doesn't have save/restore with transforms the same way,
+    // so we scale the radius and position offsets directly
+    let sr = r * scale;
+    gfx.fill_circle(cx, cy, sr, [cancel_brightness, cancel_brightness, cancel_brightness, t]);
 
-    state.click_regions.borrow_mut().push(ClickRegion {
-        x: btn_x, y: btn_y, w: CANCEL_BUTTON_SIZE, h: CANCEL_BUTTON_SIZE,
-        action: ClickAction::CancelDictation,
-    });
+    let s = 3.0 * scale;
+    gfx.draw_line(cx - s, cy - s, cx + s, cy + s, [1.0, 1.0, 1.0, t], 1.8);
+    gfx.draw_line(cx + s, cy - s, cx - s, cy + s, [1.0, 1.0, 1.0, t], 1.8);
+
+    if t > 0.5 {
+        state.click_regions.borrow_mut().push(ClickRegion {
+            x: btn_x, y: btn_y, w: CANCEL_BUTTON_SIZE, h: CANCEL_BUTTON_SIZE,
+            action: ClickAction::CancelDictation,
+        });
+    }
 }
 
 fn draw_wrench_icon(gfx: &Gfx, x: f64, y: f64, size: f64, alpha: f64) {

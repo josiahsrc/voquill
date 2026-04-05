@@ -112,11 +112,16 @@ pub fn run(receiver: Receiver<InMessage>) {
         mouse_x: Cell::new(-1000.0),
         mouse_y: Cell::new(-1000.0),
         entry_text: RefCell::new(String::new()),
+        cancel_t: Cell::new(0.0),
+        cancel_velocity: Cell::new(0.0),
         flash_message: RefCell::new(String::new()),
         flash_visible: Cell::new(false),
         flash_t: Cell::new(0.0),
         flash_velocity: Cell::new(0.0),
         flash_timer: Cell::new(0.0),
+        flash_is_error: Cell::new(false),
+        flash_action: RefCell::new(None),
+        flash_action_label: RefCell::new(None),
         fireworks_active: Cell::new(false),
         fireworks_elapsed: Cell::new(0.0),
         fireworks_next_launch: Cell::new(0),
@@ -355,13 +360,25 @@ fn process_message(msg: InMessage, state: &PillState, _hwnd: HWND) {
             state.style_count.set(count);
             *state.style_name.borrow_mut() = name;
         }
-        InMessage::FlashMessage { message } => {
+        InMessage::Toast { message, toast_type, duration, action, action_label } => {
             *state.flash_message.borrow_mut() = message;
+            state.flash_is_error.set(toast_type.as_deref() == Some("error"));
             state.flash_visible.set(true);
-            state.flash_timer.set(FLASH_DURATION);
+            state.flash_timer.set(duration.unwrap_or(FLASH_DURATION));
+            *state.flash_action.borrow_mut() = action;
+            *state.flash_action_label.borrow_mut() = action_label;
+        }
+        InMessage::DismissToast => {
+            state.flash_visible.set(false);
+            state.flash_timer.set(0.0);
+            *state.flash_action.borrow_mut() = None;
+            *state.flash_action_label.borrow_mut() = None;
         }
         InMessage::Fireworks { message } => {
             *state.flash_message.borrow_mut() = message;
+            state.flash_is_error.set(false);
+            *state.flash_action.borrow_mut() = None;
+            *state.flash_action_label.borrow_mut() = None;
             state.flash_visible.set(true);
             state.flash_timer.set(FIREWORKS_TOTAL_DURATION);
             state.fireworks_active.set(true);
@@ -371,6 +388,9 @@ fn process_message(msg: InMessage, state: &PillState, _hwnd: HWND) {
         }
         InMessage::Flame { message } => {
             *state.flash_message.borrow_mut() = message;
+            state.flash_is_error.set(false);
+            *state.flash_action.borrow_mut() = None;
+            *state.flash_action_label.borrow_mut() = None;
             state.flash_visible.set(true);
             state.flash_timer.set(FLAME_TOTAL_DURATION);
 
@@ -493,12 +513,21 @@ fn tick(state: &PillState, dt: f64) {
         if remaining <= 0.0 {
             state.flash_visible.set(false);
             state.flash_timer.set(0.0);
+            *state.flash_action.borrow_mut() = None;
+            *state.flash_action_label.borrow_mut() = None;
         } else {
             state.flash_timer.set(remaining);
         }
     }
     let flash_target = if state.flash_visible.get() { 1.0 } else { 0.0 };
     spring_anim(&state.flash_t, &state.flash_velocity, flash_target, SPRING_STIFFNESS, dt);
+
+    // Cancel button
+    let cancel_target = if state.hovered.get()
+        && state.phase.get() != Phase::Idle
+        && !state.assistant_active.get()
+    { 1.0 } else { 0.0 };
+    spring_anim(&state.cancel_t, &state.cancel_velocity, cancel_target, SPRING_STIFFNESS * 2.0, dt);
 
     if state.should_stick.get() && state.assistant_active.get() && !state.assistant_compact.get() {
         let max_scroll = (state.content_height.get() - state.viewport_height.get()).max(0.0);
@@ -603,15 +632,9 @@ fn tick_flame(state: &PillState, dt: f64) {
     let elapsed = state.flame_elapsed.get() + dt;
     state.flame_elapsed.set(elapsed);
 
-    let ww = state.draw_width.get();
-    let wh = state.draw_height.get();
-    let (pill_x, _, pill_w, _) = draw::pill_position(state, ww, wh);
-
     let mut tongues = state.flame_tongues.borrow_mut();
 
     if tongues.is_empty() {
-        let inset = pill_w * 0.12;
-        let usable = pill_w - inset * 2.0;
         for i in 0..FLAME_TONGUE_COUNT {
             let t = if FLAME_TONGUE_COUNT > 1 {
                 i as f64 / (FLAME_TONGUE_COUNT - 1) as f64
@@ -625,7 +648,7 @@ fn tick_flame(state: &PillState, dt: f64) {
             let speed_var = ((hash >> 30) % 1000) as f64 / 1000.0;
 
             tongues.push(state::FlameTongue {
-                base_x: pill_x + inset + usable * t,
+                t,
                 height: FLAME_MIN_HEIGHT + (FLAME_MAX_HEIGHT - FLAME_MIN_HEIGHT) * h_t,
                 width: FLAME_MIN_WIDTH + (FLAME_MAX_WIDTH - FLAME_MIN_WIDTH) * w_t,
                 phase,
