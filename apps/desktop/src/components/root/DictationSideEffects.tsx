@@ -493,8 +493,7 @@ export const DictationSideEffects = () => {
         );
         showToast({
           message: intl.formatMessage({
-            defaultMessage:
-              "Recording stopped: duration limit reached",
+            defaultMessage: "Recording stopped: duration limit reached",
           }),
           toastType: "info",
           duration: 5_000,
@@ -683,8 +682,7 @@ export const DictationSideEffects = () => {
 
     void showToast({
       message: intl.formatMessage({
-        defaultMessage:
-          "Press cancel again to discard transcript",
+        defaultMessage: "Press cancel again to discard transcript",
       }),
       toastType: "info",
       action: "confirm_cancel_transcription",

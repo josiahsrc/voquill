@@ -143,8 +143,7 @@ const cycleWritingStyle = async (direction: 1 | -1): Promise<void> => {
     await showToast({
       message: intl.formatMessage(
         {
-          defaultMessage:
-            '"{toneName}" is your only active style',
+          defaultMessage: '"{toneName}" is your only active style',
         },
         { toneName },
       ),

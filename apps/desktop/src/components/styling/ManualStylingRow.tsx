@@ -5,13 +5,7 @@ import {
   MoreVert,
   PublicOutlined,
 } from "@mui/icons-material";
-import {
-  IconButton,
-  Radio,
-  Stack,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { IconButton, Radio, Stack, Tooltip, Typography } from "@mui/material";
 import { getRec } from "@voquill/utilities";
 import { useCallback, useMemo } from "react";
 import { FormattedMessage } from "react-intl";
