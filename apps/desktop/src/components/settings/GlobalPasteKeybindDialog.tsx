@@ -42,7 +42,7 @@ export const GlobalPasteKeybindDialog = () => {
       </DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          <FormattedMessage defaultMessage="Wayland does not allow apps to detect which application is focused, so Voquill uses a single paste binding for all apps. Some apps like terminals use Ctrl+Shift+V instead of Ctrl+V." />
+          <FormattedMessage defaultMessage="Wayland does not allow apps to detect which application is focused, so Voquill uses a single paste binding for all apps. Some apps like terminals use Ctrl+Shift+V or Shift+Insert instead of Ctrl+V." />
         </Typography>
         <Select
           value={pasteKeybind}
@@ -56,6 +56,9 @@ export const GlobalPasteKeybindDialog = () => {
           </MenuItem>
           <MenuItem value="ctrl+shift+v">
             <FormattedMessage defaultMessage="Terminal (Ctrl+Shift+V)" />
+          </MenuItem>
+          <MenuItem value="shift+insert">
+            <FormattedMessage defaultMessage="Shift+Insert" />
           </MenuItem>
         </Select>
       </DialogContent>

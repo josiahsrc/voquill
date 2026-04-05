@@ -1,3 +1,4 @@
+use crate::platform::paste_keybind::{parse_paste_keystroke, PasteKeystroke};
 use enigo::{Enigo, Key, KeyboardControllable};
 use std::process::Command;
 use std::sync::Mutex;
@@ -49,40 +50,58 @@ fn xdotool_key(combo: &str) -> Result<(), String> {
     }
 }
 
-fn simulate_paste_keystroke(shift: bool) -> Result<(), String> {
+fn simulate_paste_keystroke(style: PasteKeystroke) -> Result<(), String> {
     if xdotool_available() {
-        let combo = if shift { "ctrl+shift+v" } else { "ctrl+v" };
+        let combo = match style {
+            PasteKeystroke::CtrlV => "ctrl+v",
+            PasteKeystroke::CtrlShiftV => "ctrl+shift+v",
+            PasteKeystroke::ShiftInsert => "shift+Insert",
+        };
         log::info!("Using xdotool for paste keystroke ({combo})");
         return xdotool_key(combo);
     }
 
     log::info!("xdotool not available, falling back to enigo");
-    enigo_paste_keystroke(shift)
+    enigo_paste_keystroke(style)
 }
 
-fn enigo_paste_keystroke(shift: bool) -> Result<(), String> {
+fn enigo_paste_keystroke(style: PasteKeystroke) -> Result<(), String> {
     let mut enigo = Enigo::new();
     enigo.key_up(Key::Shift);
     enigo.key_up(Key::Control);
     enigo.key_up(Key::Alt);
     thread::sleep(Duration::from_millis(30));
 
-    enigo.key_down(Key::Control);
-    if shift {
-        enigo.key_down(Key::Shift);
+    match style {
+        PasteKeystroke::CtrlV => {
+            enigo.key_down(Key::Control);
+            enigo.key_down(Key::Layout('v'));
+            thread::sleep(Duration::from_millis(15));
+            enigo.key_up(Key::Layout('v'));
+            enigo.key_up(Key::Control);
+        }
+        PasteKeystroke::CtrlShiftV => {
+            enigo.key_down(Key::Control);
+            enigo.key_down(Key::Shift);
+            enigo.key_down(Key::Layout('v'));
+            thread::sleep(Duration::from_millis(15));
+            enigo.key_up(Key::Layout('v'));
+            enigo.key_up(Key::Shift);
+            enigo.key_up(Key::Control);
+        }
+        PasteKeystroke::ShiftInsert => {
+            enigo.key_down(Key::Shift);
+            enigo.key_down(Key::Insert);
+            thread::sleep(Duration::from_millis(15));
+            enigo.key_up(Key::Insert);
+            enigo.key_up(Key::Shift);
+        }
     }
-    enigo.key_down(Key::Layout('v'));
-    thread::sleep(Duration::from_millis(15));
-    enigo.key_up(Key::Layout('v'));
-    if shift {
-        enigo.key_up(Key::Shift);
-    }
-    enigo.key_up(Key::Control);
     Ok(())
 }
 
 fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
-    let shift = keybind == Some("ctrl+shift+v");
+    let style = parse_paste_keystroke(keybind);
     let mut clipboard =
         arboard::Clipboard::new().map_err(|err| format!("clipboard unavailable: {err}"))?;
     let previous = crate::platform::SavedClipboard::save(&mut clipboard);
@@ -97,7 +116,7 @@ fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> 
 
     thread::sleep(Duration::from_millis(40));
 
-    simulate_paste_keystroke(shift)?;
+    simulate_paste_keystroke(style)?;
 
     thread::spawn(move || {
         thread::sleep(Duration::from_millis(800));
