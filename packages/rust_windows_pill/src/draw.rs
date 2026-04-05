@@ -350,8 +350,10 @@ fn draw_flame(gfx: &Gfx, state: &PillState, ww: f64, wh: f64) {
         return;
     }
 
-    let (_, pill_y, _, pill_h) = pill_position(state, ww, wh);
+    let (pill_x, pill_y, pill_w, pill_h) = pill_position(state, ww, wh);
     let base_y = pill_y + pill_h * 0.35;
+    let inset = pill_w * 0.12;
+    let usable = pill_w - inset * 2.0;
 
     let fade_in = (elapsed / 0.3).clamp(0.0, 1.0);
     let fade_out = ((FLAME_TOTAL_DURATION - elapsed) / 0.8).clamp(0.0, 1.0);
@@ -370,7 +372,8 @@ fn draw_flame(gfx: &Gfx, state: &PillState, ww: f64, wh: f64) {
         let sway = tongue.phase.sin() * FLAME_SWAY
             + (tongue.phase * 1.7 + 1.0).sin() * FLAME_SWAY * 0.4;
 
-        let cx = tongue.base_x + sway * 0.3;
+        let base_x = pill_x + inset + usable * tongue.t;
+        let cx = base_x + sway * 0.3;
 
         // Layer 1: outer glow — wide, soft, dim
         gfx.fill_flame_tongue(cx, base_y, h * 1.2, hw * 1.5, sway * 1.1,

@@ -676,15 +676,9 @@ fn tick_flame(state: &PillState, dt: f64) {
     let elapsed = state.flame_elapsed.get() + dt;
     state.flame_elapsed.set(elapsed);
 
-    let ww = state.draw_width.get();
-    let wh = state.draw_height.get();
-    let (pill_x, _, pill_w, _) = draw::pill_position(state, ww, wh);
-
     let mut tongues = state.flame_tongues.borrow_mut();
 
     if tongues.is_empty() {
-        let inset = pill_w * 0.12;
-        let usable = pill_w - inset * 2.0;
         for i in 0..FLAME_TONGUE_COUNT {
             let t = if FLAME_TONGUE_COUNT > 1 {
                 i as f64 / (FLAME_TONGUE_COUNT - 1) as f64
@@ -698,7 +692,7 @@ fn tick_flame(state: &PillState, dt: f64) {
             let speed_var = ((hash >> 30) % 1000) as f64 / 1000.0;
 
             tongues.push(FlameTongue {
-                base_x: pill_x + inset + usable * t,
+                t,
                 height: FLAME_MIN_HEIGHT + (FLAME_MAX_HEIGHT - FLAME_MIN_HEIGHT) * h_t,
                 width: FLAME_MIN_WIDTH + (FLAME_MAX_WIDTH - FLAME_MIN_WIDTH) * w_t,
                 phase,

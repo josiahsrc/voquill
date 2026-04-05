@@ -96,7 +96,7 @@ impl WindowMode {
 
 #[derive(Debug, Clone)]
 pub(crate) struct FlameTongue {
-    pub(crate) base_x: f64,
+    pub(crate) t: f64,
     pub(crate) height: f64,
     pub(crate) width: f64,
     pub(crate) phase: f64,

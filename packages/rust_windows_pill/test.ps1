@@ -197,6 +197,40 @@ function Run-Flame {
     Start-Sleep -Seconds 7
 }
 
+function Run-FlameBug {
+    Write-Host "--- Flame bug: tongues spread wide when pill is expanded ---" -ForegroundColor Cyan
+    Send '{"type":"visibility","visibility":"persistent"}'
+    Start-Sleep -Milliseconds 500
+
+    Write-Host "--- Flame bug: normal flame (pill collapsed) for comparison ---" -ForegroundColor Cyan
+    Send '{"type":"flame","message":"Normal flame (collapsed pill)"}'
+    Start-Sleep -Seconds 6
+
+    Write-Host "--- Flame bug: starting recording to expand the pill ---" -ForegroundColor Cyan
+    Send '{"type":"phase","phase":"recording"}'
+    Emit-Levels 1 0.4 0.4
+
+    Write-Host "--- Flame bug: firing flame WHILE pill is expanded (recording) ---" -ForegroundColor Cyan
+    Send '{"type":"flame","message":"Wide flame (expanded pill)"}'
+    Start-Sleep -Seconds 2
+
+    Write-Host "--- Flame bug: stopping recording - pill contracts but tongues stay wide ---" -ForegroundColor Cyan
+    Send '{"type":"phase","phase":"idle"}'
+    Start-Sleep -Seconds 5
+
+    Write-Host "--- Flame bug: loading phase (also expands pill) ---" -ForegroundColor Cyan
+    Send '{"type":"phase","phase":"loading"}'
+    Start-Sleep -Milliseconds 500
+
+    Write-Host "--- Flame bug: firing flame during loading ---" -ForegroundColor Cyan
+    Send '{"type":"flame","message":"Wide flame (loading)"}'
+    Start-Sleep -Milliseconds 1500
+
+    Write-Host "--- Flame bug: back to idle - tongues should look too spread out ---" -ForegroundColor Cyan
+    Send '{"type":"phase","phase":"idle"}'
+    Start-Sleep -Seconds 5
+}
+
 function Run-Keyboard {
     Write-Host "--- Keyboard: typing mode (Ctrl-C to quit) ---" -ForegroundColor Cyan
     Send '{"type":"visibility","visibility":"persistent"}'
@@ -216,6 +250,7 @@ try {
         "toast"      { Run-Toast }
         "fireworks"  { Run-Fireworks }
         "flame"      { Run-Flame }
+        "flame_bug"  { Run-FlameBug }
         "keyboard"   { Run-Keyboard }
         default {
             Run-Dictation

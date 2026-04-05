@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 cargo build --quiet 2>&1
 
-MODE="${1:-both}"  # dictation | assistant | flash | toast | fireworks | flame | both
+MODE="${1:-both}"  # dictation | assistant | flash | toast | fireworks | flame | flame_bug | both
 
 emit_levels() {
   local duration=$1 base_amp=${2:-0.4} variance=${3:-0.4}
@@ -247,6 +247,40 @@ run_flame() {
   sleep 7
 }
 
+run_flame_bug() {
+  echo '--- Flame bug: tongues spread wide when pill is expanded ---' >&2
+  echo '{"type":"visibility","visibility":"persistent"}'
+  sleep 0.5
+
+  echo '--- Flame bug: normal flame (pill collapsed) for comparison ---' >&2
+  echo '{"type":"flame","message":"Normal flame (collapsed pill)"}'
+  sleep 6
+
+  echo '--- Flame bug: starting recording to expand the pill ---' >&2
+  echo '{"type":"phase","phase":"recording"}'
+  emit_levels 1 0.4 0.4
+
+  echo '--- Flame bug: firing flame WHILE pill is expanded (recording) ---' >&2
+  echo '{"type":"flame","message":"Wide flame (expanded pill) 🔥"}'
+  sleep 2
+
+  echo '--- Flame bug: stopping recording — pill contracts but tongues stay wide ---' >&2
+  echo '{"type":"phase","phase":"idle"}'
+  sleep 5
+
+  echo '--- Flame bug: loading phase (also expands pill) ---' >&2
+  echo '{"type":"phase","phase":"loading"}'
+  sleep 0.5
+
+  echo '--- Flame bug: firing flame during loading ---' >&2
+  echo '{"type":"flame","message":"Wide flame (loading) 🔥"}'
+  sleep 1.5
+
+  echo '--- Flame bug: back to idle — tongues should look too spread out ---' >&2
+  echo '{"type":"phase","phase":"idle"}'
+  sleep 5
+}
+
 run_keyboard() {
   echo '--- Keyboard: typing mode (Ctrl-C to quit) ---' >&2
   echo '{"type":"visibility","visibility":"persistent"}'
@@ -277,6 +311,9 @@ run_keyboard() {
       ;;
     flame)
       run_flame
+      ;;
+    flame_bug)
+      run_flame_bug
       ;;
     keyboard)
       run_keyboard
