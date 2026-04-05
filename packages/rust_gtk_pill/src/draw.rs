@@ -64,8 +64,9 @@ pub(crate) fn pill_position(state: &PillState, ww: f64, wh: f64) -> (f64, f64, f
         let panel_bottom = wh - PANEL_BOTTOM_MARGIN;
         panel_bottom - PILL_BOTTOM_INSET - pill_h
     } else {
-        let pill_area_top = wh - PILL_AREA_HEIGHT;
-        pill_area_top + (PILL_AREA_HEIGHT - pill_h) / 2.0
+        // Anchor to bottom: pill grows upward from a fixed bottom edge
+        let bottom_offset = 6.0;
+        wh - bottom_offset - pill_h
     };
 
     (pill_x, pill_y, pill_w, pill_h)
