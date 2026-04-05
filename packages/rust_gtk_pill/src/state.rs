@@ -48,6 +48,7 @@ pub(crate) enum ClickAction {
     PermissionDeny(String),
     PermissionAlwaysAllow(String),
     SendButton,
+    FlashAction,
 }
 
 #[derive(Debug, Clone)]
@@ -155,12 +156,19 @@ pub(crate) struct PillState {
     // Entry text (for typing mode)
     pub(crate) entry_text: RefCell<String>,
 
-    // Flash message
+    // Cancel button animation
+    pub(crate) cancel_t: Cell<f64>,
+    pub(crate) cancel_velocity: Cell<f64>,
+
+    // Flash message / toast
     pub(crate) flash_message: RefCell<String>,
     pub(crate) flash_visible: Cell<bool>,
     pub(crate) flash_t: Cell<f64>,
     pub(crate) flash_velocity: Cell<f64>,
     pub(crate) flash_timer: Cell<f64>,
+    pub(crate) flash_is_error: Cell<bool>,
+    pub(crate) flash_action: RefCell<Option<String>>,
+    pub(crate) flash_action_label: RefCell<Option<String>>,
 
     // Fireworks
     pub(crate) fireworks_active: Cell<bool>,

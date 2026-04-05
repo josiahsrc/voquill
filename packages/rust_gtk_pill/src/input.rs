@@ -66,6 +66,15 @@ pub(crate) fn handle_click(state: &PillState, x: f64, y: f64) {
                         *state.entry_text.borrow_mut() = String::new();
                     }
                 }
+                ClickAction::FlashAction => {
+                    if let Some(ref action) = *state.flash_action.borrow() {
+                        ipc::send(&OutMessage::ToastAction { action: action.clone() });
+                    }
+                    state.flash_visible.set(false);
+                    state.flash_timer.set(0.0);
+                    *state.flash_action.borrow_mut() = None;
+                    *state.flash_action_label.borrow_mut() = None;
+                }
             }
             return;
         }
@@ -126,6 +135,7 @@ pub(crate) fn set_expanded_input_region(gdk_window: &gdk::Window, state: &PillSt
             if state.phase.get() != Phase::Idle {
                 union_cancel_button(&region, ox, oy, dw, dh);
             }
+            union_flash_action(&region, state, ox, oy, dw, dh);
             gdk_window.input_shape_combine_region(&region, 0, 0);
         } else {
             let rect = cairo::RectangleInt::new(
@@ -137,7 +147,31 @@ pub(crate) fn set_expanded_input_region(gdk_window: &gdk::Window, state: &PillSt
             if state.phase.get() != Phase::Idle {
                 union_cancel_button(&region, ox, oy, dw, dh);
             }
+            union_flash_action(&region, state, ox, oy, dw, dh);
             gdk_window.input_shape_combine_region(&region, 0, 0);
+        }
+    }
+}
+
+fn union_flash_action(
+    region: &cairo::Region,
+    state: &PillState,
+    ox: f64, oy: f64, dw: f64, dh: f64,
+) {
+    if state.flash_action.borrow().is_none() || state.flash_t.get() < 0.5 {
+        return;
+    }
+    // Use the click regions registered by draw code for exact coordinates
+    let regions = state.click_regions.borrow();
+    for r in regions.iter() {
+        if matches!(r.action, ClickAction::FlashAction) {
+            let rect = cairo::RectangleInt::new(
+                (ox + r.x) as i32,
+                (oy + r.y) as i32,
+                r.w.ceil() as i32,
+                r.h.ceil() as i32,
+            );
+            let _ = region.union_rectangle(&rect);
         }
     }
 }
@@ -182,6 +216,7 @@ pub(crate) fn update_input_region(gdk_window: &gdk::Window, state: &PillState) {
             pill_h.ceil() as i32,
         );
         let region = cairo::Region::create_rectangle(&rect);
+        union_flash_action(&region, state, ox, oy, dw, dh);
         gdk_window.input_shape_combine_region(&region, 0, 0);
     }
 }

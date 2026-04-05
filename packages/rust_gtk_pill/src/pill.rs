@@ -139,11 +139,16 @@ pub fn run(receiver: Receiver<InMessage>) {
         should_stick: Cell::new(true),
         click_regions: RefCell::new(Vec::new()),
         entry_text: RefCell::new(String::new()),
+        cancel_t: Cell::new(0.0),
+        cancel_velocity: Cell::new(0.0),
         flash_message: RefCell::new(String::new()),
         flash_visible: Cell::new(false),
         flash_t: Cell::new(0.0),
         flash_velocity: Cell::new(0.0),
         flash_timer: Cell::new(0.0),
+        flash_is_error: Cell::new(false),
+        flash_action: RefCell::new(None),
+        flash_action_label: RefCell::new(None),
         fireworks_active: Cell::new(false),
         fireworks_elapsed: Cell::new(0.0),
         fireworks_next_launch: Cell::new(0),
@@ -313,13 +318,25 @@ pub fn run(receiver: Receiver<InMessage>) {
                     state_tick.style_count.set(count);
                     *state_tick.style_name.borrow_mut() = name;
                 }
-                InMessage::FlashMessage { message } => {
+                InMessage::Toast { message, toast_type, duration, action, action_label } => {
                     *state_tick.flash_message.borrow_mut() = message;
+                    state_tick.flash_is_error.set(toast_type.as_deref() == Some("error"));
                     state_tick.flash_visible.set(true);
-                    state_tick.flash_timer.set(FLASH_DURATION);
+                    state_tick.flash_timer.set(duration.unwrap_or(FLASH_DURATION));
+                    *state_tick.flash_action.borrow_mut() = action;
+                    *state_tick.flash_action_label.borrow_mut() = action_label;
+                }
+                InMessage::DismissToast => {
+                    state_tick.flash_visible.set(false);
+                    state_tick.flash_timer.set(0.0);
+                    *state_tick.flash_action.borrow_mut() = None;
+                    *state_tick.flash_action_label.borrow_mut() = None;
                 }
                 InMessage::Fireworks { message } => {
                     *state_tick.flash_message.borrow_mut() = message;
+                    state_tick.flash_is_error.set(false);
+                    *state_tick.flash_action.borrow_mut() = None;
+                    *state_tick.flash_action_label.borrow_mut() = None;
                     state_tick.flash_visible.set(true);
                     state_tick.flash_timer.set(FIREWORKS_TOTAL_DURATION);
 
@@ -330,6 +347,9 @@ pub fn run(receiver: Receiver<InMessage>) {
                 }
                 InMessage::Flame { message } => {
                     *state_tick.flash_message.borrow_mut() = message;
+                    state_tick.flash_is_error.set(false);
+                    *state_tick.flash_action.borrow_mut() = None;
+                    *state_tick.flash_action_label.borrow_mut() = None;
                     state_tick.flash_visible.set(true);
                     state_tick.flash_timer.set(FLAME_TOTAL_DURATION);
 
@@ -619,12 +639,21 @@ fn tick(state: &PillState) {
         if remaining <= 0.0 {
             state.flash_visible.set(false);
             state.flash_timer.set(0.0);
+            *state.flash_action.borrow_mut() = None;
+            *state.flash_action_label.borrow_mut() = None;
         } else {
             state.flash_timer.set(remaining);
         }
     }
     let flash_target = if state.flash_visible.get() { 1.0 } else { 0.0 };
     spring_anim(&state.flash_t, &state.flash_velocity, flash_target, SPRING_STIFFNESS);
+
+    // Cancel button
+    let cancel_target = if state.hovered.get()
+        && state.phase.get() != Phase::Idle
+        && !state.assistant_active.get()
+    { 1.0 } else { 0.0 };
+    spring_anim(&state.cancel_t, &state.cancel_velocity, cancel_target, SPRING_STIFFNESS * 2.0);
 
     // Auto-scroll to bottom when new content arrives
     if state.should_stick.get() && state.assistant_active.get() && !state.assistant_compact.get() {

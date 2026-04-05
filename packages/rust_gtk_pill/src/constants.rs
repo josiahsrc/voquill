@@ -109,13 +109,17 @@ pub(crate) const WINDOW_H_EXPANDED: i32 = 282;  // 14 + 258 + 10
 pub(crate) const WINDOW_W_TYPING: i32 = 600;
 pub(crate) const WINDOW_H_TYPING: i32 = 362;    // 14 + 338 + 10
 
-// ── Flash message ────────────────────────────────────────────────
+// ── Flash message / toast ────────────────────────────────────────
 pub(crate) const FLASH_DURATION: f64 = 2.5;
 pub(crate) const FLASH_HEIGHT: f64 = 32.0;
 pub(crate) const FLASH_RADIUS: f64 = 12.0;
 pub(crate) const FLASH_GAP: f64 = 6.0;
 pub(crate) const FLASH_PADDING_H: f64 = 16.0;
 pub(crate) const FLASH_MIN_SCALE: f64 = 0.5;
+pub(crate) const FLASH_ACTION_GAP: f64 = 8.0;
+pub(crate) const FLASH_ACTION_PADDING_H: f64 = 10.0;
+pub(crate) const FLASH_ACTION_HEIGHT: f64 = 22.0;
+pub(crate) const FLASH_ACTION_RADIUS: f64 = 6.0;
 
 // ── Fireworks ────────────────────────────────────────────────────
 pub(crate) const FIREWORKS_TOTAL_DURATION: f64 = 7.0;
