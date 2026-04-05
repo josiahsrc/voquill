@@ -41,7 +41,7 @@ export const routeTranscriptOutput = async (
   const pasteKeybind =
     state.supportsPasteKeybinds === "global"
       ? (prefs?.pasteKeybind ?? null)
-      : (currentApp?.pasteKeybind ?? null);
+      : (currentApp?.pasteKeybind ?? prefs?.pasteKeybind ?? null);
 
   await insertLocalTranscriptOutput(args.text, pasteKeybind);
 
