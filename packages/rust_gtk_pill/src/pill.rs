@@ -171,6 +171,7 @@ pub fn run(receiver: Receiver<InMessage>) {
     window.add_events(
         gdk::EventMask::ENTER_NOTIFY_MASK
             | gdk::EventMask::LEAVE_NOTIFY_MASK
+            | gdk::EventMask::POINTER_MOTION_MASK
             | gdk::EventMask::BUTTON_PRESS_MASK
             | gdk::EventMask::BUTTON_RELEASE_MASK
             | gdk::EventMask::FOCUS_CHANGE_MASK
@@ -179,11 +180,27 @@ pub fn run(receiver: Receiver<InMessage>) {
     );
 
     let state_enter = state.clone();
-    window.connect_enter_notify_event(move |win, _| {
-        state_enter.hovered.set(true);
-        ipc::send(&OutMessage::Hover { hovered: true });
+    window.connect_enter_notify_event(move |win, event| {
+        let (mx, my) = event.position();
+        let is_over_pill = input::is_over_pill_area(&state_enter, mx, my);
+        if is_over_pill {
+            state_enter.hovered.set(true);
+            ipc::send(&OutMessage::Hover { hovered: true });
+        }
         if let Some(gdk_win) = win.window() {
             input::set_expanded_input_region(&gdk_win, &state_enter);
+        }
+        glib::Propagation::Proceed
+    });
+
+    let state_motion = state.clone();
+    window.connect_motion_notify_event(move |_, event| {
+        let (mx, my) = event.position();
+        let is_over_pill = input::is_over_pill_area(&state_motion, mx, my);
+        let was_hovered = state_motion.hovered.get();
+        if is_over_pill != was_hovered {
+            state_motion.hovered.set(is_over_pill);
+            ipc::send(&OutMessage::Hover { hovered: is_over_pill });
         }
         glib::Propagation::Proceed
     });
