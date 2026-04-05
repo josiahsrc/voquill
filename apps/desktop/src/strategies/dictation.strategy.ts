@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { Nullable } from "@voquill/types";
 import { showErrorSnackbar, showSnackbar } from "../actions/app.actions";
+import { tryRegisterCurrentAppTarget } from "../actions/app-target.actions";
 import { showToast } from "../actions/toast.actions";
 import {
   postProcessTranscript,
@@ -33,6 +34,7 @@ export class DictationStrategy extends BaseStrategy {
   private streamedSegmentCount = 0;
   private streamedProcessedText = "";
   private pasteQueue: Promise<void> = Promise.resolve();
+  private currentAppId: string | null = null;
 
   shouldStoreTranscript(): boolean {
     return true;
@@ -77,7 +79,7 @@ export class DictationStrategy extends BaseStrategy {
         await routeTranscriptOutput({
           text: textToPaste,
           mode: "dictation",
-          currentAppId: null,
+          currentAppId: this.currentAppId,
         });
       } catch (error) {
         getLogger().error(`Failed to paste interim segment: ${error}`);
@@ -119,8 +121,18 @@ export class DictationStrategy extends BaseStrategy {
     return null;
   }
 
+  async loadAppTarget(): Promise<void> {
+    try {
+      const appTarget = await tryRegisterCurrentAppTarget();
+      this.currentAppId = appTarget?.id ?? null;
+    } catch {
+      getLogger().verbose("Failed to resolve current app target at start");
+    }
+  }
+
   async onBeforeStart(): Promise<void> {
-    // No special setup for dictation
+    // load asyncronously, non-blocking
+    this.loadAppTarget();
   }
 
   async setPhase(phase: OverlayPhase): Promise<void> {
