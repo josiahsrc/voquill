@@ -64,6 +64,15 @@ pub(crate) fn handle_click(state: &PillState, x: f64, y: f64) {
                 ClickAction::InputField => {
                     crate::pill::focus_edit_control();
                 }
+                ClickAction::FlashAction => {
+                    if let Some(ref action) = *state.flash_action.borrow() {
+                        ipc::send(&OutMessage::ToastAction { action: action.clone() });
+                    }
+                    state.flash_visible.set(false);
+                    state.flash_timer.set(0.0);
+                    *state.flash_action.borrow_mut() = None;
+                    *state.flash_action_label.borrow_mut() = None;
+                }
             }
             return;
         }
