@@ -72,7 +72,14 @@ pub enum InMessage {
     StyleInfo { count: u32, name: String },
     Visibility { visibility: Visibility },
     WindowSize { size: String },
-    FlashMessage { message: String },
+    Toast {
+        message: String,
+        toast_type: Option<String>,
+        duration: Option<f64>,
+        action: Option<String>,
+        action_label: Option<String>,
+    },
+    DismissToast,
     Fireworks { message: String },
     Flame { message: String },
     AssistantState {
@@ -106,6 +113,7 @@ pub enum OutMessage {
         always_allow: bool,
     },
     CancelDictation,
+    ToastAction { action: String },
 }
 
 pub fn send(msg: &OutMessage) {

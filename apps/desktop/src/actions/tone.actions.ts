@@ -141,13 +141,10 @@ const cycleWritingStyle = async (direction: 1 | -1): Promise<void> => {
   if (activeIds.length <= 1) {
     const toneName = getToneById(state, currentId)?.name ?? currentId;
     await showToast({
-      title: intl.formatMessage({
-        defaultMessage: "Writing style not changed",
-      }),
       message: intl.formatMessage(
         {
           defaultMessage:
-            '"{toneName}" is your only active style. Add more styles from the writing styles menu.',
+            '"{toneName}" is your only active style',
         },
         { toneName },
       ),

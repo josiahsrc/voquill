@@ -25,7 +25,7 @@ import { AuthUser } from "../types/auth.types";
 import { Vector2 } from "../types/math.types";
 import { OverlayPhase } from "../types/overlay.types";
 import { PermissionMap } from "../types/permission.types";
-import { Toast } from "../types/toast.types";
+
 import { AgentRunState } from "./agent.state";
 import { ChatState, INITIAL_CHAT_STATE } from "./chat.state";
 import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
@@ -130,9 +130,6 @@ export type AppState = {
   snackbarDuration: number;
   snackbarTransitionDuration?: number;
 
-  toastQueue: Toast[];
-  currentToast: Toast | null;
-
   overlayCursor: Nullable<Vector2>;
   hotkeyTriggers: Record<string, number>;
   hotkeyStrategy: Nullable<HotkeyStrategy>;
@@ -183,8 +180,6 @@ export const INITIAL_APP_STATE: AppState = {
   snackbarMode: "info",
   snackbarDuration: 3000,
   snackbarTransitionDuration: undefined,
-  toastQueue: [],
-  currentToast: null,
   overlayCursor: null,
   hotkeyTriggers: {},
   hotkeyStrategy: null,

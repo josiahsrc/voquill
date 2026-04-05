@@ -9,12 +9,3 @@ export type ToastAction =
 export type ToastActionPayload = {
   action: ToastAction;
 };
-
-export type Toast = {
-  id: string;
-  title: string;
-  message: string;
-  toastType: ToastType;
-  duration?: number;
-  action?: ToastAction;
-};

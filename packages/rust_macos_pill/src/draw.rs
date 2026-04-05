@@ -39,8 +39,6 @@ pub(crate) fn draw_all(ctx: &Ctx, state: &PillState, view_w: f64, view_h: f64) {
     }
 
     if !state.assistant_active.get() {
-        draw_cancel_button(ctx, state, ww, wh);
-
         if !state.fireworks_rockets.borrow().is_empty() {
             draw_fireworks(ctx, state, ww, wh);
         }
@@ -48,6 +46,8 @@ pub(crate) fn draw_all(ctx: &Ctx, state: &PillState, view_w: f64, view_h: f64) {
         if state.flash_t.get() > 0.01 {
             draw_flash_message(ctx, state, ww, wh);
         }
+
+        draw_cancel_button(ctx, state, ww, wh);
     }
 
     ctx.restore();
@@ -332,10 +332,25 @@ fn draw_flash_message(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
         return;
     }
 
+    let is_error = state.flash_is_error.get();
+    let action_label = state.flash_action_label.borrow();
+    let has_action = action_label.is_some();
+
     ctx.select_font_face("sans-serif", false, true);
     ctx.set_font_size(12.0);
     let text_extents = ctx.text_extents(&message);
-    let flash_w = (text_extents.width + FLASH_PADDING_H * 2.0).max(80.0);
+
+    let action_w = if let Some(ref label) = *action_label {
+        ctx.select_font_face("sans-serif", false, true);
+        ctx.set_font_size(11.0);
+        let ext = ctx.text_extents(label);
+        ext.width + FLASH_ACTION_PADDING_H * 2.0
+    } else {
+        0.0
+    };
+    let action_section = if has_action { FLASH_ACTION_GAP + action_w } else { 0.0 };
+
+    let flash_w = (text_extents.width + FLASH_PADDING_H * 2.0 + action_section).max(80.0);
 
     let scale = FLASH_MIN_SCALE + (1.0 - FLASH_MIN_SCALE) * flash_t;
     let alpha = flash_t;
@@ -352,17 +367,52 @@ fn draw_flash_message(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
     ctx.scale(scale, scale);
     ctx.translate(-center_x, -center_y);
 
+    // Background
+    let (bg_r, bg_g, bg_b) = if is_error { (0.35, 0.05, 0.05) } else { (0.0, 0.0, 0.0) };
     gfx::rounded_rect(ctx, full_x, full_y, flash_w, FLASH_HEIGHT, FLASH_RADIUS);
-    ctx.set_source_rgba(0.0, 0.0, 0.0, 0.92 * alpha);
+    ctx.set_source_rgba(bg_r, bg_g, bg_b, 0.92 * alpha);
     ctx.fill();
 
+    // Message text
     ctx.set_source_rgba(1.0, 1.0, 1.0, 0.9 * alpha);
     ctx.select_font_face("sans-serif", false, true);
     ctx.set_font_size(12.0);
-    let tx = full_x + (flash_w - text_extents.width) / 2.0 - text_extents.x_bearing;
+    let text_left = if has_action {
+        full_x + FLASH_PADDING_H
+    } else {
+        full_x + (flash_w - text_extents.width) / 2.0
+    };
+    let tx = text_left - text_extents.x_bearing;
     let ty = full_y + (FLASH_HEIGHT - text_extents.height) / 2.0 - text_extents.y_bearing;
     ctx.move_to(tx, ty);
     ctx.show_text(&message);
+
+    // Action button
+    if let Some(ref label) = *action_label {
+        let btn_x = full_x + flash_w - FLASH_PADDING_H - action_w;
+        let btn_y = full_y + (FLASH_HEIGHT - FLASH_ACTION_HEIGHT) / 2.0;
+
+        gfx::rounded_rect(ctx, btn_x, btn_y, action_w, FLASH_ACTION_HEIGHT, FLASH_ACTION_RADIUS);
+        ctx.set_source_rgba(1.0, 1.0, 1.0, 0.2 * alpha);
+        ctx.fill();
+
+        ctx.set_source_rgba(1.0, 1.0, 1.0, 0.95 * alpha);
+        ctx.select_font_face("sans-serif", false, true);
+        ctx.set_font_size(11.0);
+        let label_ext = ctx.text_extents(label);
+        let lx = btn_x + (action_w - label_ext.width) / 2.0 - label_ext.x_bearing;
+        let ly = btn_y + (FLASH_ACTION_HEIGHT - label_ext.height) / 2.0 - label_ext.y_bearing;
+        ctx.move_to(lx, ly);
+        ctx.show_text(label);
+
+        state.click_regions.borrow_mut().push(ClickRegion {
+            x: btn_x,
+            y: btn_y,
+            w: action_w,
+            h: FLASH_ACTION_HEIGHT,
+            action: ClickAction::FlashAction,
+        });
+    }
 
     ctx.restore();
 }
@@ -996,10 +1046,8 @@ fn draw_keyboard_button(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
 }
 
 fn draw_cancel_button(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
-    let is_idle = state.phase.get() == Phase::Idle;
-    let hovered = state.hovered.get();
-
-    if is_idle || !hovered || state.assistant_active.get() {
+    let t = state.cancel_t.get();
+    if t < 0.01 {
         return;
     }
 
@@ -1009,13 +1057,23 @@ fn draw_cancel_button(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
     let cx = btn_x + CANCEL_BUTTON_SIZE / 2.0;
     let cy = btn_y + CANCEL_BUTTON_SIZE / 2.0;
 
-    ctx.set_source_rgba(0.46, 0.46, 0.46, 1.0);
+    let scale = 0.5 + 0.5 * t;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(scale, scale);
+    ctx.translate(-cx, -cy);
+
+    ctx.set_source_rgba(0.46, 0.46, 0.46, t);
     ctx.draw_symbol("xmark.circle.fill", cx, cy, CANCEL_BUTTON_SIZE - 2.0);
 
-    state.click_regions.borrow_mut().push(ClickRegion {
-        x: btn_x, y: btn_y, w: CANCEL_BUTTON_SIZE, h: CANCEL_BUTTON_SIZE,
-        action: ClickAction::CancelDictation,
-    });
+    ctx.restore();
+
+    if t > 0.5 {
+        state.click_regions.borrow_mut().push(ClickRegion {
+            x: btn_x, y: btn_y, w: CANCEL_BUTTON_SIZE, h: CANCEL_BUTTON_SIZE,
+            action: ClickAction::CancelDictation,
+        });
+    }
 }
 
 fn draw_wrench_icon(ctx: &Ctx, x: f64, y: f64, size: f64, alpha: f64) {

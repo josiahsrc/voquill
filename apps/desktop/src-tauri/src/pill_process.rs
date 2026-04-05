@@ -264,6 +264,13 @@ fn start_stdout_reader(app: tauri::AppHandle, reader: std::io::BufReader<ChildSt
                         } else if line.contains("\"backward\"") {
                             let _ = app.emit_to("main", "tone-switch-backward", ());
                         }
+                    } else if line.contains("\"toast_action\"") {
+                        if let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) {
+                            if let Some(action) = val.get("action").and_then(|v| v.as_str()) {
+                                let payload = serde_json::json!({ "action": action });
+                                let _ = app.emit_to("main", "toast-action", payload);
+                            }
+                        }
                     }
                 }
             }

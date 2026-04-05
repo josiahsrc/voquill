@@ -5,6 +5,17 @@ use crate::draw::pill_position;
 use crate::gfx;
 use crate::state::{ClickAction, PillState};
 
+fn has_flash_action_at(state: &PillState, x: f64, y: f64) -> bool {
+    if state.flash_action.borrow().is_none() || state.flash_t.get() < 0.5 {
+        return false;
+    }
+    // Check against the actual click regions registered by the draw code,
+    // since the flash can be wider than the draw area (it extends into the
+    // content-offset margins). The FlashAction region has exact coordinates.
+    let regions = state.click_regions.borrow();
+    regions.iter().any(|r| matches!(r.action, ClickAction::FlashAction) && r.contains(x, y))
+}
+
 pub(crate) fn handle_click(state: &PillState, x: f64, y: f64) {
     let s = state.ui_scale;
     let (ox, oy) = state.content_offset();
@@ -64,6 +75,15 @@ pub(crate) fn handle_click(state: &PillState, x: f64, y: f64) {
                         ipc::send(&OutMessage::TypedMessage { text });
                         *state.entry_text.borrow_mut() = String::new();
                     }
+                }
+                ClickAction::FlashAction => {
+                    if let Some(ref action) = *state.flash_action.borrow() {
+                        ipc::send(&OutMessage::ToastAction { action: action.clone() });
+                    }
+                    state.flash_visible.set(false);
+                    state.flash_timer.set(0.0);
+                    *state.flash_action.borrow_mut() = None;
+                    *state.flash_action_label.borrow_mut() = None;
                 }
             }
             return;
@@ -186,6 +206,11 @@ pub(crate) fn is_interactive_at(state: &PillState, x: f64, y: f64) -> bool {
         {
             return true;
         }
+    }
+
+    // Flash message with action button
+    if has_flash_action_at(state, x, y) {
+        return true;
     }
 
     false

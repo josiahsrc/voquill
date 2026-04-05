@@ -229,8 +229,7 @@ export class DictationStrategy extends BaseStrategy {
       postProcessWarnings.push(errorMessage);
 
       await showToast({
-        title: "Transcription failed",
-        message: errorMessage,
+        message: "Transcription failed",
         toastType: "error",
       });
     }
