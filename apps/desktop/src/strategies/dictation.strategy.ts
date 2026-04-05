@@ -70,7 +70,7 @@ export class DictationStrategy extends BaseStrategy {
 
     this.pasteQueue = this.pasteQueue.then(async () => {
       const text = sanitized;
-      const textToPaste = (isFirst ? "" : " ") + text;
+      const textToPaste = text + " ";
       this.streamedProcessedText += (isFirst ? "" : " ") + text;
 
       try {
@@ -131,25 +131,8 @@ export class DictationStrategy extends BaseStrategy {
     args: HandleTranscriptParams,
   ): Promise<HandleTranscriptResult> {
     const sanitizedTranscript = this.sanitizeTranscript(args.rawTranscript);
-    let remoteStatus: "sent" | null = null;
-    const remoteDeviceId = this.getActiveRemoteTargetDeviceId();
 
     await this.pasteQueue;
-    try {
-      const result = await routeTranscriptOutput({
-        text: " ",
-        mode: "dictation",
-        currentAppId: args.currentApp?.id ?? null,
-      });
-      if (result.remote && result.delivered) {
-        remoteStatus = "sent";
-        showSnackbar("Transcript sent to paired receiver.", {
-          mode: "success",
-        });
-      }
-    } catch {
-      // Non-critical trailing space
-    }
 
     const transcript = this.streamedProcessedText || sanitizedTranscript;
     getLogger().verbose(
@@ -162,8 +145,8 @@ export class DictationStrategy extends BaseStrategy {
       sanitizedTranscript,
       postProcessMetadata: {},
       postProcessWarnings: [],
-      remoteStatus,
-      remoteDeviceId: remoteStatus ? remoteDeviceId : null,
+      remoteStatus: null,
+      remoteDeviceId: null,
     };
   }
 
