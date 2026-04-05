@@ -1,3 +1,4 @@
+use crate::platform::paste_keybind::{parse_paste_keystroke, PasteKeystroke};
 use std::process::Command;
 use std::sync::Mutex;
 use std::{thread, time::Duration};
@@ -24,7 +25,7 @@ pub(crate) fn clipboard_set(text: &str) -> Result<(), String> {
 //
 // v0.1.x: key combos as "modifier+key" (e.g. "ctrl+v")
 // v1.x:   scancode pairs as "code:1" (press) / "code:0" (release)
-//         KEY_LEFTCTRL = 29, KEY_LEFTSHIFT = 42, KEY_C = 46, KEY_V = 47
+//         KEY_LEFTCTRL = 29, KEY_LEFTSHIFT = 42, KEY_C = 46, KEY_V = 47, KEY_INSERT = 110
 
 use std::sync::OnceLock;
 
@@ -69,17 +70,21 @@ fn ydotool_key(args: &[&str]) -> Result<(), String> {
     }
 }
 
-fn ydotool_paste(shift: bool) -> Result<(), String> {
+fn ydotool_paste(style: PasteKeystroke) -> Result<(), String> {
     if is_ydotool_v1() {
-        if shift {
-            ydotool_key(&["29:1", "42:1", "47:1", "47:0", "42:0", "29:0"])
-        } else {
-            ydotool_key(&["29:1", "47:1", "47:0", "29:0"])
+        match style {
+            PasteKeystroke::CtrlV => ydotool_key(&["29:1", "47:1", "47:0", "29:0"]),
+            PasteKeystroke::CtrlShiftV => {
+                ydotool_key(&["29:1", "42:1", "47:1", "47:0", "42:0", "29:0"])
+            }
+            PasteKeystroke::ShiftInsert => ydotool_key(&["42:1", "110:1", "110:0", "42:0"]),
         }
-    } else if shift {
-        ydotool_key(&["ctrl+shift+v"])
     } else {
-        ydotool_key(&["ctrl+v"])
+        match style {
+            PasteKeystroke::CtrlV => ydotool_key(&["ctrl+v"]),
+            PasteKeystroke::CtrlShiftV => ydotool_key(&["ctrl+shift+v"]),
+            PasteKeystroke::ShiftInsert => ydotool_key(&["shift+insert"]),
+        }
     }
 }
 
@@ -118,17 +123,17 @@ pub fn wtype_key(modifiers: &[&str], key: &str) -> Result<(), String> {
 
 // --- Simulate paste/copy keystrokes ---
 
-fn simulate_paste_keystroke(shift: bool) -> Result<(), String> {
+fn simulate_paste_keystroke(style: PasteKeystroke) -> Result<(), String> {
     if ydotool_available() {
-        log::info!("Using ydotool for paste keystroke (shift={shift})");
-        return ydotool_paste(shift);
+        log::info!("Using ydotool for paste keystroke ({style:?})");
+        return ydotool_paste(style);
     }
 
     log::info!("ydotool not available, trying wtype for paste keystroke");
-    if shift {
-        wtype_key(&["ctrl", "shift"], "v")
-    } else {
-        wtype_key(&["ctrl"], "v")
+    match style {
+        PasteKeystroke::CtrlV => wtype_key(&["ctrl"], "v"),
+        PasteKeystroke::CtrlShiftV => wtype_key(&["ctrl", "shift"], "v"),
+        PasteKeystroke::ShiftInsert => wtype_key(&["shift"], "Insert"),
     }
 }
 
@@ -149,13 +154,13 @@ pub fn paste_text(text: &str, keybind: Option<&str>) -> Result<(), String> {
 }
 
 fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
-    let shift = keybind == Some("ctrl+shift+v");
+    let style = parse_paste_keystroke(keybind);
     let previous = clipboard_get().ok();
 
     clipboard_set(text)?;
     thread::sleep(Duration::from_millis(40));
 
-    simulate_paste_keystroke(shift)?;
+    simulate_paste_keystroke(style)?;
 
     if let Some(old) = previous {
         thread::spawn(move || {

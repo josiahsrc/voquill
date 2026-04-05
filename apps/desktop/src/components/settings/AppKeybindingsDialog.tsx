@@ -144,6 +144,9 @@ const AppKeybindingRow = ({ target }: AppKeybindingRowProps) => {
         <MenuItem value="ctrl+shift+v">
           <FormattedMessage defaultMessage="Terminal (Ctrl+Shift+V)" />
         </MenuItem>
+        <MenuItem value="shift+insert">
+          <FormattedMessage defaultMessage="Shift+Insert" />
+        </MenuItem>
       </Select>
     </Stack>
   );

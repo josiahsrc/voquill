@@ -127,6 +127,8 @@ pub mod app_info;
 
 pub mod audio;
 
+pub mod paste_keybind;
+
 #[cfg(desktop)]
 pub mod keyboard;
 

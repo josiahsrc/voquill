@@ -3,8 +3,8 @@ use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE, KEYBDINPUT,
     KEYEVENTF_KEYUP, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEINPUT, VIRTUAL_KEY,
-    VK_C, VK_CONTROL, VK_LCONTROL, VK_LMENU, VK_LSHIFT, VK_LWIN, VK_MENU, VK_RCONTROL, VK_RMENU,
-    VK_RSHIFT, VK_RWIN, VK_SHIFT, VK_V,
+    VK_C, VK_CONTROL, VK_INSERT, VK_LCONTROL, VK_LMENU, VK_LSHIFT, VK_LWIN, VK_MENU, VK_RCONTROL,
+    VK_RMENU, VK_RSHIFT, VK_RWIN, VK_SHIFT, VK_V,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     GetClassNameW, GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW,
@@ -228,24 +228,37 @@ fn send_right_click() {
 }
 
 fn send_paste_keys(keybind: Option<&str>) {
-    let is_console = is_console_window();
+    use crate::platform::paste_keybind::{parse_paste_keystroke, PasteKeystroke};
 
-    let use_shift = keybind == Some("ctrl+shift+v");
-    if is_console && !use_shift {
-        log::info!("detected console window, using right-click to paste");
-        send_right_click();
-    } else {
-        send_key_down(VK_CONTROL);
-        if use_shift {
-            send_key_down(VK_SHIFT);
+    let is_console = is_console_window();
+    match parse_paste_keystroke(keybind) {
+        PasteKeystroke::CtrlV if is_console => {
+            log::info!("detected console window, using right-click to paste");
+            send_right_click();
         }
-        send_key_down(VK_V);
-        thread::sleep(Duration::from_millis(20));
-        send_key_up(VK_V);
-        if use_shift {
+        PasteKeystroke::CtrlV => {
+            send_key_down(VK_CONTROL);
+            send_key_down(VK_V);
+            thread::sleep(Duration::from_millis(20));
+            send_key_up(VK_V);
+            send_key_up(VK_CONTROL);
+        }
+        PasteKeystroke::CtrlShiftV => {
+            send_key_down(VK_CONTROL);
+            send_key_down(VK_SHIFT);
+            send_key_down(VK_V);
+            thread::sleep(Duration::from_millis(20));
+            send_key_up(VK_V);
+            send_key_up(VK_SHIFT);
+            send_key_up(VK_CONTROL);
+        }
+        PasteKeystroke::ShiftInsert => {
+            send_key_down(VK_SHIFT);
+            send_key_down(VK_INSERT);
+            thread::sleep(Duration::from_millis(20));
+            send_key_up(VK_INSERT);
             send_key_up(VK_SHIFT);
         }
-        send_key_up(VK_CONTROL);
     }
 }
 

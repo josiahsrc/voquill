@@ -92,6 +92,15 @@ export const AppStylingRow = ({ id }: AppStylingRowProps) => {
         close();
       },
     },
+    {
+      kind: "listItem",
+      title: <FormattedMessage defaultMessage="Shift+Insert" />,
+      trailing: pasteKeybindValue === "shift+insert" ? <Check /> : undefined,
+      onClick: ({ close }) => {
+        handlePasteKeybindChange("shift+insert");
+        close();
+      },
+    },
   ];
 
   const leading = (
