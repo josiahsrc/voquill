@@ -34,12 +34,38 @@ fn uinput_accessible() -> bool {
         .is_ok()
 }
 
+fn user_pending_input_group() -> bool {
+    let username = std::env::var("USER")
+        .or_else(|_| std::env::var("LOGNAME"))
+        .unwrap_or_default();
+    if username.is_empty() {
+        return false;
+    }
+    Command::new("getent")
+        .args(["group", "input"])
+        .output()
+        .map(|out| {
+            let line = String::from_utf8_lossy(&out.stdout);
+            line.split(':')
+                .nth(3)
+                .map(|members| members.trim().split(',').any(|m| m.trim() == username))
+                .unwrap_or(false)
+        })
+        .unwrap_or(false)
+}
+
 pub fn get_native_setup_status() -> NativeSetupStatus {
-    if !is_ydotool_installed() || !uinput_accessible() {
+    if !is_ydotool_installed() {
         return NativeSetupStatus::NeedsSetup;
     }
     if !user_in_input_group() {
-        return NativeSetupStatus::NeedsRestart;
+        if user_pending_input_group() {
+            return NativeSetupStatus::NeedsRestart;
+        }
+        return NativeSetupStatus::NeedsSetup;
+    }
+    if !uinput_accessible() {
+        return NativeSetupStatus::NeedsSetup;
     }
     NativeSetupStatus::Ready
 }
@@ -97,25 +123,31 @@ fn detect_install_command() -> Option<&'static str> {
 }
 
 fn build_setup_script(username: &str) -> Result<String, String> {
-    let pkg_manager = detect_install_command()
-        .ok_or_else(|| "No supported package manager found".to_string())?;
+    let mut steps = Vec::new();
 
-    let install_cmd = match pkg_manager {
-        "apt-get" => "apt-get install -y ydotool",
-        "dnf" => "dnf install -y ydotool",
-        "pacman" => "pacman -S --noconfirm ydotool",
-        "zypper" => "zypper install -y ydotool",
-        "apk" => "apk add ydotool",
-        _ => return Err(format!("Unsupported package manager: {pkg_manager}")),
-    };
+    if !is_ydotool_installed() {
+        let pkg_manager = detect_install_command()
+            .ok_or_else(|| "No supported package manager found".to_string())?;
 
-    Ok(format!(
-        "{install_cmd} && \
-         usermod -aG input {username} && \
-         echo 'KERNEL==\"uinput\", GROUP=\"input\", MODE=\"0660\"' > /etc/udev/rules.d/99-voquill-uinput.rules && \
-         udevadm control --reload-rules && udevadm trigger /dev/uinput && \
-         (systemctl enable --now ydotoold 2>/dev/null || true)"
-    ))
+        let install_cmd = match pkg_manager {
+            "apt-get" => "apt-get install -y ydotool",
+            "dnf" => "dnf install -y ydotool",
+            "pacman" => "pacman -S --noconfirm ydotool",
+            "zypper" => "zypper install -y ydotool",
+            "apk" => "apk add ydotool",
+            _ => return Err(format!("Unsupported package manager: {pkg_manager}")),
+        };
+        steps.push(install_cmd.to_string());
+    }
+
+    steps.push(format!("usermod -aG input {username}"));
+    steps.push(
+        "echo 'KERNEL==\"uinput\", GROUP=\"input\", MODE=\"0660\"' > /etc/udev/rules.d/99-voquill-uinput.rules".to_string(),
+    );
+    steps.push("udevadm control --reload-rules && udevadm trigger /dev/uinput".to_string());
+    steps.push("(systemctl enable --now ydotoold 2>/dev/null || true)".to_string());
+
+    Ok(steps.join(" && "))
 }
 
 pub async fn run_native_setup() -> NativeSetupResult {
