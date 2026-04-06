@@ -1,7 +1,3 @@
-- Significant improvements to AI text clean up (available to Voquill cloud users, you will feel the difference immediately)
-- New pill affordances that feel awesome (keep your streak going to see them)
-- You can now configure the max dictation time (community mode only)
-- Windows now uses a native pill similar to MacOS and Linux
-- Voquill now remembers your window size and position for when you reopen it
-- Add words to dictionary via a hotkey
-- Various improvements and bug fixes
+- Add support for Shift+Insert pasting
+- Improve flame affordances
+- Add toast messages to pill for better communication of actions
