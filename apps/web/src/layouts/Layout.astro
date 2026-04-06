@@ -10,6 +10,7 @@ import {
 	buildWebsiteStructuredData,
 	getOgLocale,
 	toAbsoluteImageUrl,
+	toAbsoluteUrl,
 } from '../utils/seo';
 
 interface Props {
@@ -41,7 +42,7 @@ const {
 	structuredData = [],
 } = Astro.props;
 const siteBase = Astro.site ?? SITE_URL;
-const canonicalUrl = new URL(Astro.url.pathname, siteBase);
+const canonicalUrl = toAbsoluteUrl(Astro.url.pathname);
 const absoluteOgImage = toAbsoluteImageUrl(ogImage);
 const ogLocale = getOgLocale(lang);
 
@@ -71,7 +72,7 @@ const alternateOgLocales = locales
 		<meta name="robots" content={robots} />
 		<meta name="theme-color" content="#121212" />
 		<meta name="application-name" content="Voquill" />
-		<link rel="canonical" href={canonicalUrl.href} />
+		<link rel="canonical" href={canonicalUrl} />
 		<link rel="sitemap" type="application/xml" href={new URL('/sitemap.xml', siteBase).href} />
 
 		{hreflangUrls.map(({ locale, href }) => (
@@ -85,7 +86,7 @@ const alternateOgLocales = locales
 		<meta property="og:description" content={description} />
 		<meta property="og:image" content={absoluteOgImage} />
 		<meta property="og:image:alt" content={ogImageAlt} />
-		<meta property="og:url" content={canonicalUrl.href} />
+		<meta property="og:url" content={canonicalUrl} />
 		<meta property="og:site_name" content="Voquill" />
 		<meta property="og:locale" content={ogLocale} />
 		{alternateOgLocales.map((locale) => (
