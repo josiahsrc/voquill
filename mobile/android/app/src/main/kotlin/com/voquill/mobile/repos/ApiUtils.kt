@@ -14,6 +14,7 @@ fun postJsonSync(
     urlString: String,
     payload: JSONObject,
     authorization: String? = null,
+    extraHeaders: Map<String, String> = emptyMap(),
 ): HttpResponse? {
     return try {
         val url = URL(urlString)
@@ -23,8 +24,39 @@ fun postJsonSync(
         if (!authorization.isNullOrBlank()) {
             conn.setRequestProperty("Authorization", authorization)
         }
+        for ((key, value) in extraHeaders) {
+            conn.setRequestProperty(key, value)
+        }
         conn.doOutput = true
         conn.outputStream.use { it.write(payload.toString().toByteArray()) }
+
+        val status = conn.responseCode
+        val stream = if (status in 200..299) conn.inputStream else conn.errorStream
+        val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+        conn.disconnect()
+        HttpResponse(status, body)
+    } catch (e: Exception) {
+        Log.w("VoquillRepo", "HTTP call failed: ${e.message}")
+        null
+    }
+}
+
+fun postBytesSync(
+    urlString: String,
+    data: ByteArray,
+    contentType: String,
+    headers: Map<String, String> = emptyMap(),
+): HttpResponse? {
+    return try {
+        val url = URL(urlString)
+        val conn = url.openConnection() as HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Content-Type", contentType)
+        for ((key, value) in headers) {
+            conn.setRequestProperty(key, value)
+        }
+        conn.doOutput = true
+        conn.outputStream.use { it.write(data) }
 
         val status = conn.responseCode
         val stream = if (status in 200..299) conn.inputStream else conn.errorStream

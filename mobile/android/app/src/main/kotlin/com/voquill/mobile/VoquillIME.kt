@@ -919,7 +919,9 @@ class VoquillIME : InputMethodService() {
             val apiKey = prefs.getString(KEY_AI_TRANSCRIPTION_API_KEY, null) ?: return null
             val provider = prefs.getString(KEY_AI_TRANSCRIPTION_PROVIDER, "openai") ?: "openai"
             val baseUrl = prefs.getString(KEY_AI_TRANSCRIPTION_BASE_URL, null)
-            return ByokTranscribeAudioRepo(apiKey, provider, baseUrl)
+            val model = prefs.getString(KEY_AI_TRANSCRIPTION_MODEL, null)
+            val azureRegion = prefs.getString(KEY_AI_TRANSCRIPTION_AZURE_REGION, null)
+            return ByokTranscribeAudioRepo(apiKey, provider, baseUrl, model, azureRegion)
         }
         config ?: return null
         return CloudTranscribeAudioRepo(config)
@@ -931,7 +933,8 @@ class VoquillIME : InputMethodService() {
             val apiKey = prefs.getString(KEY_AI_POST_PROCESSING_API_KEY, null) ?: return null
             val provider = prefs.getString(KEY_AI_POST_PROCESSING_PROVIDER, "openai") ?: "openai"
             val baseUrl = prefs.getString(KEY_AI_POST_PROCESSING_BASE_URL, null)
-            return ByokGenerateTextRepo(apiKey, provider, baseUrl)
+            val model = prefs.getString(KEY_AI_POST_PROCESSING_MODEL, null)
+            return ByokGenerateTextRepo(apiKey, provider, baseUrl, model)
         }
         config ?: return null
         return CloudGenerateTextRepo(config)
@@ -1479,6 +1482,9 @@ class VoquillIME : InputMethodService() {
         const val KEY_AI_POST_PROCESSING_API_KEY = "voquill_ai_post_processing_api_key"
         const val KEY_AI_TRANSCRIPTION_BASE_URL = "voquill_ai_transcription_base_url"
         const val KEY_AI_POST_PROCESSING_BASE_URL = "voquill_ai_post_processing_base_url"
+        const val KEY_AI_TRANSCRIPTION_MODEL = "voquill_ai_transcription_model"
+        const val KEY_AI_POST_PROCESSING_MODEL = "voquill_ai_post_processing_model"
+        const val KEY_AI_TRANSCRIPTION_AZURE_REGION = "voquill_ai_transcription_azure_region"
         const val EXTRA_SHOW_PAYWALL = "voquill_show_paywall"
 
         const val COLOR_BLUE = 0xFF3380FF.toInt()

@@ -197,9 +197,12 @@ Future<void> syncKeyboardAiConfig({
   String? transcriptionProvider,
   String? transcriptionApiKey,
   String? transcriptionBaseUrl,
+  String? transcriptionModel,
+  String? transcriptionAzureRegion,
   String? postProcessingProvider,
   String? postProcessingApiKey,
   String? postProcessingBaseUrl,
+  String? postProcessingModel,
 }) async {
   if (!_canSync) return;
 
@@ -210,9 +213,12 @@ Future<void> syncKeyboardAiConfig({
       if (transcriptionProvider != null) 'transcriptionProvider': transcriptionProvider,
       if (transcriptionApiKey != null) 'transcriptionApiKey': transcriptionApiKey,
       if (transcriptionBaseUrl != null) 'transcriptionBaseUrl': transcriptionBaseUrl,
+      if (transcriptionModel != null) 'transcriptionModel': transcriptionModel,
+      if (transcriptionAzureRegion != null) 'transcriptionAzureRegion': transcriptionAzureRegion,
       if (postProcessingProvider != null) 'postProcessingProvider': postProcessingProvider,
       if (postProcessingApiKey != null) 'postProcessingApiKey': postProcessingApiKey,
       if (postProcessingBaseUrl != null) 'postProcessingBaseUrl': postProcessingBaseUrl,
+      if (postProcessingModel != null) 'postProcessingModel': postProcessingModel,
     });
   } catch (e) {
     _logger.w('Failed to sync keyboard AI config', e);

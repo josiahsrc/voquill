@@ -220,6 +220,21 @@ import UIKit
         } else {
           defaults.removeObject(forKey: "voquill_ai_post_processing_base_url")
         }
+        if let model = args["transcriptionModel"] {
+          defaults.set(model, forKey: "voquill_ai_transcription_model")
+        } else {
+          defaults.removeObject(forKey: "voquill_ai_transcription_model")
+        }
+        if let model = args["postProcessingModel"] {
+          defaults.set(model, forKey: "voquill_ai_post_processing_model")
+        } else {
+          defaults.removeObject(forKey: "voquill_ai_post_processing_model")
+        }
+        if let azureRegion = args["transcriptionAzureRegion"] {
+          defaults.set(azureRegion, forKey: "voquill_ai_transcription_azure_region")
+        } else {
+          defaults.removeObject(forKey: "voquill_ai_transcription_azure_region")
+        }
         result(nil)
 
       case "startDictation":

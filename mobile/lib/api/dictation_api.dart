@@ -60,11 +60,13 @@ Future<DictationSession> createDictationSession() async {
       final key = keys.where((k) => k.id == keyId).firstOrNull;
       if (key != null && key.provider.supportsTranscription) {
         final apiKeyValue = await getApiKeyValue(keyId);
-        if (apiKeyValue != null) {
+        if (apiKeyValue != null || key.provider.isApiKeyOptional) {
           return ByokDictationSession(
-            apiKey: apiKeyValue,
+            apiKey: apiKeyValue ?? '',
             provider: key.provider,
             baseUrl: key.baseUrl,
+            model: key.transcriptionModel,
+            azureRegion: key.azureRegion,
           );
         }
       }
@@ -383,11 +385,15 @@ class ByokDictationSession implements DictationSession {
     required this.apiKey,
     required this.provider,
     this.baseUrl,
+    this.model,
+    this.azureRegion,
   });
 
   final String apiKey;
   final ApiKeyProvider provider;
   final String? baseUrl;
+  final String? model;
+  final String? azureRegion;
 
   final _audioChunks = <Uint8List>[];
   int _sampleRate = 16000;
@@ -397,26 +403,14 @@ class ByokDictationSession implements DictationSession {
   @override
   Stream<String> get partialTranscripts => _partialController.stream;
 
-  String get _apiUrl {
-    switch (provider) {
-      case ApiKeyProvider.groq:
-        return 'https://api.groq.com/openai/v1/audio/transcriptions';
-      case ApiKeyProvider.speaches:
-        final base = (baseUrl ?? '').replaceAll(RegExp(r'/+$'), '');
-        return '$base/v1/audio/transcriptions';
-      case ApiKeyProvider.openaiCompatible:
-        final base = (baseUrl ?? '').replaceAll(RegExp(r'/+$'), '');
-        return '$base/audio/transcriptions';
-      default:
-        return 'https://api.openai.com/v1/audio/transcriptions';
-    }
-  }
-
-  String get _model {
+  String get _effectiveModel {
+    if (model != null && model!.isNotEmpty) return model!;
     switch (provider) {
       case ApiKeyProvider.groq:
       case ApiKeyProvider.speaches:
         return 'whisper-large-v3';
+      case ApiKeyProvider.gemini:
+        return 'gemini-2.0-flash';
       default:
         return 'whisper-1';
     }
@@ -442,14 +436,41 @@ class ByokDictationSession implements DictationSession {
     String? prompt,
     String? systemPrompt,
   }) async {
+    if (provider == ApiKeyProvider.gemini) {
+      return _finalizeGemini(prompt: prompt);
+    }
+    if (provider == ApiKeyProvider.azure) {
+      return _finalizeAzure(prompt: prompt);
+    }
+    return _finalizeWhisperCompatible(prompt: prompt);
+  }
+
+  Future<DictationResult> _finalizeWhisperCompatible({String? prompt}) async {
     final wavBytes = _buildWav();
 
-    final request = http.MultipartRequest('POST', Uri.parse(_apiUrl))
+    String apiUrl;
+    switch (provider) {
+      case ApiKeyProvider.groq:
+        apiUrl = 'https://api.groq.com/openai/v1/audio/transcriptions';
+      case ApiKeyProvider.speaches:
+        final base = (baseUrl ?? '').replaceAll(RegExp(r'/+$'), '');
+        apiUrl = '$base/v1/audio/transcriptions';
+      case ApiKeyProvider.ollama:
+        final base = (baseUrl ?? 'http://localhost:11434').replaceAll(RegExp(r'/+$'), '');
+        apiUrl = '$base/v1/audio/transcriptions';
+      case ApiKeyProvider.openaiCompatible:
+        final base = (baseUrl ?? '').replaceAll(RegExp(r'/+$'), '');
+        apiUrl = '$base/audio/transcriptions';
+      default:
+        apiUrl = 'https://api.openai.com/v1/audio/transcriptions';
+    }
+
+    final request = http.MultipartRequest('POST', Uri.parse(apiUrl))
       ..headers['Authorization'] = 'Bearer $apiKey'
       ..files.add(
         http.MultipartFile.fromBytes('file', wavBytes, filename: 'audio.wav'),
       )
-      ..fields['model'] = _model
+      ..fields['model'] = _effectiveModel
       ..fields['response_format'] = 'text';
 
     if (prompt != null) request.fields['prompt'] = prompt;
@@ -462,8 +483,77 @@ class ByokDictationSession implements DictationSession {
       throw Exception('Transcription failed (${response.statusCode}): $body');
     }
 
-    final text = body.trim();
-    return DictationResult(text: text, source: provider.displayName);
+    return DictationResult(text: body.trim(), source: provider.displayName);
+  }
+
+  Future<DictationResult> _finalizeGemini({String? prompt}) async {
+    final wavBytes = _buildWav();
+    final audioBase64 = base64Encode(wavBytes);
+    final geminiModel = _effectiveModel;
+    final url = Uri.parse(
+      'https://generativelanguage.googleapis.com/v1beta/models/$geminiModel:generateContent?key=$apiKey',
+    );
+
+    final transcribePrompt = prompt != null && prompt.isNotEmpty
+        ? 'Transcribe this audio exactly. Use these terms if you hear them: $prompt. Output only the transcription text.'
+        : 'Transcribe this audio exactly. Output only the transcription text.';
+
+    final body = jsonEncode({
+      'contents': [
+        {
+          'parts': [
+            {
+              'inline_data': {
+                'mime_type': 'audio/wav',
+                'data': audioBase64,
+              },
+            },
+            {'text': transcribePrompt},
+          ],
+        },
+      ],
+    });
+
+    final response = await http.post(url, headers: {'Content-Type': 'application/json'}, body: body);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Gemini transcription failed (${response.statusCode}): ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final candidates = json['candidates'] as List?;
+    final content = candidates?.firstOrNull as Map<String, dynamic>?;
+    final parts = (content?['content'] as Map<String, dynamic>?)?['parts'] as List?;
+    final text = (parts?.firstOrNull as Map<String, dynamic>?)?['text'] as String? ?? '';
+
+    return DictationResult(text: text.trim(), source: 'Gemini');
+  }
+
+  Future<DictationResult> _finalizeAzure({String? prompt}) async {
+    final wavBytes = _buildWav();
+    final region = azureRegion ?? 'eastus';
+    final lang = _language ?? 'en-US';
+    final url = Uri.parse(
+      'https://$region.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=$lang&format=detailed',
+    );
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Ocp-Apim-Subscription-Key': apiKey,
+        'Content-Type': 'audio/wav',
+        'Accept': 'application/json',
+      },
+      body: wavBytes,
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Azure STT failed (${response.statusCode}): ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final text = json['DisplayText'] as String? ?? '';
+    return DictationResult(text: text.trim(), source: 'Azure');
   }
 
   Uint8List _buildWav() {

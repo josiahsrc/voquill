@@ -31,6 +31,14 @@ class _ApiKeyListWidgetState extends State<ApiKeyListWidget> {
     _load();
   }
 
+  List<ApiKey> get _filteredKeys {
+    return _keys.where((k) {
+      return widget.configContext == AiConfigContext.transcription
+          ? k.provider.supportsTranscription
+          : k.provider.supportsPostProcessing;
+    }).toList();
+  }
+
   Future<void> _load() async {
     final keys = await loadApiKeys();
     final selectedId = widget.configContext == AiConfigContext.transcription
@@ -57,11 +65,24 @@ class _ApiKeyListWidgetState extends State<ApiKeyListWidget> {
   Future<void> _addKey() async {
     final result = await showDialog<ApiKey>(
       context: context,
-      builder: (_) => const AddApiKeyDialog(),
+      builder: (_) => AddApiKeyDialog(configContext: widget.configContext),
     );
     if (result != null) {
       await _load();
       await _selectKey(result.id);
+    }
+  }
+
+  Future<void> _editKey(ApiKey key) async {
+    final result = await showDialog<ApiKey>(
+      context: context,
+      builder: (_) => AddApiKeyDialog(
+        existingKey: key,
+        configContext: widget.configContext,
+      ),
+    );
+    if (result != null) {
+      await _load();
     }
   }
 
@@ -92,6 +113,7 @@ class _ApiKeyListWidgetState extends State<ApiKeyListWidget> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final filteredKeys = _filteredKeys;
 
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
@@ -101,7 +123,7 @@ class _ApiKeyListWidgetState extends State<ApiKeyListWidget> {
       controller: widget.scrollController,
       padding: Theming.padding.onlyHorizontal(),
       children: [
-        if (_keys.isEmpty)
+        if (filteredKeys.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 32),
             child: Column(
@@ -122,12 +144,14 @@ class _ApiKeyListWidgetState extends State<ApiKeyListWidget> {
               ],
             ),
           ),
-        for (final key in _keys)
+        for (final key in filteredKeys)
           _ApiKeyTile(
             apiKey: key,
             isSelected: key.id == _selectedKeyId,
             onSelect: () => _selectKey(key.id),
+            onEdit: () => _editKey(key),
             onDelete: () => _deleteKey(key),
+            configContext: widget.configContext,
           ),
         const SizedBox(height: 8),
         FilledButton.tonalIcon(
@@ -144,18 +168,29 @@ class _ApiKeyTile extends StatelessWidget {
   final ApiKey apiKey;
   final bool isSelected;
   final VoidCallback onSelect;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final AiConfigContext configContext;
 
   const _ApiKeyTile({
     required this.apiKey,
     required this.isSelected,
     required this.onSelect,
+    required this.onEdit,
     required this.onDelete,
+    required this.configContext,
   });
+
+  String? get _modelDisplay {
+    return configContext == AiConfigContext.transcription
+        ? apiKey.transcriptionModel
+        : apiKey.postProcessingModel;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final model = _modelDisplay;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -189,12 +224,27 @@ class _ApiKeyTile extends StatelessWidget {
                         color: theme.colorScheme.onSurface.withAlpha(153),
                       ),
                     ),
+                    if (model != null && model.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        model,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary.withAlpha(179),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
               IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                onPressed: onEdit,
+                tooltip: 'Edit',
+              ),
+              IconButton(
                 icon: const Icon(Icons.delete_outline, size: 20),
                 onPressed: onDelete,
+                tooltip: 'Delete',
               ),
             ],
           ),

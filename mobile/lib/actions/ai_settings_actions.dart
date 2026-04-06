@@ -69,6 +69,9 @@ Future<ApiKey> createApiKey({
   required ApiKeyProvider provider,
   required String keyValue,
   String? baseUrl,
+  String? transcriptionModel,
+  String? postProcessingModel,
+  String? azureRegion,
 }) async {
   final keys = await loadApiKeys();
   final id = const Uuid().v4();
@@ -82,12 +85,57 @@ Future<ApiKey> createApiKey({
     keySuffix: suffix,
     createdAt: now,
     baseUrl: baseUrl,
+    transcriptionModel: transcriptionModel,
+    postProcessingModel: postProcessingModel,
+    azureRegion: azureRegion,
   );
 
   await _secureStorage.write(key: '$_secureKeyPrefix$id', value: keyValue);
   keys.add(apiKey);
   await _saveApiKeyList(keys);
   return apiKey;
+}
+
+Future<ApiKey> updateApiKey({
+  required String id,
+  required String name,
+  required ApiKeyProvider provider,
+  String? keyValue,
+  String? baseUrl,
+  String? transcriptionModel,
+  String? postProcessingModel,
+  String? azureRegion,
+}) async {
+  final keys = await loadApiKeys();
+  final index = keys.indexWhere((k) => k.id == id);
+  if (index == -1) throw Exception('API key not found');
+
+  final existing = keys[index];
+  String keySuffix = existing.keySuffix;
+
+  if (keyValue != null && keyValue.isNotEmpty) {
+    keySuffix = keyValue.length >= 4
+        ? keyValue.substring(keyValue.length - 4)
+        : keyValue;
+    await _secureStorage.write(key: '$_secureKeyPrefix$id', value: keyValue);
+  }
+
+  final updated = ApiKey(
+    id: id,
+    name: name,
+    provider: provider,
+    keySuffix: keySuffix,
+    createdAt: existing.createdAt,
+    baseUrl: baseUrl,
+    transcriptionModel: transcriptionModel,
+    postProcessingModel: postProcessingModel,
+    azureRegion: azureRegion,
+  );
+
+  keys[index] = updated;
+  await _saveApiKeyList(keys);
+  await syncKeyboardAiSettings();
+  return updated;
 }
 
 Future<void> deleteApiKey(String id) async {
@@ -148,9 +196,12 @@ Future<void> syncKeyboardAiSettings() async {
     String? transcriptionProvider;
     String? transcriptionApiKey;
     String? transcriptionBaseUrl;
+    String? transcriptionModel;
+    String? transcriptionAzureRegion;
     String? postProcessingProvider;
     String? postProcessingApiKey;
     String? postProcessingBaseUrl;
+    String? postProcessingModel;
 
     if (transcriptionMode == AiMode.api) {
       final keyId = await getSelectedTranscriptionKeyId();
@@ -161,6 +212,8 @@ Future<void> syncKeyboardAiSettings() async {
           transcriptionProvider = key.provider.serializedName;
           transcriptionApiKey = await getApiKeyValue(keyId);
           transcriptionBaseUrl = key.baseUrl;
+          transcriptionModel = key.transcriptionModel;
+          transcriptionAzureRegion = key.azureRegion;
         }
       }
     }
@@ -174,6 +227,7 @@ Future<void> syncKeyboardAiSettings() async {
           postProcessingProvider = key.provider.serializedName;
           postProcessingApiKey = await getApiKeyValue(keyId);
           postProcessingBaseUrl = key.baseUrl;
+          postProcessingModel = key.postProcessingModel;
         }
       }
     }
@@ -184,9 +238,12 @@ Future<void> syncKeyboardAiSettings() async {
       transcriptionProvider: transcriptionProvider,
       transcriptionApiKey: transcriptionApiKey,
       transcriptionBaseUrl: transcriptionBaseUrl,
+      transcriptionModel: transcriptionModel,
+      transcriptionAzureRegion: transcriptionAzureRegion,
       postProcessingProvider: postProcessingProvider,
       postProcessingApiKey: postProcessingApiKey,
       postProcessingBaseUrl: postProcessingBaseUrl,
+      postProcessingModel: postProcessingModel,
     );
   } catch (e) {
     _logger.w('Failed to sync AI settings to keyboard', e);

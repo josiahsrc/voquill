@@ -1145,7 +1145,9 @@ class KeyboardViewController: UIInputViewController {
            let provider = defaults.string(forKey: "voquill_ai_transcription_provider"),
            let apiKey = defaults.string(forKey: "voquill_ai_transcription_api_key") {
             let baseUrl = defaults.string(forKey: "voquill_ai_transcription_base_url")
-            return ByokTranscribeAudioRepo(apiKey: apiKey, provider: provider, baseUrl: baseUrl)
+            let model = defaults.string(forKey: "voquill_ai_transcription_model")
+            let azureRegion = defaults.string(forKey: "voquill_ai_transcription_azure_region")
+            return ByokTranscribeAudioRepo(apiKey: apiKey, provider: provider, baseUrl: baseUrl, modelOverride: model, azureRegion: azureRegion)
         }
         guard let config = config else { return nil }
         return CloudTranscribeAudioRepo(config: config)
@@ -1157,7 +1159,8 @@ class KeyboardViewController: UIInputViewController {
            let provider = defaults.string(forKey: "voquill_ai_post_processing_provider"),
            let apiKey = defaults.string(forKey: "voquill_ai_post_processing_api_key") {
             let baseUrl = defaults.string(forKey: "voquill_ai_post_processing_base_url")
-            return ByokGenerateTextRepo(apiKey: apiKey, provider: provider, baseUrl: baseUrl)
+            let model = defaults.string(forKey: "voquill_ai_post_processing_model")
+            return ByokGenerateTextRepo(apiKey: apiKey, provider: provider, baseUrl: baseUrl, modelOverride: model)
         }
         guard let config = config else { return nil }
         return CloudGenerateTextRepo(config: config)
