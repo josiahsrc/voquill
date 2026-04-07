@@ -45,7 +45,7 @@ hound = "3.5"
 base64 = "0.21"
 ferrous-focus = { git = "https://github.com/MichaelWGibson/ferrous-focus" }
 image = { version = "0.25.2", default-features = false, features = ["jpeg"] }
-rand = "0.8"
+rand = "0.9"
 sha2 = "0.10"
 url = "2"
 jsonwebtoken = "9"
