@@ -43,7 +43,7 @@
     "@voquill/utilities": "workspace:*",
     "@voquill/voice-ai": "workspace:*",
     "@stripe/react-stripe-js": "^3.7.0",
-    "@stripe/stripe-js": "^7.4.0",
+    "@stripe/stripe-js": "^9.1.0",
     "@tauri-apps/api": "~2.9.0",
     "@tauri-apps/plugin-autostart": "^2.5.1",
     "@tauri-apps/plugin-http": "^2.5.4",
