@@ -18,7 +18,7 @@
     "dist"
   ],
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.71.2",
+    "@anthropic-ai/sdk": "^0.82.0",
     "@azure/openai": "^2.0.0",
     "@google/genai": "^1.37.0",
     "@voquill/types": "workspace:*",
