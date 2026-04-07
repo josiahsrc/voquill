@@ -14,4 +14,4 @@ gtk-layer-shell = { version = "0.8", features = ["v0_5", "v0_6"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 pango = "0.18"
-pangocairo = "0.18"
+pangocairo = "0.22"
