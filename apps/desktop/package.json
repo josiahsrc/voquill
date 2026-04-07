@@ -58,7 +58,7 @@
     "firebase": "^11.10.0",
     "framer-motion": "^12.26.2",
     "immer": "^10.1.1",
-    "lodash-es": "^4.17.21",
+    "lodash-es": "^4.18.1",
     "mixpanel-browser": "^2.73.0",
     "react": "^19.1.0",
     "react-confetti": "^6.4.0",
