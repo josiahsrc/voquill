@@ -1,0 +1,79 @@
+version: 2
+updates:
+  # npm (pnpm) — root workspace
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  # Cargo — desktop app
+  - package-ecosystem: "cargo"
+    directory: "/apps/desktop/src-tauri"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      cargo-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  # Cargo — rust_transcription package
+  - package-ecosystem: "cargo"
+    directory: "/packages/rust_transcription"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      cargo-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  # Cargo — rust_macos_pill package
+  - package-ecosystem: "cargo"
+    directory: "/packages/rust_macos_pill"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Cargo — rust_windows_pill package
+  - package-ecosystem: "cargo"
+    directory: "/packages/rust_windows_pill"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Cargo — rust_gtk_pill package
+  - package-ecosystem: "cargo"
+    directory: "/packages/rust_gtk_pill"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Cargo — windows installer
+  - package-ecosystem: "cargo"
+    directory: "/apps/windows-installer/src-tauri"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Flutter — mobile app
+  - package-ecosystem: "pub"
+    directory: "/mobile"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
