@@ -10,7 +10,7 @@ dependencies = [
  "base64 0.21.7",
  "block",
  "chrono",
- "cocoa 0.24.1",
+ "cocoa 0.26.1",
  "core-foundation 0.10.1",
  "core-foundation-sys",
  "core-graphics 0.24.0",
