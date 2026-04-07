@@ -30,7 +30,7 @@ tokio = { version = "1", features = ["fs", "macros", "net", "rt-multi-thread", "
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 uuid = { version = "1", features = ["serde", "v4"] }
-whisper-rs = { version = "0.15.1", default-features = false, features = ["raw-api"] }
+whisper-rs = { version = "0.16.0", default-features = false, features = ["raw-api"] }
 
 [dev-dependencies]
 http-body-util = "0.1"
