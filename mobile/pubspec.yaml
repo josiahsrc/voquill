@@ -21,7 +21,7 @@ dependencies:
   flutter_animate: ^4.5.2
   intl: ^0.20.2
   collection: ^1.19.1
-  uuid: ^4.5.2
+  uuid: ^4.5.3
   gap: ^3.0.1
   font_awesome_flutter: ^10.12.0
   rxdart: ^0.28.0
