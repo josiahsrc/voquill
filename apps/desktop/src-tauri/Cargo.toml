@@ -48,7 +48,7 @@ image = { version = "0.25.2", default-features = false, features = ["jpeg"] }
 rand = "0.8"
 sha2 = "0.10"
 url = "2"
-jsonwebtoken = "9"
+jsonwebtoken = "10"
 dotenvy = "0.15"
 chrono = "0.4"
 tokio = { version = "1", features = ["time", "net", "io-util", "sync"] }
