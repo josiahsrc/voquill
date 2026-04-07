@@ -26,7 +26,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-intl": "^7.1.14",
-    "react-router-dom": "^6.30.1",
+    "react-router-dom": "^7.14.0",
     "react-virtuoso": "^4.18.1",
     "uuid": "^13.0.0",
     "zustand": "^4.5.7"
