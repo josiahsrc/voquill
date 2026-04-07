@@ -57,7 +57,7 @@
     "dayjs": "^1.11.13",
     "firebase": "^11.10.0",
     "framer-motion": "^12.26.2",
-    "immer": "^10.1.1",
+    "immer": "^11.1.4",
     "lodash-es": "^4.17.21",
     "mixpanel-browser": "^2.73.0",
     "react": "^19.1.0",
