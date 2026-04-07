@@ -54,7 +54,7 @@
     "@tauri-apps/plugin-sql": "^2",
     "@tauri-apps/plugin-updater": "~2.9.0",
     "chroma-js": "^3.2.0",
-    "dayjs": "^1.11.13",
+    "dayjs": "^1.11.20",
     "firebase": "^11.10.0",
     "framer-motion": "^12.26.2",
     "immer": "^10.1.1",
