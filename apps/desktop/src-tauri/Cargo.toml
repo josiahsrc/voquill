@@ -59,7 +59,7 @@ regex = "1"
 once_cell = "1"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-core-graphics = "0.24"
+core-graphics = "0.25"
 core-foundation = "0.10"
 cocoa = "0.24"
 objc = "0.2"
