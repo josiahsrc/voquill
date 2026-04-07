@@ -1,0 +1,29 @@
+[allowlist]
+description = "Public/non-secret values"
+paths = [
+  # Firebase client config (public by design, protected by security rules)
+  '''apps/desktop/\.env\.(dev|emulators|prod)''',
+  '''mobile/android/app/src/.*/google-services\.json''',
+  '''mobile/lib/config/firebase_options_.*\.dart''',
+  '''apps/desktop/src/main\.tsx''',
+
+  # Test files with mock/dummy API keys
+  '''apps/desktop/test/.*\.test\.ts''',
+  '''enterprise/gateway/test/.*\.test\.ts''',
+
+  # Docker compose config values (local dev, not real secrets)
+  '''config/docker-compose\.yml''',
+  '''enterprise/docker-compose\.yml''',
+
+  # Podfile.lock checksums (not secrets)
+  '''mobile/ios/Podfile\.lock''',
+
+  # GitHub Actions workflow (references ${{ secrets.* }}, not actual values)
+  '''\.github/workflows/.*\.yml''',
+
+  # Documentation examples
+  '''docs/.*\.md''',
+]
+regexes = [
+  '''pk_live_.*''',
+]
