@@ -1,0 +1,22 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import LeaderboardPage from '../../components/LeaderboardPage.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import { defaultLocale, type Locale } from '../../types/locale';
+import { t } from '../../i18n/translations';
+export { getLocaleStaticPaths as getStaticPaths } from '../../utils/paths';
+
+const locale = (Astro.params.locale ?? defaultLocale) as Locale;
+const i18n = t(locale);
+---
+
+<Layout
+	title="Leaderboard | Voquill"
+	description="See who's ditching the keyboard the most this week. Every word dictated is time reclaimed."
+	lang={locale}
+>
+	<Header locale={locale} />
+	<LeaderboardPage locale={locale} />
+	<SiteFooter locale={locale} />
+</Layout>

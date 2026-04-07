@@ -1,0 +1,398 @@
+---
+import type { Locale } from '../types/locale';
+import { localePath } from '../utils/paths';
+import DownloadButton from './DownloadButton.astro';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<main class="leaderboard-page">
+	<div class="leaderboard-hero">
+		<span class="lb-badge"><span class="lb-dot"></span> Updated live</span>
+		<h1>The voice leaderboard</h1>
+		<p>See who's ditching the keyboard the most this week. Every word dictated is time reclaimed.</p>
+	</div>
+
+	<div class="lb-toggle">
+		<button class="lb-toggle-btn active" data-period="weekly">Weekly</button>
+		<button class="lb-toggle-btn" data-period="monthly">Monthly</button>
+	</div>
+
+	<div class="lb-stats">
+		<div class="lb-stat-card">
+			<div class="lb-stat-number" id="s-words">&mdash;</div>
+			<div class="lb-stat-label" id="s-words-label">Words dictated this week</div>
+		</div>
+		<div class="lb-stat-card">
+			<div class="lb-stat-number" id="s-time">&mdash;</div>
+			<div class="lb-stat-label">Hours of typing saved</div>
+		</div>
+		<div class="lb-stat-card">
+			<div class="lb-stat-number" id="s-users">&mdash;</div>
+			<div class="lb-stat-label">Active dictators</div>
+		</div>
+	</div>
+
+	<div class="lb-grid">
+		<div class="lb-col">
+			<div class="lb-col-header">
+				<span class="lb-h-rank">#</span>
+				<span class="lb-h-user">User</span>
+				<span class="lb-h-saved">Saved</span>
+				<span class="lb-h-words">Words</span>
+			</div>
+			<div id="lb-rows"></div>
+		</div>
+	</div>
+
+	<div class="lb-cta">
+		<DownloadButton class="btn-primary btn-small" label="Start dictating" locale={locale} />
+	</div>
+</main>
+
+<script>
+	const API_BASE = 'http://localhost:6325';
+
+	function fmtNum(n: number) {
+		return n.toLocaleString('en-US');
+	}
+
+	function fmtSaved(mins: number) {
+		if (mins >= 60) return (mins / 60).toFixed(1) + ' h';
+		return mins + ' m';
+	}
+
+	type LeaderboardEntry = { initials: string; words: number; minutesSaved: number; streakDays: number };
+	type ApiResponse = { period: string; leaderboard: LeaderboardEntry[]; totalWords: number; totalMinutesSaved: number; activeUsers: number };
+
+	let currentPeriod = 'weekly';
+
+	async function loadLeaderboard(period: string) {
+		try {
+			const res = await fetch(API_BASE + '/v1/leaderboard?period=' + period);
+			if (!res.ok) throw new Error('API error');
+			const data: ApiResponse = await res.json();
+
+			const { leaderboard, totalWords, totalMinutesSaved, activeUsers } = data;
+
+			document.getElementById('s-words')!.textContent = fmtNum(totalWords);
+			document.getElementById('s-time')!.textContent = Math.round(totalMinutesSaved / 60) + ' h';
+			document.getElementById('s-users')!.textContent = fmtNum(activeUsers);
+			document.getElementById('s-words-label')!.textContent =
+				period === 'monthly' ? 'Words dictated this month' : 'Words dictated this week';
+
+			const rowsContainer = document.getElementById('lb-rows')!;
+			rowsContainer.innerHTML = '';
+
+			leaderboard.forEach((u, i) => {
+				const row = document.createElement('div');
+				row.className = 'lb-row';
+				row.innerHTML =
+					(i < 3
+						? '<span class="lb-medal lb-medal-' + (i + 1) + '">' + (i + 1) + '</span>'
+						: '<span class="lb-rank">' + (i + 1) + '</span>') +
+					'<span class="lb-name">' + u.initials + '</span>' +
+					'<span class="lb-saved">' + fmtSaved(u.minutesSaved) + '</span>' +
+					'<span class="lb-words">' + fmtNum(u.words) + '</span>';
+				rowsContainer.appendChild(row);
+			});
+		} catch (e) {
+			console.error('Failed to load leaderboard:', e);
+		}
+	}
+
+	document.querySelectorAll('.lb-toggle-btn').forEach((btn) => {
+		btn.addEventListener('click', () => {
+			const period = (btn as HTMLElement).dataset.period!;
+			if (period === currentPeriod) return;
+			currentPeriod = period;
+			document.querySelectorAll('.lb-toggle-btn').forEach((b) => b.classList.remove('active'));
+			btn.classList.add('active');
+			loadLeaderboard(period);
+		});
+	});
+
+	loadLeaderboard(currentPeriod);
+</script>
+
+<style>
+	.leaderboard-page {
+		max-width: min(960px, 100%);
+		margin: 0 auto;
+		padding-bottom: 48px;
+	}
+
+	/* ── Hero ── */
+	.leaderboard-hero {
+		text-align: center;
+		margin-bottom: 36px;
+	}
+
+	.lb-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 16px;
+		border-radius: 999px;
+		border: 1px solid rgba(34, 197, 94, 0.2);
+		background: rgba(34, 197, 94, 0.06);
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: #22c55e;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		margin-bottom: 20px;
+	}
+
+	.lb-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: #22c55e;
+		animation: lb-pulse 2s ease-in-out infinite;
+	}
+
+	@keyframes lb-pulse {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.3;
+		}
+	}
+
+	.leaderboard-hero h1 {
+		font-size: clamp(2rem, 4.5vw, 2.8rem);
+		font-weight: 700;
+		letter-spacing: -0.035em;
+		line-height: 1.1;
+		color: var(--text-strong);
+		margin-bottom: 12px;
+	}
+
+	.leaderboard-hero p {
+		font-size: 0.95rem;
+		color: var(--text-muted);
+		max-width: 460px;
+		margin: 0 auto;
+		line-height: 1.5;
+	}
+
+	/* ── Stats ── */
+	.lb-stats {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 12px;
+		margin-bottom: 40px;
+	}
+
+	.lb-stat-card {
+		background: var(--level1);
+		border: 1px solid var(--border);
+		border-radius: 16px;
+		padding: 28px 20px;
+		text-align: center;
+	}
+
+	.lb-stat-number {
+		font-size: clamp(1.8rem, 4.5vw, 2.5rem);
+		font-weight: 600;
+		color: var(--text-strong);
+		line-height: 1.2;
+		letter-spacing: -0.025em;
+	}
+
+	.lb-stat-label {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		margin-top: 6px;
+	}
+
+	/* ── Toggle ── */
+	.lb-toggle {
+		display: flex;
+		justify-content: center;
+		gap: 4px;
+		margin-bottom: 24px;
+		background: var(--level1);
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		padding: 4px;
+		width: fit-content;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.lb-toggle-btn {
+		padding: 8px 20px;
+		border-radius: 999px;
+		border: none;
+		background: transparent;
+		color: var(--text-muted);
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.lb-toggle-btn.active {
+		background: var(--level0);
+		color: var(--text-strong);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	}
+
+	/* ── Table ── */
+	.lb-grid {
+		max-width: 468px;
+		margin: 0 auto 32px;
+	}
+
+	.lb-col {
+		display: flex;
+		flex-direction: column;
+	}
+
+
+	.lb-col-header {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 0 16px 10px;
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--text-muted);
+	}
+
+	.lb-h-rank {
+		width: 24px;
+		flex-shrink: 0;
+		text-align: center;
+	}
+
+	.lb-h-user {
+		flex: 1;
+	}
+
+	.lb-h-saved {
+		flex: 1;
+		text-align: right;
+	}
+
+	.lb-h-words {
+		flex: 1;
+		text-align: right;
+	}
+
+	/* ── Row ── */
+	:global(.lb-row) {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 0 16px;
+		height: 64px;
+		border-bottom: 1px solid var(--border);
+		transition: background 0.15s ease;
+	}
+
+	:global(.lb-row:first-child) {
+		border-top: 1px solid var(--border);
+	}
+
+	:global(.lb-row:hover) {
+		background: var(--level1);
+	}
+
+	/* ── Rank ── */
+	:global(.lb-rank) {
+		font-size: 1.15rem;
+		font-weight: 500;
+		color: var(--text-muted);
+		width: 24px;
+		flex-shrink: 0;
+		text-align: center;
+	}
+
+	:global(.lb-medal) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 24px;
+		height: 24px;
+		border-radius: 6px;
+		font-size: 0.75rem;
+		font-weight: 700;
+		flex-shrink: 0;
+	}
+
+	:global(.lb-medal-1) {
+		background: rgba(250, 204, 21, 0.12);
+		color: #facc15;
+	}
+	:global(.lb-medal-2) {
+		background: rgba(161, 161, 170, 0.12);
+		color: #a1a1aa;
+	}
+	:global(.lb-medal-3) {
+		background: rgba(217, 119, 87, 0.12);
+		color: #d97757;
+	}
+
+	/* ── Name ── */
+	:global(.lb-name) {
+		font-size: 1.15rem;
+		font-weight: 600;
+		color: var(--text-strong);
+		flex: 1;
+	}
+
+	/* ── Saved ── */
+	:global(.lb-saved) {
+		font-size: 1.05rem;
+		font-weight: 500;
+		color: var(--text-muted);
+		flex: 1;
+		text-align: right;
+	}
+
+	/* ── Words ── */
+	:global(.lb-words) {
+		font-size: 1.15rem;
+		font-weight: 600;
+		color: var(--text-strong);
+		flex: 1;
+		text-align: right;
+	}
+
+	/* ── CTA ── */
+	.lb-cta {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* ── Responsive ── */
+	@media (max-width: 720px) {
+		.lb-stats {
+			grid-template-columns: 1fr;
+		}
+
+		.lb-grid {
+			max-width: 100%;
+		}
+	}
+
+	@media (max-width: 520px) {
+		.lb-cta {
+			flex-direction: column;
+			align-items: stretch;
+			text-align: center;
+		}
+	}
+</style>
