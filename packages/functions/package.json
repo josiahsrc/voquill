@@ -27,7 +27,7 @@
   "devDependencies": {
     "@voquill/typescript-config": "workspace:*",
     "firebase": "^11.1.0",
-    "typescript": "5.9.2"
+    "typescript": "5.9.3"
   },
   "publishConfig": {
     "access": "public"

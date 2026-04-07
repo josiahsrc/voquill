@@ -20,6 +20,6 @@
     "@voquill/typescript-config": "workspace:*",
     "@voquill/voice-ai": "workspace:*",
     "tsx": "^4.19.4",
-    "typescript": "5.9.2"
+    "typescript": "5.9.3"
   }
 }
