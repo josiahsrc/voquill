@@ -93,7 +93,7 @@
     "@wdio/spec-reporter": "^9.20.0",
     "babel-plugin-formatjs": "^10.5.41",
     "chromedriver": "^141.0.0",
-    "cross-env": "^7.0.3",
+    "cross-env": "^10.1.0",
     "dotenv": "^16.4.7",
     "oxlint": "^1.32.0",
     "prettier": "^3.7.4",
