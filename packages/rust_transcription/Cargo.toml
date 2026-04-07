@@ -21,7 +21,7 @@ path = "src/bin/gpu.rs"
 required-features = ["gpu"]
 
 [dependencies]
-axum = { version = "0.7", features = ["macros"] }
+axum = { version = "0.8", features = ["macros"] }
 futures-util = "0.3"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream", "json"] }
 serde = { version = "1", features = ["derive"] }
