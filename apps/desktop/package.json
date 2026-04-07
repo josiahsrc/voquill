@@ -74,7 +74,7 @@
     "vite-plugin-svgr": "^4.5.0",
     "zod": "^3.25.76",
     "zod-to-json-schema": "^3.24.6",
-    "zustand": "^4.5.2"
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@formatjs/cli": "^6.7.4",
