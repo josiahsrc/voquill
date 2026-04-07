@@ -9,8 +9,8 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^5.17.1",
+    "astro": "^5.18.1",
     "marked": "^16.4.2",
-    "mixpanel-browser": "^2.75.0"
+    "mixpanel-browser": "^2.77.0"
   }
 }

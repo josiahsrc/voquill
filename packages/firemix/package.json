@@ -22,11 +22,11 @@
   },
   "devDependencies": {
     "@voquill/typescript-config": "workspace:*",
-    "firebase": "^11.1.0",
+    "firebase": "^11.10.0",
     "typescript": "5.9.2"
   },
   "dependencies": {
-    "@firemix/core": "^0.1.7",
+    "@firemix/core": "^0.1.16",
     "@voquill/types": "workspace:*",
     "@voquill/utilities": "workspace:*"
   },

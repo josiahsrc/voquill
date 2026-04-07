@@ -10,9 +10,9 @@
     "test": "turbo run test"
   },
   "devDependencies": {
-    "prettier": "^3.6.2",
-    "turbo": "^2.5.8",
-    "typescript": "5.9.2"
+    "prettier": "^3.8.1",
+    "turbo": "^2.9.4",
+    "typescript": "6.0.2"
   },
   "engines": {
     "node": ">=18"
@@ -20,7 +20,9 @@
   "packageManager": "pnpm@10.11.0",
   "pnpm": {
     "overrides": {
-      "@types/react": "19.2.10"
+      "@types/react": "19.2.10",
+      "yaml": ">=2.8.3",
+      "serialize-javascript": ">=7.0.5"
     },
     "onlyBuiltDependencies": [
       "esbuild",

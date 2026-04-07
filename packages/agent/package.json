@@ -19,7 +19,7 @@
   "devDependencies": {
     "@voquill/typescript-config": "workspace:*",
     "@voquill/voice-ai": "workspace:*",
-    "tsx": "^4.19.4",
+    "tsx": "^4.21.0",
     "typescript": "5.9.2"
   }
 }

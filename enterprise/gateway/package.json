@@ -21,24 +21,24 @@
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "express": "^4.22.1",
-    "jose": "^6.0.11",
+    "jose": "^6.2.2",
     "jsonwebtoken": "^9.0.3",
-    "openai": "^6.17.0",
-    "pg": "^8.17.2",
+    "openai": "^6.33.0",
+    "pg": "^8.20.0",
     "uuid": "^8.3.2",
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@voquill/typescript-config": "workspace:*",
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
-    "@types/express": "^4.17.23",
+    "@types/express": "^4.17.25",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/pg": "^8.16.0",
+    "@types/pg": "^8.20.0",
     "@types/uuid": "^10.0.0",
-    "esbuild": "^0.25.11",
-    "nodemon": "^3.1.11",
+    "@voquill/typescript-config": "workspace:*",
+    "esbuild": "^0.25.12",
+    "nodemon": "^3.1.14",
     "typescript": "5.9.2",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.2"
   }
 }

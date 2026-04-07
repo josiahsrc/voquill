@@ -15,15 +15,15 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@voquill/typescript-config": "workspace:*",
     "@types/json-schema": "^7.0.15",
+    "@voquill/typescript-config": "workspace:*",
     "typescript": "5.9.2"
   },
   "files": [
     "dist"
   ],
   "dependencies": {
-    "@firemix/core": "^0.1.7",
+    "@firemix/core": "^0.1.16",
     "zod": "^3.25.76"
   },
   "publishConfig": {
