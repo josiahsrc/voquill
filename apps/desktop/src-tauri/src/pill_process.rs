@@ -1,6 +1,8 @@
 use std::io::{BufRead, Write};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
+use std::sync::mpsc::RecvTimeoutError;
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 use tauri::{Emitter, Manager};
 
 use crate::domain::{OverlayPhase, PillWindowSize};
@@ -25,6 +27,7 @@ impl PillProcess {
 }
 
 pub fn try_spawn_pill(app: &tauri::AppHandle, pill_path: &std::path::Path) -> bool {
+    let spawn_time = Instant::now();
     log::info!("Spawning pill overlay from: {}", pill_path.display());
 
     let mut child = match Command::new(pill_path)
@@ -56,10 +59,9 @@ pub fn try_spawn_pill(app: &tauri::AppHandle, pill_path: &std::path::Path) -> bo
         }
     };
 
-    let reader = match wait_for_ready(stdout) {
+    let reader = match wait_for_ready(stdout, &mut child) {
         Some(reader) => reader,
         None => {
-            log::warn!("Pill overlay did not report ready");
             let _ = child.kill();
             return false;
         }
@@ -74,7 +76,10 @@ pub fn try_spawn_pill(app: &tauri::AppHandle, pill_path: &std::path::Path) -> bo
 
     start_stdout_reader(app.clone(), reader);
 
-    log::info!("Native pill overlay is active");
+    log::info!(
+        "Native pill overlay is active (initialized in {:.1}s)",
+        spawn_time.elapsed().as_secs_f64()
+    );
     true
 }
 
@@ -173,7 +178,10 @@ pub fn resolve_pill_binary_in_dev(
     None
 }
 
-fn wait_for_ready(stdout: ChildStdout) -> Option<std::io::BufReader<ChildStdout>> {
+fn wait_for_ready(
+    stdout: ChildStdout,
+    child: &mut Child,
+) -> Option<std::io::BufReader<ChildStdout>> {
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         let mut reader = std::io::BufReader::new(stdout);
@@ -195,9 +203,26 @@ fn wait_for_ready(stdout: ChildStdout) -> Option<std::io::BufReader<ChildStdout>
         }
     });
 
-    rx.recv_timeout(std::time::Duration::from_secs(5))
-        .ok()
-        .flatten()
+    let deadline = Instant::now() + Duration::from_secs(30);
+    loop {
+        match rx.recv_timeout(Duration::from_millis(500)) {
+            Ok(result) => return result,
+            Err(RecvTimeoutError::Disconnected) => {
+                log::warn!("Pill overlay reader thread died");
+                return None;
+            }
+            Err(RecvTimeoutError::Timeout) => {
+                if let Ok(Some(status)) = child.try_wait() {
+                    log::warn!("Pill overlay exited before ready (status: {status})");
+                    return None;
+                }
+                if Instant::now() >= deadline {
+                    log::warn!("Pill overlay did not report ready (timed out after 30s)");
+                    return None;
+                }
+            }
+        }
+    }
 }
 
 fn start_stdout_reader(app: tauri::AppHandle, reader: std::io::BufReader<ChildStdout>) {
