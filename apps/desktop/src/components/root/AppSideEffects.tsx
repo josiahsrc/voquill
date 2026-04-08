@@ -16,6 +16,7 @@ import { useIntl } from "react-intl";
 import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { loadPairedRemoteDevices } from "../../actions/paired-remote-device.actions";
+import { pasteLastTranscription } from "../../actions/paste-last-transcription.actions";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import {
   refreshRemoteReceiverStatus,
@@ -61,7 +62,11 @@ import {
 } from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 import { createId } from "../../utils/id.utils";
-import { ADD_TO_DICTIONARY_HOTKEY } from "../../utils/keyboard.utils";
+import {
+  ADD_TO_DICTIONARY_HOTKEY,
+  getIsPasteLastTranscriptionHotkeyEnabled,
+  PASTE_LAST_TRANSCRIPTION_HOTKEY,
+} from "../../utils/keyboard.utils";
 import { getLogger, initLogging } from "../../utils/log.utils";
 import { sendPillFlashMessage } from "../../utils/overlay.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
@@ -145,6 +150,9 @@ export const AppSideEffects = () => {
   const prefs = useAppStore((state) => getMyUserPreferences(state));
   const keyPermAuthorized = useAppStore((state) =>
     isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state),
+  );
+  const pasteLastTranscriptionHotkeyEnabled = useAppStore(
+    getIsPasteLastTranscriptionHotkeyEnabled,
   );
 
   const hotkeyStrategy = useAppStore((state) => state.hotkeyStrategy);
@@ -585,6 +593,12 @@ export const AppSideEffects = () => {
     actionName: ADD_TO_DICTIONARY_HOTKEY,
     isDisabled: false,
     onFire: handleAddToDictionary,
+  });
+
+  useHotkeyFire({
+    actionName: PASTE_LAST_TRANSCRIPTION_HOTKEY,
+    isDisabled: !pasteLastTranscriptionHotkeyEnabled,
+    onFire: pasteLastTranscription,
   });
 
   // You cannot refresh the page in Tauri, here's a hotkey to help with that

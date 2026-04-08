@@ -22,6 +22,8 @@ export type HotkeySettingProps = {
   buttonSize?: "small" | "medium";
   enabled?: boolean;
   onEnabledChange?: (enabled: boolean) => void;
+  suggestedKeys?: string[];
+  deleteOnDisable?: boolean;
 };
 
 const areCombosEqual = (a: string[], b: string[]) =>
@@ -40,6 +42,8 @@ export const HotkeySetting = ({
   buttonSize = "small",
   enabled,
   onEnabledChange,
+  suggestedKeys,
+  deleteOnDisable = false,
 }: HotkeySettingProps) => {
   const hasEnabledToggle = enabled !== undefined;
   const isEnabled = enabled ?? true;
@@ -102,26 +106,51 @@ export const HotkeySetting = ({
     }
   };
 
-  const handleDeleteHotkey = async (id: string) => {
+  const deleteHotkeys = async (hotkeysToDelete: Hotkey[]) => {
+    if (hotkeysToDelete.length === 0) {
+      return;
+    }
+
+    const deletedIds = new Set(hotkeysToDelete.map((hotkey) => hotkey.id));
+    let updatedState = false;
     try {
       produceAppState((draft) => {
-        delete draft.hotkeyById[id];
+        for (const id of deletedIds) {
+          delete draft.hotkeyById[id];
+        }
         draft.settings.hotkeyIds = draft.settings.hotkeyIds.filter(
-          (hid) => hid !== id,
+          (id) => !deletedIds.has(id),
         );
       });
-      await getHotkeyRepo().deleteHotkey(id);
-      await syncHotkeyCombosToNative();
+      updatedState = true;
+      await Promise.all(
+        hotkeysToDelete.map((hotkey) =>
+          getHotkeyRepo().deleteHotkey(hotkey.id),
+        ),
+      );
     } catch (error) {
       console.error("Failed to delete hotkey", error);
       showErrorSnackbar("Failed to delete hotkey. Please try again.");
+    } finally {
+      if (updatedState) {
+        await syncHotkeyCombosToNative();
+      }
     }
+  };
+
+  const handleDeleteHotkey = async (id: string) => {
+    await deleteHotkeys(hotkeys.filter((hotkey) => hotkey.id === id));
+  };
+
+  const deleteHotkeysForAction = async () => {
+    await deleteHotkeys(hotkeys);
   };
 
   const [primaryHotkey, ...additionalHotkeys] = hotkeys;
   const showDefaultAsPrimary = !primaryHotkey && defaultCombos.length > 0;
   const primaryValue =
-    primaryHotkey?.keys ?? (showDefaultAsPrimary ? defaultCombos[0] : []);
+    primaryHotkey?.keys ??
+    (showDefaultAsPrimary ? defaultCombos[0] : (suggestedKeys ?? []));
   const isPrimaryUsingDefault =
     primaryHotkey != null &&
     defaultCombos.some((combo) => areCombosEqual(combo, primaryHotkey.keys));
@@ -152,14 +181,24 @@ export const HotkeySetting = ({
     const newEnabled = event.target.checked;
     onEnabledChange?.(newEnabled);
 
-    // When enabling, set up a default hotkey if none exists
-    if (newEnabled && !primaryHotkey && defaultCombos.length > 0) {
-      void saveKey(undefined, defaultCombos[0]);
+    if (!newEnabled) {
+      if (deleteOnDisable) {
+        void deleteHotkeysForAction();
+      }
+      return;
+    }
+
+    const keys = defaultCombos[0] ?? suggestedKeys;
+    if (!primaryHotkey && keys && keys.length > 0) {
+      void saveKey(undefined, keys);
     }
   };
 
   const handleDisable = () => {
     onEnabledChange?.(false);
+    if (deleteOnDisable) {
+      void deleteHotkeysForAction();
+    }
   };
 
   return (

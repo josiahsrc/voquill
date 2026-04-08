@@ -17,13 +17,19 @@ import {
   AGENT_DICTATE_HOTKEY,
   CANCEL_TRANSCRIPTION_HOTKEY,
   DICTATE_HOTKEY,
+  getIsPasteLastTranscriptionHotkeyEnabled,
   OPEN_CHAT_HOTKEY,
+  PASTE_LAST_TRANSCRIPTION_HOTKEY,
+  PASTE_LAST_TRANSCRIPTION_SUGGESTED_KEYS,
   SWITCH_WRITING_STYLE_HOTKEY,
 } from "../../utils/keyboard.utils";
 import { HotkeySetting } from "./HotkeySetting";
 
 export const ShortcutsDialog = () => {
   const isAssistantModeEnabled = useAppStore(getIsAssistantModeEnabled);
+  const pasteLastTranscriptionHotkeyEnabled = useAppStore(
+    getIsPasteLastTranscriptionHotkeyEnabled,
+  );
   const { open, hotkeysStatus, isManualStyling } = useAppStore((state) => ({
     open: state.settings.shortcutsDialogOpen,
     hotkeysStatus: state.settings.hotkeysStatus,
@@ -74,6 +80,16 @@ export const ShortcutsDialog = () => {
             <FormattedMessage defaultMessage="Cancel the current dictation or agent session." />
           }
           actionName={CANCEL_TRANSCRIPTION_HOTKEY}
+        />
+        <HotkeySetting
+          title={<FormattedMessage defaultMessage="Paste last dictation" />}
+          description={
+            <FormattedMessage defaultMessage="Insert your most recent saved dictation into the focused text field." />
+          }
+          actionName={PASTE_LAST_TRANSCRIPTION_HOTKEY}
+          enabled={pasteLastTranscriptionHotkeyEnabled}
+          suggestedKeys={PASTE_LAST_TRANSCRIPTION_SUGGESTED_KEYS}
+          deleteOnDisable
         />
         <HotkeySetting
           title={<FormattedMessage defaultMessage="Open chat" />}

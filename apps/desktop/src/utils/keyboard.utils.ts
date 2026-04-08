@@ -11,7 +11,14 @@ export const SWITCH_WRITING_STYLE_HOTKEY = "switch-writing-style";
 export const CANCEL_TRANSCRIPTION_HOTKEY = "cancel-transcription";
 export const OPEN_CHAT_HOTKEY = "open-chat";
 export const ADD_TO_DICTIONARY_HOTKEY = "add-to-dictionary";
+export const PASTE_LAST_TRANSCRIPTION_HOTKEY = "paste-last-transcription";
 export const ADDITIONAL_LANGUAGE_HOTKEY_PREFIX = "additional-language:";
+
+export const PASTE_LAST_TRANSCRIPTION_SUGGESTED_KEYS = [
+  "Alt",
+  "ShiftLeft",
+  "KeyZ",
+];
 
 type CompositorBinding = {
   actionName: string;
@@ -23,6 +30,7 @@ const COMPOSITOR_TRIGGER_ACTIONS = [
   AGENT_DICTATE_HOTKEY,
   SWITCH_WRITING_STYLE_HOTKEY,
   CANCEL_TRANSCRIPTION_HOTKEY,
+  PASTE_LAST_TRANSCRIPTION_HOTKEY,
 ];
 
 export const getAdditionalLanguageActionName = (language: string): string =>
@@ -144,6 +152,21 @@ export const getHotkeyCombosForAction = (
   }
 
   return getDefaultHotkeyCombosForAction(actionName);
+};
+
+export const getHasUserHotkeyForAction = (
+  state: Pick<AppState, "hotkeyById">,
+  actionName: string,
+): boolean => {
+  return Object.values(state.hotkeyById).some(
+    (hotkey) => hotkey.actionName === actionName && hotkey.keys.length > 0,
+  );
+};
+
+export const getIsPasteLastTranscriptionHotkeyEnabled = (
+  state: Pick<AppState, "hotkeyById">,
+): boolean => {
+  return getHasUserHotkeyForAction(state, PASTE_LAST_TRANSCRIPTION_HOTKEY);
 };
 
 export type AdditionalLanguageEntry = {
