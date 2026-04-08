@@ -1,12 +1,17 @@
 import { Typography } from "@mui/material";
 import { Stack } from "@mui/system";
 import { FormattedMessage } from "react-intl";
-import { useAppStore } from "../../store";
+import { produceAppState, useAppStore } from "../../store";
 import {
   DICTATE_HOTKEY,
   getHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
 import { HotkeyBadge } from "./HotkeyBadge";
+
+const openShortcuts = () =>
+  produceAppState((draft) => {
+    draft.settings.shortcutsDialogOpen = true;
+  });
 
 export const DictationInstruction = () => {
   const firstCombo = useAppStore((state) => {
@@ -23,7 +28,11 @@ export const DictationInstruction = () => {
       <Typography variant="body2" color="text.secondary" component="div">
         <FormattedMessage defaultMessage="Press your hotkey to dictate anywhere" />
       </Typography>
-      <HotkeyBadge keys={firstCombo} sx={{ flexShrink: 0 }} />
+      <HotkeyBadge
+        keys={firstCombo}
+        onClick={openShortcuts}
+        sx={{ flexShrink: 0 }}
+      />
     </Stack>
   );
 };
