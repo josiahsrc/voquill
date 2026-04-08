@@ -84,7 +84,7 @@ export const groqTranscribeAudio = async ({
         file,
         model,
         prompt,
-        language: language ?? "en",
+        language: language && language !== "auto" ? language : undefined,
       });
 
       if (!response.text) {

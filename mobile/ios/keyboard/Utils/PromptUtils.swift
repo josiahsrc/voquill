@@ -43,7 +43,8 @@ func buildLocalizedTranscriptionPrompt(termIds: [String], termById: [String: Sha
     }
 }
 
-func mapDictationLanguageToWhisperLanguage(_ language: String) -> String {
+func mapDictationLanguageToWhisperLanguage(_ language: String) -> String? {
+    if language == "auto" { return nil }
     return language.components(separatedBy: "-").first ?? language
 }
 

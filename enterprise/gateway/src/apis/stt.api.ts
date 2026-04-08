@@ -35,7 +35,7 @@ export class GroqSttApi extends BaseSttApi {
       file,
       model: this.model,
       prompt: input.prompt ?? undefined,
-      language: input.language,
+      language: input.language === "auto" ? undefined : input.language,
     });
     return { text: result.text };
   }
@@ -72,7 +72,7 @@ export class SpeachesSttApi extends BaseSttApi {
       file,
       model: this.model,
       prompt: input.prompt ?? undefined,
-      language: input.language,
+      language: input.language === "auto" ? undefined : input.language,
     });
     return { text: result.text };
   }

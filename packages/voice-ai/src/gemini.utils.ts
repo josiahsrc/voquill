@@ -113,7 +113,7 @@ export const geminiTranscribeAudio = async ({
       const base64Audio = btoa(binary);
 
       let transcriptionPrompt = "Transcribe this audio accurately.";
-      if (language) {
+      if (language && language !== "auto") {
         transcriptionPrompt += ` The audio is in ${language}.`;
       }
       if (prompt) {

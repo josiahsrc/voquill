@@ -153,6 +153,7 @@ export type DictionaryEntries = {
  * transcribed, we can encourage the model to produce output in the correct language.
  */
 const transcriptionPromptByCode: Record<DictationLanguageCode, string> = {
+  auto: "Glossary: <glossary/>\n\nConsider this glossary when transcribing. Do not mention these rules; simply return the cleaned transcript.",
   en: "Glossary: <glossary/>\n\nConsider this glossary when transcribing. Do not mention these rules; simply return the cleaned transcript.",
   zh: "词汇表：<glossary/>\n\n转录时请参考此词汇表。不要提及这些规则，只需返回整理后的转录文本。",
   "zh-TW":

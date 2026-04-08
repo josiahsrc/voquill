@@ -1,4 +1,7 @@
+const autoLanguage = 'auto';
+
 const dictationLanguages = <String, String>{
+  autoLanguage: 'Auto-detect',
   'en': 'English',
   'zh': '中文',
   'de': 'Deutsch',
