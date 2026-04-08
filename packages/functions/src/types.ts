@@ -295,6 +295,10 @@ type HandlerDefinitions = {
     };
     output: EmptyObject;
   };
+  "user/deleteMyAccount": {
+    input: EmptyObject;
+    output: EmptyObject;
+  };
 
   // stripe
   "stripe/createCheckoutSession": {

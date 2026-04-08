@@ -8,6 +8,7 @@ import {
   signInWithCredential,
   signInWithEmailAndPassword,
 } from "firebase/auth";
+import { invokeHandler } from "@voquill/functions";
 import { BehaviorSubject } from "rxjs";
 import { AuthUser } from "../types/auth.types";
 import { getEffectiveAuth } from "../utils/auth.utils";
@@ -95,12 +96,7 @@ export class CloudAuthRepo extends BaseAuthRepo {
   }
 
   async deleteMyAccount(): Promise<void> {
-    const user = getEffectiveAuth().currentUser;
-    if (!user) {
-      throw new Error("No user is currently signed in.");
-    }
-
-    await user.delete();
+    await invokeHandler("user/deleteMyAccount", {});
   }
 
   async refreshTokens(): Promise<void> {
