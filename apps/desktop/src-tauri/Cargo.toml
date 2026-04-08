@@ -15,10 +15,10 @@ name = "desktop_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "=2.5.3", features = [] }
+tauri-build = { version = "=2.5.6", features = [] }
 
 [dependencies]
-tauri = { version = "=2.9.5", features = ["protocol-asset", "tray-icon", "image-png", "devtools", "macos-private-api"] }
+tauri = { version = "=2.10.3", features = ["protocol-asset", "tray-icon", "image-png", "devtools", "macos-private-api"] }
 tauri-plugin-log = "2"
 log = "0.4"
 tauri-plugin-autostart = "2"
