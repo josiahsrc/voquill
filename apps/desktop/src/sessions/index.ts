@@ -39,7 +39,11 @@ export const createTranscriptionSession = (
     }
   }
 
-  if (prefs.mode === "cloud" && !getIsEnterpriseEnabled()) {
+  if (
+    prefs.mode === "cloud" &&
+    !getIsEnterpriseEnabled() &&
+    !getAppState().local.accurateDictationEnabled
+  ) {
     return new NewServerTranscriptionSession();
   }
 
