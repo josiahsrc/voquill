@@ -159,11 +159,7 @@ fn handle_request(
         return Ok(None);
     }
 
-    respond(
-        stream,
-        200,
-        "<html><body><h1>You can close this window.</h1></body></html>",
-    )?;
+    respond(stream, 200, super::oauth_callback_page::success_html())?;
 
     Ok(Some(EnterpriseOidcPayload {
         token: token.unwrap().clone(),
