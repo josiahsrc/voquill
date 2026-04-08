@@ -138,7 +138,7 @@ class ByokTranscribeAudioRepo(
                 writeField("model", model)
                 writeField("response_format", "text")
                 if (prompt.isNotBlank()) writeField("prompt", prompt)
-                if (language.isNotBlank()) writeField("language", language)
+                if (language.isNotBlank() && language != "auto") writeField("language", language)
 
                 out.write("--$boundary--\r\n".toByteArray())
             }
@@ -218,7 +218,7 @@ class ByokTranscribeAudioRepo(
             }
 
             val region = azureRegion ?: "eastus"
-            val lang = language.ifBlank { "en-US" }
+            val lang = if (language.isBlank() || language == "auto") "en-US" else language
             val urlString = "https://$region.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=$lang&format=detailed"
 
             val response = postBytesSync(

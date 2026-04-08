@@ -6,6 +6,7 @@ export type LocalState = {
   lastSeenTrialExtensionClaimedAt: string | null;
   featureSeenAt: string | null;
   disablePillRewards: boolean;
+  accurateDictationEnabled?: boolean;
   hasHiddenTrialExtensionCard: boolean;
 };
 
@@ -17,5 +18,6 @@ export const INITIAL_LOCAL_STATE: LocalState = {
   lastSeenTrialExtensionClaimedAt: null,
   featureSeenAt: null,
   disablePillRewards: false,
+  accurateDictationEnabled: false,
   hasHiddenTrialExtensionCard: false,
 };

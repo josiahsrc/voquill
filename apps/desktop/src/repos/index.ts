@@ -97,6 +97,7 @@ import {
   AldeaTranscribeAudioRepo,
   AzureTranscribeAudioRepo,
   BaseTranscribeAudioRepo,
+  ElevenLabsTranscribeAudioRepo,
   EnterpriseTranscribeAudioRepo,
   GeminiTranscribeAudioRepo,
   GroqTranscribeAudioRepo,
@@ -438,6 +439,8 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
         baseUrl,
         model || "Systran/faster-whisper-large-v3",
       );
+    } else if (prefs.provider === "elevenlabs") {
+      repo = new ElevenLabsTranscribeAudioRepo(prefs.apiKeyValue);
     } else {
       repo = new GroqTranscribeAudioRepo(
         prefs.apiKeyValue,

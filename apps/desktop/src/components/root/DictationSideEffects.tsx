@@ -583,6 +583,7 @@ export const DictationSideEffects = () => {
         sessionRef.current = null;
         strategyRef.current = null;
         clearRecordingState();
+        abortRecording();
 
         hardResetHotkeyState();
         clearRecordingTimers();

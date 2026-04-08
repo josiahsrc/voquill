@@ -1329,6 +1329,7 @@ class VoquillIME : InputMethodService() {
     }
 
     private fun mapDictationLanguageToWhisperLanguage(language: String): String {
+        if (language == "auto") return "auto"
         return language.substringBefore("-")
     }
 

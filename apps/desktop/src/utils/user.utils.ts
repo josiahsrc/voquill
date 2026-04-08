@@ -24,6 +24,7 @@ import {
   getAllowsChangeTranscription,
 } from "./enterprise.utils";
 import {
+  AUTO_LANGUAGE,
   coerceToDictationLanguage,
   DictationLanguageCode,
   KEYBOARD_LAYOUT_LANGUAGE,
@@ -125,6 +126,9 @@ export const loadMyEffectiveDictationLanguage = async (
   state: AppState,
 ): Promise<DictationLanguageCode> => {
   let lang = getMyDictationLanguage(state);
+  if (lang === AUTO_LANGUAGE) {
+    return AUTO_LANGUAGE;
+  }
   if (lang === KEYBOARD_LAYOUT_LANGUAGE) {
     lang = await invoke<string>("get_keyboard_language").catch((e) => {
       console.error("Failed to get keyboard language:", e);
@@ -136,6 +140,9 @@ export const loadMyEffectiveDictationLanguage = async (
 };
 
 export const formatDictationLanguageCode = (language: string): string => {
+  if (language === AUTO_LANGUAGE) {
+    return "AUTO";
+  }
   const baseCode = language.split("-")[0];
   return baseCode.toUpperCase().slice(0, 2);
 };

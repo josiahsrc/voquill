@@ -237,11 +237,7 @@ fn handle_request(stream: &mut TcpStream, expected_state: &str) -> Result<Option
         return Ok(None);
     }
 
-    respond(
-        stream,
-        200,
-        "<html><body><h1>You can close this window.</h1></body></html>",
-    )?;
+    respond(stream, 200, super::oauth_callback_page::success_html())?;
     Ok(Some(code.unwrap().clone()))
 }
 

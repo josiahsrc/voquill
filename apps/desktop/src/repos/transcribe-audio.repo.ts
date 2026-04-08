@@ -4,6 +4,7 @@ import { batchAsync } from "@voquill/utilities";
 import {
   aldeaTranscribeAudio,
   azureTranscribeAudio,
+  elevenlabsTranscribeAudio,
   geminiTranscribeAudio,
   GeminiTranscriptionModel,
   groqTranscribeAudio,
@@ -397,6 +398,49 @@ export class AldeaTranscribeAudioRepo extends BaseTranscribeAudioRepo {
       text: transcript,
       metadata: {
         inferenceDevice: "API • Aldea",
+        modelSize: null,
+        transcriptionMode: "api",
+      },
+    };
+  }
+}
+
+export class ElevenLabsTranscribeAudioRepo extends BaseTranscribeAudioRepo {
+  private apiKey: string;
+
+  constructor(apiKey: string) {
+    super();
+    this.apiKey = apiKey;
+  }
+
+  protected getSegmentDurationSec(): number {
+    return 60;
+  }
+
+  protected getOverlapDurationSec(): number {
+    return 5;
+  }
+
+  protected getBatchChunkCount(): number {
+    return 3;
+  }
+
+  protected async transcribeSegment(
+    input: TranscribeSegmentInput,
+  ): Promise<TranscribeAudioOutput> {
+    const wavBuffer = buildWaveFile(input.samples, input.sampleRate);
+
+    const { text: transcript } = await elevenlabsTranscribeAudio({
+      apiKey: this.apiKey,
+      blob: wavBuffer,
+      ext: "wav",
+      language: input.language,
+    });
+
+    return {
+      text: transcript,
+      metadata: {
+        inferenceDevice: "API • ElevenLabs",
         modelSize: null,
         transcriptionMode: "api",
       },

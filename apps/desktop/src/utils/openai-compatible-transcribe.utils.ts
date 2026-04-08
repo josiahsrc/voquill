@@ -32,7 +32,7 @@ export const openaiCompatibleTranscribeAudio = async ({
   if (prompt) {
     formData.append("prompt", prompt);
   }
-  if (language) {
+  if (language && language !== "auto") {
     formData.append("language", language);
   }
 

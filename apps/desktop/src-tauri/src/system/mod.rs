@@ -6,6 +6,7 @@ pub mod diagnostics;
 pub mod enterprise_oidc;
 pub mod google_oauth;
 pub mod gpu;
+pub mod oauth_callback_page;
 pub mod models;
 pub mod paths;
 pub mod remote_receiver;

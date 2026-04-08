@@ -456,7 +456,7 @@ export class LocalTranscriptionSidecar extends BaseSidecar {
     return {
       model: input.model,
       sampleRate: input.sampleRate,
-      language: input.language,
+      language: input.language === "auto" ? undefined : input.language,
       initialPrompt: input.initialPrompt,
       deviceId,
     };

@@ -119,8 +119,11 @@ export const WHISPER_LANGUAGES = {
   yue: "粵語",
 };
 
+export const AUTO_LANGUAGE = "auto";
+
 /** These are all the supported languages. Anything not supported by Whisper needs to be post processed into the language of choice */
 export const DICTATION_LANGUAGES = {
+  [AUTO_LANGUAGE]: "Auto-detect",
   ...WHISPER_LANGUAGES,
 
   // chinese (Traditional Chinese (Taiwan), Traditional Chinese (Hong Kong), and Simplified Chinese)
@@ -246,6 +249,10 @@ export const ORDERED_DICTATION_LANGUAGES: DictationLanguageCode[] = [
 export const coerceToDictationLanguage = (
   language: string,
 ): DictationLanguageCode => {
+  if (language === AUTO_LANGUAGE) {
+    return AUTO_LANGUAGE;
+  }
+
   if (DICTATION_LANGUAGES[language as DictationLanguageCode]) {
     return language as DictationLanguageCode;
   }
@@ -266,6 +273,7 @@ const getKeyboardLayoutTranslation = () =>
   });
 
 export const DICTATION_LANGUAGE_OPTIONS: [string, string][] = [
+  [AUTO_LANGUAGE, DICTATION_LANGUAGES[AUTO_LANGUAGE]],
   [KEYBOARD_LAYOUT_LANGUAGE, getKeyboardLayoutTranslation()],
   ...ORDERED_DICTATION_LANGUAGES.map<[string, string]>((code) => [
     code,
@@ -289,6 +297,9 @@ export const resolveLocaleValue = (value?: string | null): Locale => {
 export const mapDictationLanguageToWhisperLanguage = (
   language: string,
 ): string => {
+  if (language === AUTO_LANGUAGE) {
+    return AUTO_LANGUAGE;
+  }
   const baseLanguage = language.split("-")[0];
   return baseLanguage;
 };

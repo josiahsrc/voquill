@@ -33,6 +33,7 @@ thread_local! {
 }
 
 pub fn run(receiver: Receiver<InMessage>) {
+    let t0 = Instant::now();
     unsafe {
         let _ = windows::Win32::UI::HiDpi::SetProcessDpiAwarenessContext(
             windows::Win32::UI::HiDpi::DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
@@ -67,8 +68,10 @@ pub fn run(receiver: Receiver<InMessage>) {
     };
 
     HWND_CELL.with(|c| c.set(hwnd));
+    eprintln!("[pill] window created in {:?}", t0.elapsed());
 
     let gfx = Gfx::new(WINDOW_W_TYPING, WINDOW_H_TYPING).expect("Failed to create D2D context");
+    eprintln!("[pill] D2D/DWrite initialized in {:?}", t0.elapsed());
 
     let state = PillState {
         phase: Cell::new(Phase::Idle),
@@ -136,12 +139,14 @@ pub fn run(receiver: Receiver<InMessage>) {
     RECEIVER.with(|r| *r.borrow_mut() = Some(receiver));
 
     create_edit_overlay(hinstance, hwnd);
+    eprintln!("[pill] edit overlay created in {:?}", t0.elapsed());
 
     unsafe {
         windows::Win32::Media::timeBeginPeriod(1);
         SetTimer(Some(hwnd), TIMER_CURSOR, 60, None);
     }
 
+    eprintln!("[pill] ready after {:?}", t0.elapsed());
     ipc::send(&OutMessage::Ready);
 
     unsafe {

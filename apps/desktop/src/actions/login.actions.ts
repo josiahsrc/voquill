@@ -46,15 +46,11 @@ export const submitSignIn = async (): Promise<void> => {
 export const submitSignInWithGoogle = async (): Promise<void> => {
   try {
     produceAppState((state) => {
-      state.login.status = "loading";
       state.login.errorMessage = "";
     });
     await invoke(GOOGLE_AUTH_COMMAND);
   } catch {
-    produceAppState((state) => {
-      state.login.errorMessage = "An error occurred while signing in.";
-      state.login.status = "idle";
-    });
+    // Timeout or user closed the OAuth window — no error shown, they can retry
   }
 };
 
@@ -156,7 +152,6 @@ export const submitSignInWithSso = async (
 ): Promise<void> => {
   try {
     produceAppState((state) => {
-      state.login.status = "loading";
       state.login.errorMessage = "";
     });
     const target = getEnterpriseTarget();
@@ -168,10 +163,7 @@ export const submitSignInWithSso = async (
       providerId,
     });
   } catch {
-    produceAppState((state) => {
-      state.login.errorMessage = "An error occurred while signing in with SSO.";
-      state.login.status = "idle";
-    });
+    // Timeout or user closed the OAuth window — no error shown, they can retry
   }
 };
 

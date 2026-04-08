@@ -474,7 +474,7 @@ class ByokDictationSession implements DictationSession {
       ..fields['response_format'] = 'text';
 
     if (prompt != null) request.fields['prompt'] = prompt;
-    if (_language != null) request.fields['language'] = _language!;
+    if (_language != null && _language != 'auto') request.fields['language'] = _language!;
 
     final response = await request.send();
     final body = await response.stream.bytesToString();
@@ -532,7 +532,7 @@ class ByokDictationSession implements DictationSession {
   Future<DictationResult> _finalizeAzure({String? prompt}) async {
     final wavBytes = _buildWav();
     final region = azureRegion ?? 'eastus';
-    final lang = _language ?? 'en-US';
+    final lang = (_language == null || _language == 'auto') ? 'en-US' : _language!;
     final url = Uri.parse(
       'https://$region.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=$lang&format=detailed',
     );

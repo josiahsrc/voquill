@@ -35,6 +35,7 @@ import {
   getAllowsMultiDeviceMode,
 } from "../../utils/enterprise.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
+import { getIsVoquillCloudUser } from "../../utils/member.utils";
 import {
   getEffectivePillVisibility,
   getMyUserPreferences,
@@ -56,6 +57,8 @@ export const MoreSettingsDialog = () => {
     showDictationLimitSetting,
     dictationLimitMinutes,
     disablePillRewards,
+    accurateDictationEnabled,
+    isCloudUser,
   ] = useAppStore((state) => {
     const prefs = getMyUserPreferences(state);
     const transcriptionPrefs = getTranscriptionPrefs(state);
@@ -71,6 +74,8 @@ export const MoreSettingsDialog = () => {
       shouldEnableDictationLimit(transcriptionPrefs.mode),
       getEffectiveDictationLimitMinutes(prefs),
       state.local.disablePillRewards,
+      state.local.accurateDictationEnabled,
+      getIsVoquillCloudUser(state),
     ] as const;
   });
   const [dictationLimitInput, setDictationLimitInput] = useState(
@@ -151,6 +156,14 @@ export const MoreSettingsDialog = () => {
   ) => {
     produceAppState((draft) => {
       draft.local.disablePillRewards = !event.target.checked;
+    });
+  };
+
+  const handleToggleAccurateDictation = (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    produceAppState((draft) => {
+      draft.local.accurateDictationEnabled = event.target.checked;
     });
   };
 
@@ -286,6 +299,22 @@ export const MoreSettingsDialog = () => {
               />
             }
           />
+
+          {isCloudUser && (
+            <SettingSection
+              title={<FormattedMessage defaultMessage="Accurate dictation" />}
+              description={
+                <FormattedMessage defaultMessage="Use a more accurate transcription engine for higher quality results." />
+              }
+              action={
+                <Switch
+                  edge="end"
+                  checked={accurateDictationEnabled}
+                  onChange={handleToggleAccurateDictation}
+                />
+              }
+            />
+          )}
 
           {showDictationLimitSetting && (
             <SettingSection
