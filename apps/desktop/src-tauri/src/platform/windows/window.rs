@@ -1,10 +1,25 @@
 use std::sync::mpsc;
-use tauri::WebviewWindow;
+use tauri::{Manager, WebviewWindow};
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
     BringWindowToTop, SetForegroundWindow, SetWindowPos, ShowWindow, HWND_NOTOPMOST, HWND_TOPMOST,
     SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, SW_RESTORE, SW_SHOW,
 };
+
+/// Keep the WebView2 rendering active after the host window is hidden.
+///
+/// When Tauri hides the OS window, WebView2 may internally suspend the
+/// renderer and stop dispatching IPC messages to JavaScript. This forces the
+/// controller's `IsVisible` flag back to `true` so background JS (e.g. global
+/// hotkey detection via `keys_held` events) keeps running while the app sits
+/// in the system tray.
+pub fn keep_webview_active(app_handle: &tauri::AppHandle, label: &str) {
+    if let Some(ww) = app_handle.get_webview_window(label) {
+        let _ = ww.with_webview(|webview| unsafe {
+            let _ = webview.controller().SetIsVisible(true);
+        });
+    }
+}
 
 pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
     let window_for_handle = window.clone();

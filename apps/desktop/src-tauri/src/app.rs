@@ -84,6 +84,11 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 if window.label() == "main" {
                     let _ = window.app_handle().save_window_state(StateFlags::SIZE | StateFlags::POSITION);
                     let _ = window.hide();
+                    // On Windows, force the WebView to stay active after hiding the window
+                    // so that background JS (global hotkey detection via keys_held events)
+                    // continues running while the app is minimized to the system tray.
+                    #[cfg(target_os = "windows")]
+                    crate::platform::window::keep_webview_active(window.app_handle(), "main");
                     #[cfg(target_os = "macos")]
                     {
                         if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
@@ -130,6 +135,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 if std::env::args().any(|arg| arg == AUTOSTART_HIDDEN_ARG) {
                     if let Some(main_window) = app.get_webview_window("main") {
                         let _ = main_window.hide();
+                        #[cfg(target_os = "windows")]
+                        crate::platform::window::keep_webview_active(app.handle(), "main");
                         #[cfg(target_os = "macos")]
                         {
                             if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
