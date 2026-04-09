@@ -79,23 +79,44 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 .build(),
         )
         .on_window_event(|window, event| {
-            if let WindowEvent::CloseRequested { api, .. } = event {
-                api.prevent_close();
-                if window.label() == "main" {
-                    let _ = window.app_handle().save_window_state(StateFlags::SIZE | StateFlags::POSITION);
-                    let _ = window.hide();
-                    // On Windows, force the WebView to stay active after hiding the window
-                    // so that background JS (global hotkey detection via keys_held events)
-                    // continues running while the app is minimized to the system tray.
-                    #[cfg(target_os = "windows")]
-                    crate::platform::window::keep_webview_active(window.app_handle(), "main");
-                    #[cfg(target_os = "macos")]
-                    {
-                        if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
-                            log::error!("Failed to hide dock icon: {err}");
+            match event {
+                WindowEvent::CloseRequested { api, .. } => {
+                    api.prevent_close();
+                    if window.label() == "main" {
+                        let _ = window.app_handle().save_window_state(StateFlags::SIZE | StateFlags::POSITION);
+                        let _ = window.hide();
+                        // On Windows, force the WebView to stay active after hiding the window
+                        // so that background JS (global hotkey detection via keys_held events)
+                        // continues running while the app is minimized to the system tray.
+                        #[cfg(target_os = "windows")]
+                        {
+                            crate::platform::window::keep_webview_active(window.app_handle(), "main");
+                            crate::platform::window::set_webview_keepalive(true);
+                        }
+                        #[cfg(target_os = "macos")]
+                        {
+                            if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
+                                log::error!("Failed to hide dock icon: {err}");
+                            }
                         }
                     }
                 }
+                // On Windows, WebView2 automatically freezes JS execution when the
+                // hosting window is occluded (fully covered by another window) or
+                // minimized. This breaks global hotkey detection via keys_held events.
+                // Counter this by re-asserting WebView visibility whenever focus is lost,
+                // and running a periodic keepalive to defeat ongoing occlusion detection.
+                #[cfg(target_os = "windows")]
+                WindowEvent::Focused(focused) => {
+                    if window.label() == "main" && !focused {
+                        crate::platform::window::keep_webview_active(window.app_handle(), "main");
+                        crate::platform::window::set_webview_keepalive(true);
+                    }
+                    if window.label() == "main" && *focused {
+                        crate::platform::window::set_webview_keepalive(false);
+                    }
+                }
+                _ => {}
             }
         })
         .setup(|app| {
@@ -136,7 +157,10 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                     if let Some(main_window) = app.get_webview_window("main") {
                         let _ = main_window.hide();
                         #[cfg(target_os = "windows")]
-                        crate::platform::window::keep_webview_active(app.handle(), "main");
+                        {
+                            crate::platform::window::keep_webview_active(app.handle(), "main");
+                            crate::platform::window::set_webview_keepalive(true);
+                        }
                         #[cfg(target_os = "macos")]
                         {
                             if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
@@ -145,6 +169,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                         }
                     }
                 }
+
+                #[cfg(target_os = "windows")]
+                crate::platform::window::start_webview_keepalive(app.handle());
 
                 crate::system::tray::setup_tray(app)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
