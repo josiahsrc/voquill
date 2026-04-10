@@ -2,10 +2,10 @@
 
 **Version 1.0**
 
-Copyright © 2025-present Handaptive LLC. All rights reserved.
+Copyright © 2025-present Voquill, Inc.. All rights reserved.
 
 This software and associated documentation files (the "Software") are the
-proprietary intellectual property of Handaptive LLC ("Licensor").
+proprietary intellectual property of Voquill, Inc. ("Licensor").
 
 ## 1. Definitions
 
@@ -46,7 +46,7 @@ For commercial licensing inquiries, contact: **enterprise@voquill.com**
 ## 4. Enterprise Configuration Key
 
 Use of the encrypted enterprise configuration ("Embedded Config") requires a
-valid, signed configuration key obtained directly from Handaptive LLC under an
+valid, signed configuration key obtained directly from Voquill, Inc. under an
 active commercial license agreement. Each configuration key is issued to a
 specific organization and may only be used by that organization.
 
