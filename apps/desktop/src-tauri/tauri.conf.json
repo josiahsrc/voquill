@@ -17,7 +17,8 @@
         "width": 900,
         "height": 610,
         "minWidth": 800,
-        "minHeight": 600
+        "minHeight": 600,
+        "additionalBrowserArgs": "--disable-features=CalculateNativeWinOcclusion --disable-renderer-backgrounding --disable-background-timer-throttling --disable-backgrounding-occluded-windows"
       }
     ],
     "security": {

@@ -41,11 +41,24 @@ pub fn set_webview_keepalive(active: bool) {
 /// controller's `IsVisible` flag back to `true` so background JS (e.g. global
 /// hotkey detection via `keys_held` events) keeps running while the app sits
 /// in the system tray.
+///
+/// IMPORTANT: WebView2 COM interfaces must be accessed from the main thread.
+/// Using `run_on_main_thread` ensures the `SetIsVisible` call actually takes
+/// effect instead of silently failing from a background thread.
 pub fn keep_webview_active(app_handle: &tauri::AppHandle, label: &str) {
     if let Some(ww) = app_handle.get_webview_window(label) {
-        let _ = ww.with_webview(|webview| unsafe {
-            let _ = webview.controller().SetIsVisible(true);
-        });
+        let window_for_main_thread = ww.clone();
+        if let Err(err) = ww.run_on_main_thread(move || {
+            if let Err(err) = window_for_main_thread.with_webview(|webview| unsafe {
+                if let Err(err) = webview.controller().SetIsVisible(true) {
+                    log::error!("Failed to keep WebView active: {err}");
+                }
+            }) {
+                log::error!("Failed to access WebView for keepalive: {err}");
+            }
+        }) {
+            log::error!("Failed to schedule WebView keepalive: {err}");
+        }
     }
 }
 
