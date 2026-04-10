@@ -1539,10 +1539,17 @@ pub async fn run_terminal_command(command: String) -> Result<RunTerminalCommandR
         } else {
             ("sh", "-c")
         };
-        let output = std::process::Command::new(shell)
-            .args([flag, &command])
-            .output()
-            .map_err(|err| err.to_string())?;
+        let mut cmd = std::process::Command::new(shell);
+        cmd.args([flag, &command]);
+
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+            cmd.creation_flags(CREATE_NO_WINDOW);
+        }
+
+        let output = cmd.output().map_err(|err| err.to_string())?;
 
         Ok(RunTerminalCommandResponse {
             stdout: String::from_utf8_lossy(&output.stdout).to_string(),

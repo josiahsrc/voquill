@@ -57,18 +57,6 @@ export const TrialEndedDialog = () => {
       hasFocusedRef.current = true;
       delayed(1000 * 4).then(() => {
         surfaceMainWindow();
-        // showToast({
-        //   title: intl.formatMessage({
-        //     defaultMessage: "Your Pro trial has ended",
-        //   }),
-        //   message: intl.formatMessage({
-        //     defaultMessage:
-        //       "Upgrade now to continue voice typing without any limits.",
-        //   }),
-        //   toastType: "info",
-        //   action: "surface_window",
-        //   duration: 8_000,
-        // });
       });
     }
 
