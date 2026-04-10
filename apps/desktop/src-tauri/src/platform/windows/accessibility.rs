@@ -110,24 +110,40 @@ fn try_is_text_input_focused() -> Result<bool, windows::core::Error> {
         let focused = automation.GetFocusedElement()?;
         let control_type = get_control_type(&focused);
 
-        if matches!(
-            control_type,
-            value if value == UIA_EditControlTypeId.0 || value == UIA_DocumentControlTypeId.0
-        ) {
+        // Edit controls are always text inputs (textboxes, search bars, etc.)
+        if control_type == UIA_EditControlTypeId.0 {
             return Ok(true);
         }
 
-        let text_pattern = focused.GetCurrentPattern(UIA_TextPatternId)?;
-        if !text_pattern.as_raw().is_null() {
-            return Ok(true);
+        // Document controls include browser page content areas, which are NOT
+        // editable unless they use contenteditable or designMode. Check
+        // ValuePattern.IsReadOnly to distinguish editable documents from
+        // read-only web pages.
+        if control_type == UIA_DocumentControlTypeId.0 {
+            return Ok(is_value_writable(&focused));
         }
 
-        let value_pattern = focused.GetCurrentPattern(UIA_ValuePatternId)?;
-        if !value_pattern.as_raw().is_null() {
+        // For other control types, only consider them text inputs if they
+        // expose ValuePattern and the value is writable.
+        if is_value_writable(&focused) {
             return Ok(true);
         }
 
         Ok(false)
+    }
+}
+
+fn is_value_writable(element: &IUIAutomationElement) -> bool {
+    unsafe {
+        let pattern = match element.GetCurrentPattern(UIA_ValuePatternId) {
+            Ok(p) if !p.as_raw().is_null() => p,
+            _ => return false,
+        };
+        let value_pattern: IUIAutomationValuePattern = match pattern.cast() {
+            Ok(vp) => vp,
+            Err(_) => return false,
+        };
+        matches!(value_pattern.CurrentIsReadOnly(), Ok(readonly) if !readonly.as_bool())
     }
 }
 

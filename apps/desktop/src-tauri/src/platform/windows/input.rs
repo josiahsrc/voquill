@@ -24,6 +24,11 @@ pub(crate) fn paste_text_into_focused_field(
         return Ok(crate::commands::PasteMethod::Clipboard);
     }
 
+    if !super::accessibility::is_text_input_focused() {
+        log::info!("No text input focused, signalling noTarget for clipboard fallback");
+        return Ok(crate::commands::PasteMethod::NoTarget);
+    }
+
     let override_text = env::var("VOQUILL_DEBUG_PASTE_TEXT").ok();
     let target = override_text.as_deref().unwrap_or(text);
     log::info!(
