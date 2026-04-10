@@ -17,6 +17,14 @@ use sqlx::Row;
 
 use crate::platform::input::paste_text_into_focused_field as platform_paste_text;
 
+#[derive(serde::Serialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub enum PasteMethod {
+    Accessibility,
+    Clipboard,
+    NoTarget,
+}
+
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StopRecordingResponse {
@@ -1260,7 +1268,16 @@ pub fn sync_native_pill_assistant(app: AppHandle, payload: String) {
 }
 
 #[tauri::command]
-pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> {
+pub fn copy_to_clipboard(text: String) -> Result<(), String> {
+    let mut clipboard =
+        arboard::Clipboard::new().map_err(|e| format!("clipboard unavailable: {e}"))?;
+    clipboard
+        .set_text(text)
+        .map_err(|e| format!("failed to set clipboard: {e}"))
+}
+
+#[tauri::command]
+pub async fn paste(text: String, keybind: Option<String>) -> Result<PasteMethod, String> {
     let join_result = tauri::async_runtime::spawn_blocking(move || {
         platform_paste_text(&text, keybind.as_deref())
     })
