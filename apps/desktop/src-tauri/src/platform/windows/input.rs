@@ -31,7 +31,7 @@ pub(crate) fn paste_text_into_focused_field(
         target.chars().count()
     );
 
-    paste_via_clipboard(target, keybind).or_else(|err| {
+    paste_via_clipboard(target, keybind).or_else(|err| -> Result<(), String> {
         log::warn!("Clipboard paste failed ({err}), falling back to simulated typing");
         use enigo::{Enigo, KeyboardControllable};
         let mut enigo = Enigo::new();
