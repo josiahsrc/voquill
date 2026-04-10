@@ -19,9 +19,9 @@ pub struct WindowTargetInfo {
 pub(crate) fn paste_text_into_focused_field(
     text: &str,
     keybind: Option<&str>,
-) -> Result<(), String> {
+) -> Result<crate::commands::PasteMethod, String> {
     if text.trim().is_empty() {
-        return Ok(());
+        return Ok(crate::commands::PasteMethod::Clipboard);
     }
 
     let override_text = env::var("VOQUILL_DEBUG_PASTE_TEXT").ok();
@@ -39,7 +39,8 @@ pub(crate) fn paste_text_into_focused_field(
         thread::sleep(Duration::from_millis(50));
         enigo.key_sequence(target);
         Ok(())
-    })
+    })?;
+    Ok(crate::commands::PasteMethod::Clipboard)
 }
 
 fn is_console_window() -> bool {
