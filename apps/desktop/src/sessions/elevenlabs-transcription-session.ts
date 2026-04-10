@@ -32,6 +32,26 @@ const getClosestSupportedSampleRate = (sampleRate: number): number => {
   return closest;
 };
 
+const resampleAudio = (
+  input: Float32Array,
+  inputRate: number,
+  outputRate: number,
+): Float32Array => {
+  if (inputRate === outputRate) return input;
+  const ratio = inputRate / outputRate;
+  const outputLength = Math.ceil(input.length / ratio);
+  const output = new Float32Array(outputLength);
+  for (let i = 0; i < outputLength; i++) {
+    const srcIndex = i * ratio;
+    const srcFloor = Math.floor(srcIndex);
+    const frac = srcIndex - srcFloor;
+    const a = input[srcFloor] ?? 0;
+    const b = input[Math.min(srcFloor + 1, input.length - 1)] ?? 0;
+    output[i] = a + frac * (b - a);
+  }
+  return output;
+};
+
 const getElevenLabsToken = async (apiKey: string): Promise<string> => {
   const response = await fetch(ELEVENLABS_TOKEN_URL, {
     method: "POST",
@@ -60,9 +80,10 @@ const startElevenLabsStreaming = async (
     ? inputSampleRate
     : getClosestSupportedSampleRate(inputSampleRate);
 
-  if (sampleRate !== inputSampleRate) {
+  const needsResample = sampleRate !== inputSampleRate;
+  if (needsResample) {
     console.warn(
-      `[ElevenLabs WebSocket] Sample rate ${inputSampleRate} not supported, using ${sampleRate}. Audio may be distorted.`,
+      `[ElevenLabs WebSocket] Sample rate ${inputSampleRate} not supported, resampling to ${sampleRate}.`,
     );
   }
 
@@ -294,10 +315,13 @@ const startElevenLabsStreaming = async (
             }
             if (ws && ws.readyState === WebSocket.OPEN && !isFinalized) {
               try {
-                const typedChunk =
+                const rawChunk =
                   event.payload.samples instanceof Float32Array
                     ? event.payload.samples
                     : Float32Array.from(event.payload.samples);
+                const typedChunk = needsResample
+                  ? resampleAudio(rawChunk, inputSampleRate, sampleRate)
+                  : rawChunk;
                 pendingChunks.push(typedChunk);
                 pendingSampleCount += typedChunk.length;
                 flushPendingSamples(false);

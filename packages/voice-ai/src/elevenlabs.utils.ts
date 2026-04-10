@@ -7,15 +7,19 @@ export type ElevenLabsTestIntegrationArgs = {
 export const elevenlabsTestIntegration = async ({
   apiKey,
 }: ElevenLabsTestIntegrationArgs): Promise<boolean> => {
-  try {
-    const response = await fetch("https://api.elevenlabs.io/v1/user", {
-      method: "GET",
-      headers: { "xi-api-key": apiKey },
-    });
-    return response.ok;
-  } catch {
-    return false;
+  const response = await fetch("https://api.elevenlabs.io/v1/user", {
+    method: "GET",
+    headers: { "xi-api-key": apiKey },
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(
+      detail
+        ? `ElevenLabs responded ${response.status}: ${detail}`
+        : `ElevenLabs responded with status ${response.status}`,
+    );
   }
+  return true;
 };
 
 export type ElevenLabsTranscriptionArgs = {
