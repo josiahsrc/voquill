@@ -43,9 +43,18 @@ pub fn set_webview_keepalive(active: bool) {
 /// in the system tray.
 pub fn keep_webview_active(app_handle: &tauri::AppHandle, label: &str) {
     if let Some(ww) = app_handle.get_webview_window(label) {
-        let _ = ww.with_webview(|webview| unsafe {
-            let _ = webview.controller().SetIsVisible(true);
-        });
+        let window_for_main_thread = ww.clone();
+        if let Err(err) = ww.run_on_main_thread(move || {
+            match window_for_main_thread
+                .with_webview(|webview| unsafe { webview.controller().SetIsVisible(true) })
+            {
+                Ok(Ok(())) => {}
+                Ok(Err(err)) => log::error!("Failed to keep WebView active: {err}"),
+                Err(err) => log::error!("Failed to access WebView for keepalive: {err}"),
+            }
+        }) {
+            log::error!("Failed to schedule WebView keepalive: {err}");
+        }
     }
 }
 
