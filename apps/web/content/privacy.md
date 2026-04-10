@@ -2,7 +2,7 @@
 
 _Last updated: February 24, 2026_
 
-This Privacy Policy explains how **Handaptive LLC** ("we," "us," or "our") collects, uses, and protects your information when you use the Voquill application, website, and related services (collectively, the "Service"). Voquill is designed with privacy in mind — your voice data is never retained, and your transcriptions stay on your device.
+This Privacy Policy explains how **Voquill, Inc.** ("we," "us," or "our") collects, uses, and protects your information when you use the Voquill application, website, and related services (collectively, the "Service"). Voquill is designed with privacy in mind — your voice data is never retained, and your transcriptions stay on your device.
 
 ## 1. Information We Collect
 
