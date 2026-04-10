@@ -1,4 +1,5 @@
-- Fix windows issue where hotkeys and pill wasn't working on some machines
+- Fix issue where Windows wouldn't paste into certain text fields
+- Fix issue where Windows hotkeys and pill weren't working on some machines
 - Improve login UI
 - Copy text to clipboard if paste fails (Windows/MacOS)
 - Add "Auto" language detection option to settings
