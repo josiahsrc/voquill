@@ -294,6 +294,7 @@ class DictationService {
         case .began:
             NSLog("[VoquillApp] Audio session interrupted (e.g. phone call)")
             stopRecordingTimeout()
+            stopIdleTimeout()
             isRecording = false
             audioFile = nil
             defaults?.set(Float(0), forKey: DictationConstants.audioLevelKey)
