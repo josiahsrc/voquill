@@ -269,27 +269,31 @@ Future<void> downloadLocalTranscriptionModel(String slug) async {
   }
 }
 
-Future<void> deleteLocalTranscriptionModel(String slug) async {
-  if (!_canSync) return;
+Future<bool> deleteLocalTranscriptionModel(String slug) async {
+  if (!_canSync) return false;
 
   try {
     await _sharedChannel.invokeMethod('deleteLocalTranscriptionModel', {
       'slug': slug,
     });
+    return true;
   } catch (e) {
     _logger.w('Failed to delete local transcription model', e);
+    return false;
   }
 }
 
-Future<void> selectLocalTranscriptionModel(String slug) async {
-  if (!_canSync) return;
+Future<bool> selectLocalTranscriptionModel(String slug) async {
+  if (!_canSync) return false;
 
   try {
     await _sharedChannel.invokeMethod('selectLocalTranscriptionModel', {
       'slug': slug,
     });
+    return true;
   } catch (e) {
     _logger.w('Failed to select local transcription model', e);
+    return false;
   }
 }
 

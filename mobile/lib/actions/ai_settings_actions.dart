@@ -37,9 +37,13 @@ Future<AiMode> getTranscriptionMode() async {
   return AiMode.cloud;
 }
 
-Future<void> setTranscriptionMode(AiMode mode) async {
+Future<void> _persistTranscriptionMode(AiMode mode) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(_kTranscriptionMode, mode.name);
+}
+
+Future<void> setTranscriptionMode(AiMode mode) async {
+  await _persistTranscriptionMode(mode);
   await syncKeyboardAiSettings();
 }
 
@@ -217,12 +221,30 @@ Future<void> downloadLocalTranscriptionModel(String slug) {
   return channel_utils.downloadLocalTranscriptionModel(slug);
 }
 
-Future<void> deleteLocalTranscriptionModel(String slug) {
-  return channel_utils.deleteLocalTranscriptionModel(slug);
+Future<bool> _isSelectedLocalTranscriptionModel(String slug) async {
+  final models = await listLocalTranscriptionModels();
+  return models.where((model) => model.slug == slug).firstOrNull?.selected == true;
 }
 
-Future<void> selectLocalTranscriptionModel(String slug) {
-  return channel_utils.selectLocalTranscriptionModel(slug);
+Future<void> deleteLocalTranscriptionModel(String slug) async {
+  final wasSelected = await _isSelectedLocalTranscriptionModel(slug);
+  final didDelete = await channel_utils.deleteLocalTranscriptionModel(slug);
+  if (!didDelete) return;
+
+  if (wasSelected) {
+    // Native model lists only report selected=true when native transcription mode is local.
+    await _persistTranscriptionMode(AiMode.local);
+  }
+
+  await syncKeyboardAiSettings();
+}
+
+Future<void> selectLocalTranscriptionModel(String slug) async {
+  final didSelect = await channel_utils.selectLocalTranscriptionModel(slug);
+  if (!didSelect) return;
+
+  await _persistTranscriptionMode(AiMode.local);
+  await syncKeyboardAiSettings();
 }
 
 bool shouldClearTranscriptionModelForSync({
