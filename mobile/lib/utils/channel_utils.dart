@@ -244,3 +244,19 @@ Future<void> syncKeyboardDictationLanguages({
     _logger.w('Failed to sync keyboard dictation languages', e);
   }
 }
+
+Future<void> syncIdleTimeout({
+  required int timeoutSeconds,
+}) async {
+  if (!_canSync) {
+    return;
+  }
+
+  try {
+    await _sharedChannel.invokeMethod('setIdleTimeout', {
+      'timeoutSeconds': timeoutSeconds,
+    });
+  } catch (e) {
+    _logger.w('Failed to sync idle timeout', e);
+  }
+}
