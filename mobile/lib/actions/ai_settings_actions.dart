@@ -20,6 +20,14 @@ final _secureStorage = const FlutterSecureStorage(
   aOptions: AndroidOptions(encryptedSharedPreferences: true),
 );
 
+AiMode postProcessingModeForSync(AiMode mode) {
+  if (mode == AiMode.local) {
+    _logger.w('Syncing invalid local post-processing mode as cloud');
+    return AiMode.cloud;
+  }
+  return mode;
+}
+
 Future<AiMode> getTranscriptionMode() async {
   final prefs = await SharedPreferences.getInstance();
   final value = prefs.getString(_kTranscriptionMode);
@@ -38,10 +46,21 @@ Future<AiMode> getPostProcessingMode() async {
   final prefs = await SharedPreferences.getInstance();
   final value = prefs.getString(_kPostProcessingMode);
   if (value == AiMode.api.name) return AiMode.api;
+  if (value == AiMode.local.name) {
+    _logger.w('Found invalid local mode for post-processing');
+    return AiMode.local;
+  }
   return AiMode.cloud;
 }
 
 Future<void> setPostProcessingMode(AiMode mode) async {
+  if (mode == AiMode.local) {
+    throw ArgumentError.value(
+      mode,
+      'mode',
+      'Post-processing only supports cloud or api modes.',
+    );
+  }
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(_kPostProcessingMode, mode.name);
   await syncKeyboardAiSettings();
@@ -192,7 +211,10 @@ Future<String?> getApiKeyValue(String id) async {
 Future<void> syncKeyboardAiSettings() async {
   try {
     final transcriptionMode = await getTranscriptionMode();
-    final postProcessingMode = await getPostProcessingMode();
+    final storedPostProcessingMode = await getPostProcessingMode();
+    final postProcessingMode = postProcessingModeForSync(
+      storedPostProcessingMode,
+    );
 
     String? transcriptionProvider;
     String? transcriptionApiKey;

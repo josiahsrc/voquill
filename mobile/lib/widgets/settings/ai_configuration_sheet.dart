@@ -47,11 +47,24 @@ class _AiConfigurationSheetState extends State<AiConfigurationSheet> {
   }
 
   Future<void> _setMode(AiMode mode) async {
-    setState(() => _mode = mode);
-    if (widget.configContext == AiConfigContext.transcription) {
+    final isTranscription =
+        widget.configContext == AiConfigContext.transcription;
+    if (!isTranscription && mode == AiMode.local) {
+      throw ArgumentError.value(
+        mode,
+        'mode',
+        'Post-processing only supports cloud or api modes.',
+      );
+    }
+
+    if (isTranscription) {
       await setTranscriptionMode(mode);
     } else {
       await setPostProcessingMode(mode);
+    }
+
+    if (mounted) {
+      setState(() => _mode = mode);
     }
   }
 
@@ -62,7 +75,10 @@ class _AiConfigurationSheetState extends State<AiConfigurationSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isTranscription = widget.configContext == AiConfigContext.transcription;
+    final isTranscription =
+        widget.configContext == AiConfigContext.transcription;
+    final hasInvalidLocalPostProcessing =
+        !isTranscription && _mode == AiMode.local;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -91,7 +107,7 @@ class _AiConfigurationSheetState extends State<AiConfigurationSheet> {
             const SizedBox(height: 16),
             if (!_loading) ...[
               _ModeSelector(
-                mode: _mode,
+                mode: hasInvalidLocalPostProcessing ? null : _mode,
                 onChanged: _setMode,
                 includeLocal: isTranscription,
               ),
@@ -104,7 +120,10 @@ class _AiConfigurationSheetState extends State<AiConfigurationSheet> {
                   AiMode.local when isTranscription => _LocalContent(
                     scrollController: scrollController,
                   ),
-                  _ => ApiKeyListWidget(
+                  AiMode.local => _InvalidPostProcessingModeContent(
+                    scrollController: scrollController,
+                  ),
+                  AiMode.api => ApiKeyListWidget(
                     configContext: widget.configContext,
                     scrollController: scrollController,
                   ),
@@ -123,7 +142,7 @@ class _AiConfigurationSheetState extends State<AiConfigurationSheet> {
 }
 
 class _ModeSelector extends StatelessWidget {
-  final AiMode mode;
+  final AiMode? mode;
   final ValueChanged<AiMode> onChanged;
   final bool includeLocal;
 
@@ -144,8 +163,13 @@ class _ModeSelector extends StatelessWidget {
             const ButtonSegment(value: AiMode.local, label: Text('Local')),
           const ButtonSegment(value: AiMode.api, label: Text('API Key')),
         ],
-        selected: {mode},
-        onSelectionChanged: (selection) => onChanged(selection.first),
+        selected: mode == null ? const <AiMode>{} : {mode!},
+        emptySelectionAllowed: mode == null,
+        onSelectionChanged: (selection) {
+          if (selection.isNotEmpty) {
+            onChanged(selection.first);
+          }
+        },
         showSelectedIcon: false,
         style: SegmentedButton.styleFrom(
           visualDensity: VisualDensity.compact,
@@ -219,6 +243,43 @@ class _LocalContent extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           'Local transcription is selected. Model download and device setup controls will land in a follow-up task.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withAlpha(153),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}
+
+class _InvalidPostProcessingModeContent extends StatelessWidget {
+  final ScrollController scrollController;
+
+  const _InvalidPostProcessingModeContent({required this.scrollController});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return ListView(
+      controller: scrollController,
+      padding: Theming.padding,
+      children: [
+        Icon(
+          Icons.warning_amber_rounded,
+          size: 48,
+          color: theme.colorScheme.error,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Local post-processing is unavailable',
+          style: theme.textTheme.titleMedium,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Choose Cloud or API Key to continue.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurface.withAlpha(153),
           ),

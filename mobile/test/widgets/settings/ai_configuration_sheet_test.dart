@@ -51,4 +51,27 @@ void main() {
     expect(find.text('API Key'), findsOneWidget);
     expect(find.text('Local'), findsNothing);
   });
+
+  testWidgets('post-processing settings show invalid local state explicitly', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'ai_post_processing_mode': AiMode.local.name,
+    });
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: AiConfigurationSheet(
+            configContext: AiConfigContext.postProcessing,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Local post-processing is unavailable'), findsOneWidget);
+    expect(find.text('Choose Cloud or API Key to continue.'), findsOneWidget);
+    expect(find.byType(ApiKeyListWidget), findsNothing);
+  });
 }
