@@ -6,150 +6,13 @@ import android.content.res.Configuration
 import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
 import com.voquill.flutter_video_looper.FlutterVideoLooperPlugin
+import com.voquill.mobile.repos.LocalTranscriptionModelManager
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import org.json.JSONArray
 import org.json.JSONObject
-
-internal data class LocalModelDefinition(
-    val slug: String,
-    val label: String,
-    val helper: String,
-    val sizeBytes: Long,
-    val languageSupport: String,
-)
-
-internal object LocalModelBridge {
-    const val KEY_DOWNLOADED_MODELS = "voquill_local_transcription_downloaded_models"
-
-    private val supportedModels =
-        listOf(
-            LocalModelDefinition(
-                slug = "tiny",
-                label = "Whisper Tiny (77 MB)",
-                helper = "Fastest, lowest accuracy",
-                sizeBytes = 77_000_000,
-                languageSupport = "multilingual",
-            ),
-            LocalModelDefinition(
-                slug = "base",
-                label = "Whisper Base (148 MB)",
-                helper = "Great balance of speed and accuracy",
-                sizeBytes = 148_000_000,
-                languageSupport = "multilingual",
-            ),
-            LocalModelDefinition(
-                slug = "small",
-                label = "Whisper Small (488 MB)",
-                helper = "Recommended with GPU acceleration",
-                sizeBytes = 488_000_000,
-                languageSupport = "multilingual",
-            ),
-            LocalModelDefinition(
-                slug = "medium",
-                label = "Whisper Medium (1.53 GB)",
-                helper = "Balanced quality and speed",
-                sizeBytes = 1_530_000_000,
-                languageSupport = "multilingual",
-            ),
-            LocalModelDefinition(
-                slug = "turbo",
-                label = "Whisper Large v3 Turbo (1.6 GB)",
-                helper = "Fast large model, great accuracy",
-                sizeBytes = 1_600_000_000,
-                languageSupport = "multilingual",
-            ),
-            LocalModelDefinition(
-                slug = "large",
-                label = "Whisper Large v3 (3.1 GB)",
-                helper = "Highest accuracy, requires GPU",
-                sizeBytes = 3_100_000_000,
-                languageSupport = "multilingual",
-            ),
-        )
-
-    fun listModels(prefs: android.content.SharedPreferences): List<Map<String, Any>> {
-        val downloaded = loadDownloadedModels(prefs)
-        val transcriptionMode = prefs.getString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, null)
-        val selectedModel = prefs.getString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, null)
-
-        return supportedModels.map { model ->
-            val isDownloaded = downloaded.contains(model.slug)
-            mapOf(
-                "slug" to model.slug,
-                "label" to model.label,
-                "helper" to model.helper,
-                "sizeBytes" to model.sizeBytes,
-                "languageSupport" to model.languageSupport,
-                "downloaded" to isDownloaded,
-                "valid" to isDownloaded,
-                "selected" to (transcriptionMode == "local" && selectedModel == model.slug),
-            )
-        }
-    }
-
-    fun downloadModel(prefs: android.content.SharedPreferences, slug: String): Boolean {
-        if (supportedModels.none { it.slug == slug }) {
-            return false
-        }
-        val downloaded = loadDownloadedModels(prefs).toMutableSet()
-        downloaded.add(slug)
-        saveDownloadedModels(prefs, downloaded)
-        return true
-    }
-
-    fun deleteModel(prefs: android.content.SharedPreferences, slug: String): Boolean {
-        if (supportedModels.none { it.slug == slug }) {
-            return false
-        }
-        val downloaded = loadDownloadedModels(prefs).toMutableSet()
-        downloaded.remove(slug)
-        saveDownloadedModels(prefs, downloaded)
-        val editor = prefs.edit()
-        if (prefs.getString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, null) == slug) {
-            editor.remove(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL)
-        }
-        editor.apply()
-        return true
-    }
-
-    fun selectModel(prefs: android.content.SharedPreferences, slug: String): Boolean {
-        if (supportedModels.none { it.slug == slug }) {
-            return false
-        }
-        if (!loadDownloadedModels(prefs).contains(slug)) {
-            return false
-        }
-        prefs
-            .edit()
-            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, "local")
-            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, slug)
-            .apply()
-        return true
-    }
-
-    private fun saveDownloadedModels(prefs: android.content.SharedPreferences, slugs: Set<String>) {
-        prefs
-            .edit()
-            .putString(KEY_DOWNLOADED_MODELS, JSONArray(slugs.sorted()).toString())
-            .apply()
-    }
-
-    private fun loadDownloadedModels(prefs: android.content.SharedPreferences): Set<String> {
-        val raw = prefs.getString(KEY_DOWNLOADED_MODELS, null) ?: return emptySet()
-        return try {
-            val json = JSONArray(raw)
-            buildSet {
-                for (index in 0 until json.length()) {
-                    add(json.optString(index))
-                }
-            }
-        } catch (_: Exception) {
-            emptySet()
-        }
-    }
-}
+import java.io.IOException
 
 internal object AiConfigBridge {
     fun setKeyboardAiConfig(
@@ -188,6 +51,7 @@ internal object AiConfigBridge {
 
 class MainActivity : FlutterFragmentActivity() {
     private var sharedChannel: MethodChannel? = null
+    private val localTranscriptionModelManager by lazy { LocalTranscriptionModelManager(filesDir) }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -224,7 +88,9 @@ class MainActivity : FlutterFragmentActivity() {
                         result.success(null)
                     }
                     "setKeyboardAiConfig" -> handleSetKeyboardAiConfig(call.arguments, result)
-                    "listLocalTranscriptionModels" -> result.success(LocalModelBridge.listModels(keyboardPrefs))
+                    "listLocalTranscriptionModels" -> result.success(
+                        localTranscriptionModelManager.listModels(keyboardPrefs).map { it.toChannelMap() },
+                    )
                     "downloadLocalTranscriptionModel" -> handleDownloadLocalTranscriptionModel(
                         call.arguments,
                         result,
@@ -440,11 +306,24 @@ class MainActivity : FlutterFragmentActivity() {
     ) {
         val args = arguments as? Map<*, *>
         val slug = args?.get("slug") as? String
-        if (slug.isNullOrBlank() || !LocalModelBridge.downloadModel(keyboardPrefs, slug)) {
+        if (slug.isNullOrBlank()) {
             result.error("INVALID_ARGS", "Missing required arguments", null)
             return
         }
-        result.success(null)
+
+        Thread {
+            try {
+                if (!localTranscriptionModelManager.downloadModel(slug)) {
+                    runOnUiThread { result.error("INVALID_ARGS", "Missing required arguments", null) }
+                    return@Thread
+                }
+                runOnUiThread { result.success(null) }
+            } catch (error: IOException) {
+                runOnUiThread {
+                    result.error("DOWNLOAD_FAILED", error.message ?: "Failed to download model", null)
+                }
+            }
+        }.start()
     }
 
     private fun handleDeleteLocalTranscriptionModel(
@@ -453,7 +332,7 @@ class MainActivity : FlutterFragmentActivity() {
     ) {
         val args = arguments as? Map<*, *>
         val slug = args?.get("slug") as? String
-        if (slug.isNullOrBlank() || !LocalModelBridge.deleteModel(keyboardPrefs, slug)) {
+        if (slug.isNullOrBlank() || !localTranscriptionModelManager.deleteModel(keyboardPrefs, slug)) {
             result.error("INVALID_ARGS", "Missing required arguments", null)
             return
         }
@@ -466,7 +345,7 @@ class MainActivity : FlutterFragmentActivity() {
     ) {
         val args = arguments as? Map<*, *>
         val slug = args?.get("slug") as? String
-        if (slug.isNullOrBlank() || !LocalModelBridge.selectModel(keyboardPrefs, slug)) {
+        if (slug.isNullOrBlank() || !localTranscriptionModelManager.selectModel(keyboardPrefs, slug)) {
             result.error("INVALID_ARGS", "Missing required arguments", null)
             return
         }
