@@ -19,10 +19,11 @@ internal object AiConfigBridge {
         args: Map<*, *>,
         prefs: android.content.SharedPreferences,
     ) {
+        val transcriptionMode = args["transcriptionMode"] as? String
         val editor =
             prefs
                 .edit()
-                .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, args["transcriptionMode"] as? String)
+                .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, transcriptionMode)
                 .putString(VoquillIME.KEY_AI_POST_PROCESSING_MODE, args["postProcessingMode"] as? String)
 
         fun putOrRemove(key: String, argKey: String) {
@@ -37,10 +38,12 @@ internal object AiConfigBridge {
         putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_API_KEY, "postProcessingApiKey")
         putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_BASE_URL, "transcriptionBaseUrl")
         putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_BASE_URL, "postProcessingBaseUrl")
-        if ((args["clearTranscriptionModel"] as? String) == "true") {
-            editor.remove(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL)
-        } else {
-            putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, "transcriptionModel")
+        if (transcriptionMode != "local") {
+            if ((args["clearTranscriptionModel"] as? String) == "true") {
+                editor.remove(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL)
+            } else {
+                putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, "transcriptionModel")
+            }
         }
         putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_MODEL, "postProcessingModel")
         putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_AZURE_REGION, "transcriptionAzureRegion")
@@ -297,6 +300,24 @@ class MainActivity : FlutterFragmentActivity() {
         }
 
         AiConfigBridge.setKeyboardAiConfig(args ?: emptyMap<String, String>(), keyboardPrefs)
+        val transcriptionModel = args?.get("transcriptionModel") as? String
+        val clearTranscriptionModel = args?.get("clearTranscriptionModel") as? String == "true"
+        when {
+            transcriptionMode == "local" && !transcriptionModel.isNullOrBlank() -> {
+                if (!localTranscriptionModelManager.selectModel(keyboardPrefs, transcriptionModel)) {
+                    localTranscriptionModelManager.clearSelection(keyboardPrefs)
+                }
+            }
+            transcriptionMode == "local" && clearTranscriptionModel -> {
+                localTranscriptionModelManager.clearSelection(keyboardPrefs)
+            }
+            transcriptionMode == "local" -> {
+                localTranscriptionModelManager.clearSelection(keyboardPrefs)
+            }
+            else -> {
+                localTranscriptionModelManager.syncSelectionFromPrefs(keyboardPrefs)
+            }
+        }
         result.success(null)
     }
 
@@ -332,11 +353,20 @@ class MainActivity : FlutterFragmentActivity() {
     ) {
         val args = arguments as? Map<*, *>
         val slug = args?.get("slug") as? String
-        if (slug.isNullOrBlank() || !localTranscriptionModelManager.deleteModel(keyboardPrefs, slug)) {
+        if (slug.isNullOrBlank()) {
             result.error("INVALID_ARGS", "Missing required arguments", null)
             return
         }
-        result.success(null)
+
+        try {
+            if (!localTranscriptionModelManager.deleteModel(keyboardPrefs, slug)) {
+                result.error("INVALID_ARGS", "Missing required arguments", null)
+                return
+            }
+            result.success(null)
+        } catch (error: IOException) {
+            result.error("DELETE_FAILED", error.message ?: "Failed to delete model", null)
+        }
     }
 
     private fun handleSelectLocalTranscriptionModel(

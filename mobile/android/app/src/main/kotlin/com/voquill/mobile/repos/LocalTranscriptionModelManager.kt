@@ -57,12 +57,18 @@ private data class LocalTranscriptionModelManifestEntry(
     val downloadUrl: String,
     val fileSizeBytes: Long,
     val downloadedAtEpochMs: Long,
+    val downloaded: Boolean,
+    val valid: Boolean,
+    val selected: Boolean,
+    val validationError: String?,
 )
 
 private data class LocalTranscriptionModelValidation(
     val downloaded: Boolean,
     val valid: Boolean,
+    val selected: Boolean,
     val validationError: String?,
+    val manifestEntry: LocalTranscriptionModelManifestEntry?,
 )
 
 private class HttpLocalTranscriptionModelDownloader : LocalTranscriptionModelDownloader {
@@ -163,37 +169,42 @@ internal class LocalTranscriptionModelManager(
 
     private val modelsDirectory = File(appFilesDir, "models")
     private val manifestFile = File(modelsDirectory, "manifest.json")
+    private val manifestLock = Any()
+    private val activeDownloads = mutableSetOf<String>()
 
-    fun listModels(prefs: SharedPreferences): List<LocalTranscriptionModelState> {
-        val manifestEntries = loadManifestEntries()
-        val transcriptionMode = prefs.getString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, null)
-        val selectedSlug = prefs.getString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, null)
+    fun listModels(prefs: SharedPreferences): List<LocalTranscriptionModelState> =
+        synchronized(manifestLock) {
+            val manifestEntries = normalizeManifestEntries(loadManifestEntries(), prefs)
 
-        return supportedModels.map { definition ->
-            val validation = validate(definition, manifestEntries[definition.slug])
-            LocalTranscriptionModelState(
-                slug = definition.slug,
-                label = definition.label,
-                helper = definition.helper,
-                sizeBytes = definition.sizeBytes,
-                languageSupport = definition.languageSupport,
-                downloaded = validation.downloaded,
-                valid = validation.valid,
-                selected = transcriptionMode == "local" && selectedSlug == definition.slug,
-                validationError = validation.validationError,
-            )
+            supportedModels.map { definition ->
+                val manifestEntry = manifestEntries[definition.slug]
+                LocalTranscriptionModelState(
+                    slug = definition.slug,
+                    label = definition.label,
+                    helper = definition.helper,
+                    sizeBytes = definition.sizeBytes,
+                    languageSupport = definition.languageSupport,
+                    downloaded = manifestEntry?.downloaded == true,
+                    valid = manifestEntry?.valid == true,
+                    selected = manifestEntry?.selected == true,
+                    validationError = manifestEntry?.validationError,
+                )
+            }
         }
-    }
 
     @Throws(IOException::class)
     fun downloadModel(slug: String): Boolean {
         val definition = supportedModelsBySlug[slug] ?: return false
-
-        ensureModelsDirectory()
-
         val destination = modelFileFor(definition)
         val tempFile = File(modelsDirectory, "${definition.filename}.download")
-        tempFile.delete()
+
+        synchronized(manifestLock) {
+            ensureModelsDirectory()
+            if (!activeDownloads.add(slug)) {
+                throw IOException("Model download already in progress")
+            }
+            tempFile.delete()
+        }
 
         try {
             downloader.download(definition.downloadUrl, tempFile)
@@ -202,74 +213,120 @@ internal class LocalTranscriptionModelManager(
                 throw IOException("Downloaded model file is empty")
             }
 
-            if (destination.exists() && !destination.delete()) {
-                throw IOException("Failed to replace existing model file")
-            }
-            moveFile(tempFile, destination)
+            synchronized(manifestLock) {
+                if (destination.exists() && !destination.delete()) {
+                    throw IOException("Failed to replace existing model file")
+                }
+                moveFile(tempFile, destination)
 
-            val manifestEntries = loadManifestEntries()
-            manifestEntries[slug] =
-                LocalTranscriptionModelManifestEntry(
-                    slug = slug,
-                    filename = definition.filename,
-                    downloadUrl = definition.downloadUrl,
-                    fileSizeBytes = fileSize,
-                    downloadedAtEpochMs = clock(),
-                )
-            saveManifestEntries(manifestEntries)
+                val manifestEntries = loadManifestEntries()
+                manifestEntries[slug] =
+                    LocalTranscriptionModelManifestEntry(
+                        slug = slug,
+                        filename = definition.filename,
+                        downloadUrl = definition.downloadUrl,
+                        fileSizeBytes = fileSize,
+                        downloadedAtEpochMs = clock(),
+                        downloaded = true,
+                        valid = true,
+                        selected = false,
+                        validationError = null,
+                    )
+                saveManifestEntries(manifestEntries)
+            }
             return true
         } catch (error: Exception) {
-            tempFile.delete()
-            if (!validateModel(slug)) {
+            synchronized(manifestLock) {
+                tempFile.delete()
                 destination.takeIf { it.exists() && it.length() == 0L }?.delete()
             }
             if (error is IOException) {
                 throw error
             }
             throw IOException("Failed to download local transcription model", error)
+        } finally {
+            synchronized(manifestLock) {
+                activeDownloads.remove(slug)
+            }
         }
     }
 
+    @Throws(IOException::class)
     fun deleteModel(
         prefs: SharedPreferences,
         slug: String,
-    ): Boolean {
-        val definition = supportedModelsBySlug[slug] ?: return false
-        val manifestEntries = loadManifestEntries()
-        manifestEntries.remove(slug)
-        saveManifestEntries(manifestEntries)
+    ): Boolean =
+        synchronized(manifestLock) {
+            val definition = supportedModelsBySlug[slug] ?: return false
+            if (activeDownloads.contains(slug)) {
+                throw IOException("Model download already in progress")
+            }
+            val modelFile = modelFileFor(definition)
+            if (modelFile.exists() && !modelFile.delete()) {
+                throw IOException("Failed to delete local model file")
+            }
 
-        modelFileFor(definition).delete()
-        File(modelsDirectory, "${definition.filename}.download").delete()
+            val partialFile = File(modelsDirectory, "${definition.filename}.download")
+            if (partialFile.exists() && !partialFile.delete()) {
+                throw IOException("Failed to delete temporary model file")
+            }
 
-        if (prefs.getString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, null) == slug) {
-            prefs.edit().remove(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL).apply()
+            if (prefs.getString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, null) == slug) {
+                prefs.edit().remove(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL).apply()
+            }
+
+            val manifestEntries = loadManifestEntries()
+            manifestEntries.remove(slug)
+            saveManifestEntries(manifestEntries)
+            normalizeManifestEntries(manifestEntries, prefs)
+            true
         }
 
-        return true
+    fun clearSelection(prefs: SharedPreferences? = null) {
+        synchronized(manifestLock) {
+            prefs?.edit()?.remove(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL)?.apply()
+            val manifestEntries = loadManifestEntries()
+            for ((slug, entry) in manifestEntries) {
+                manifestEntries[slug] = entry.copy(selected = false)
+            }
+            saveManifestEntries(manifestEntries)
+        }
     }
 
     fun selectModel(
         prefs: SharedPreferences,
         slug: String,
-    ): Boolean {
-        if (!validateModel(slug)) {
-            return false
+    ): Boolean =
+        synchronized(manifestLock) {
+            if (!validateModel(slug)) {
+                return false
+            }
+
+            prefs
+                .edit()
+                .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, "local")
+                .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, slug)
+                .apply()
+            syncSelectionFromPrefs(prefs)
+            true
         }
 
-        prefs
-            .edit()
-            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, "local")
-            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, slug)
-            .apply()
-        return true
+    fun syncSelectionFromPrefs(prefs: SharedPreferences) {
+        synchronized(manifestLock) {
+            normalizeManifestEntries(loadManifestEntries(), prefs)
+        }
     }
 
-    fun validateModel(slug: String): Boolean {
-        val definition = supportedModelsBySlug[slug] ?: return false
-        val manifestEntries = loadManifestEntries()
-        return validate(definition, manifestEntries[slug]).valid
-    }
+    fun validateModel(slug: String): Boolean =
+        synchronized(manifestLock) {
+            val manifestEntries =
+                normalizeManifestEntries(
+                    entries = loadManifestEntries(),
+                    prefs = null,
+                    preserveExistingSelection = true,
+                )
+            manifestEntries[slug]?.valid == true
+        }
 
     private fun ensureModelsDirectory() {
         if (modelsDirectory.exists()) {
@@ -283,17 +340,21 @@ internal class LocalTranscriptionModelManager(
     private fun validate(
         definition: LocalTranscriptionModelDefinition,
         manifestEntry: LocalTranscriptionModelManifestEntry?,
+        selectedSlug: String?,
     ): LocalTranscriptionModelValidation {
         val modelFile = modelFileFor(definition)
-        val downloaded = manifestEntry != null || modelFile.exists()
+        val downloaded = manifestEntry?.downloaded == true || modelFile.exists()
         if (!downloaded) {
             return LocalTranscriptionModelValidation(
                 downloaded = false,
                 valid = false,
+                selected = false,
                 validationError = null,
+                manifestEntry = null,
             )
         }
 
+        val actualFileSize = if (modelFile.exists()) modelFile.length() else manifestEntry?.fileSizeBytes ?: 0L
         val validationError =
             when {
                 manifestEntry == null -> "Manifest entry missing"
@@ -307,11 +368,66 @@ internal class LocalTranscriptionModelManager(
                 else -> null
             }
 
+        val selected = selectedSlug == definition.slug && validationError == null
+        val normalizedEntry =
+            LocalTranscriptionModelManifestEntry(
+                slug = definition.slug,
+                filename = definition.filename,
+                downloadUrl = definition.downloadUrl,
+                fileSizeBytes = actualFileSize,
+                downloadedAtEpochMs = manifestEntry?.downloadedAtEpochMs ?: clock(),
+                downloaded = true,
+                valid = validationError == null,
+                selected = selected,
+                validationError = validationError,
+            )
+
         return LocalTranscriptionModelValidation(
             downloaded = true,
             valid = validationError == null,
+            selected = selected,
             validationError = validationError,
+            manifestEntry = normalizedEntry,
         )
+    }
+
+    private fun normalizeManifestEntries(
+        entries: MutableMap<String, LocalTranscriptionModelManifestEntry>,
+        prefs: SharedPreferences?,
+        preserveExistingSelection: Boolean = false,
+    ): MutableMap<String, LocalTranscriptionModelManifestEntry> {
+        val selectedSlug =
+            if (prefs?.getString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, null) == "local") {
+                prefs.getString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, null)
+            } else if (preserveExistingSelection) {
+                entries.values.firstOrNull { it.selected }?.slug
+            } else {
+                null
+            }
+
+        val normalizedEntries = linkedMapOf<String, LocalTranscriptionModelManifestEntry>()
+        var changed = false
+
+        for (definition in supportedModels) {
+            val validation = validate(definition, entries[definition.slug], selectedSlug)
+            val normalizedEntry = validation.manifestEntry
+            if (normalizedEntry != null) {
+                normalizedEntries[definition.slug] = normalizedEntry
+            }
+            if (entries[definition.slug] != normalizedEntry) {
+                changed = true
+            }
+        }
+
+        if (entries.keys.any { it !in normalizedEntries.keys }) {
+            changed = true
+        }
+
+        if (changed) {
+            saveManifestEntries(normalizedEntries)
+        }
+
+        return normalizedEntries
     }
 
     private fun moveFile(
@@ -351,6 +467,10 @@ internal class LocalTranscriptionModelManager(
                             downloadUrl = json.optString("downloadUrl"),
                             fileSizeBytes = json.optLong("fileSizeBytes"),
                             downloadedAtEpochMs = json.optLong("downloadedAtEpochMs"),
+                            downloaded = json.optBoolean("downloaded", true),
+                            valid = json.optBoolean("valid", false),
+                            selected = json.optBoolean("selected", false),
+                            validationError = json.optString("validationError").takeIf { it.isNotBlank() },
                         ),
                     )
                 }
@@ -378,6 +498,12 @@ internal class LocalTranscriptionModelManager(
                                     put("downloadUrl", entry.downloadUrl)
                                     put("fileSizeBytes", entry.fileSizeBytes)
                                     put("downloadedAtEpochMs", entry.downloadedAtEpochMs)
+                                    put("downloaded", entry.downloaded)
+                                    put("valid", entry.valid)
+                                    put("selected", entry.selected)
+                                    if (entry.validationError != null) {
+                                        put("validationError", entry.validationError)
+                                    }
                                 },
                             )
                         }

@@ -13,6 +13,11 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
 import java.io.File
+import java.io.IOException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.concurrent.thread
 
 class LocalTranscriptionModelManagerTest {
     @get:Rule
@@ -56,6 +61,8 @@ class LocalTranscriptionModelManagerTest {
         assertTrue(tiny.valid)
         assertTrue(tiny.selected)
         assertNull(tiny.validationError)
+        assertTrue(readManifestFile().contains("\"selected\": true"))
+        assertTrue(readManifestFile().contains("\"valid\": true"))
     }
 
     @Test
@@ -102,7 +109,6 @@ class LocalTranscriptionModelManagerTest {
 
         assertTrue(manager.deleteModel(prefs, "tiny"))
         assertFalse(File(appFilesDir, "models/ggml-tiny.bin").exists())
-        assertFalse(readManifestFile().contains("\"tiny\""))
         assertNull(prefs.getString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, null))
         assertEquals("local", prefs.getString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, null))
         assertFalse(manager.listModels(prefs).first { it.slug == "tiny" }.downloaded)
@@ -128,8 +134,111 @@ class LocalTranscriptionModelManagerTest {
         )
         assertTrue(File(appFilesDir, "models/ggml-large-v3-turbo.bin").exists())
         assertTrue(manager.validateModel("turbo"))
-        assertNotNull(manager.listModels(prefs).first { it.slug == "turbo" }.downloaded)
+        assertTrue(manager.listModels(prefs).first { it.slug == "turbo" }.downloaded)
         assertTrue(readManifestFile().contains("ggml-large-v3-turbo.bin"))
+        assertTrue(readManifestFile().contains("\"downloaded\": true"))
+        assertTrue(readManifestFile().contains("\"valid\": true"))
+    }
+
+    @Test
+    fun deleteModel_rejectsDeletionWhileDownloadIsInProgress() {
+        val downloadStarted = CountDownLatch(1)
+        val allowDownloadToFinish = CountDownLatch(1)
+        val downloadError = AtomicReference<Throwable?>(null)
+        val manager =
+            manager(
+                downloader =
+                    LocalTranscriptionModelDownloader { _, destination ->
+                        downloadStarted.countDown()
+                        assertTrue(allowDownloadToFinish.await(5, TimeUnit.SECONDS))
+                        destination.parentFile?.mkdirs()
+                        destination.writeText("tiny-model")
+                    },
+            )
+
+        val downloadThread =
+            thread(start = true) {
+                try {
+                    manager.downloadModel("tiny")
+                } catch (error: Throwable) {
+                    downloadError.set(error)
+                }
+            }
+
+        assertTrue(downloadStarted.await(5, TimeUnit.SECONDS))
+
+        val error =
+            try {
+                manager.deleteModel(prefs, "tiny")
+                null
+            } catch (ioError: IOException) {
+                ioError
+            }
+
+        assertNotNull(error)
+        assertEquals("Model download already in progress", error?.message)
+
+        allowDownloadToFinish.countDown()
+        downloadThread.join(5_000)
+
+        assertNull(downloadError.get())
+        assertTrue(File(appFilesDir, "models/ggml-tiny.bin").exists())
+        assertTrue(manager.listModels(prefs).first { it.slug == "tiny" }.downloaded)
+    }
+
+    @Test
+    fun deleteModel_preservesManifestWhenFileDeletionFails() {
+        writeManifestOnly(slug = "tiny", fileSizeBytes = 10L)
+        val modelPath = File(appFilesDir, "models/ggml-tiny.bin")
+        assertTrue(modelPath.mkdirs())
+        File(modelPath, "nested.bin").writeText("still-here")
+
+        val error =
+            try {
+                manager().deleteModel(prefs, "tiny")
+                null
+            } catch (ioError: IOException) {
+                ioError
+            }
+
+        assertNotNull(error)
+        assertEquals("Failed to delete local model file", error?.message)
+        assertTrue(readManifestFile().contains(""""tiny""""))
+    }
+
+    @Test
+    fun syncSelectionFromPrefs_updatesManifestSelectedState() {
+        writeInstalledModel(slug = "tiny", fileContents = "tiny-model".encodeToByteArray())
+        writeInstalledModel(slug = "base", fileContents = "base-model".encodeToByteArray())
+        prefs
+            .edit()
+            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, "local")
+            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, "base")
+            .commit()
+
+        manager().syncSelectionFromPrefs(prefs)
+
+        val manifest = readManifestFile()
+        assertTrue(manifest.contains(""""tiny""""))
+        assertTrue(manifest.contains(""""base""""))
+        assertTrue(manifest.contains(""""selected": true"""))
+        assertEquals("base", manager().listModels(prefs).first { it.selected }.slug)
+    }
+
+    @Test
+    fun validateModel_preservesExistingSelectedManifestState() {
+        writeInstalledModel(slug = "tiny", fileContents = "tiny-model".encodeToByteArray())
+        prefs
+            .edit()
+            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, "local")
+            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, "tiny")
+            .commit()
+        val manager = manager()
+        manager.syncSelectionFromPrefs(prefs)
+
+        assertTrue(manager.validateModel("tiny"))
+        assertEquals("tiny", manager.listModels(prefs).first { it.selected }.slug)
+        assertTrue(readManifestFile().contains(""""selected": true"""))
     }
 
     private fun manager(
