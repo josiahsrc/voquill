@@ -1,0 +1,15 @@
+{
+  "originHash" : "1f5da0bcb1390ae7fd7f6004969d9dc91046337c988ebcd8c242f58ebd2519be",
+  "pins" : [
+    {
+      "identity" : "whispercppkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Justmalhar/WhisperCppKit",
+      "state" : {
+        "revision" : "f45a3319036b93bafb4e9fdd81ca9e0840c04687",
+        "version" : "0.1.1"
+      }
+    }
+  ],
+  "version" : 3
+}

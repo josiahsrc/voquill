@@ -9,8 +9,25 @@ import java.net.URL
 import java.util.UUID
 
 abstract class BaseTranscribeAudioRepo {
+    var lastErrorMessage: String? = null
+        protected set
+
+    protected fun resetLastError() {
+        lastErrorMessage = null
+    }
+
+    protected fun fail(message: String): String? {
+        lastErrorMessage = message
+        return null
+    }
+
     abstract fun transcribeSync(audioFile: File, prompt: String, language: String): String?
 }
+
+data class TranscribeRepoBuildResult(
+    val repo: BaseTranscribeAudioRepo?,
+    val errorMessage: String? = null,
+)
 
 // MARK: - Cloud Implementation
 
@@ -19,6 +36,7 @@ class CloudTranscribeAudioRepo(
 ) : BaseTranscribeAudioRepo() {
 
     override fun transcribeSync(audioFile: File, prompt: String, language: String): String? {
+        resetLastError()
         return try {
             if (!audioFile.exists() || audioFile.length() == 0L) {
                 Log.w(TAG, "No audio data at ${audioFile.absolutePath}")
@@ -100,6 +118,7 @@ class ByokTranscribeAudioRepo(
     }
 
     override fun transcribeSync(audioFile: File, prompt: String, language: String): String? {
+        resetLastError()
         return when (provider) {
             "gemini" -> transcribeGemini(audioFile, prompt, language)
             "azure" -> transcribeAzure(audioFile, language)

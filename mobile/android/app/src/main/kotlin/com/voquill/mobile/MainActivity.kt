@@ -6,14 +6,55 @@ import android.content.res.Configuration
 import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
 import com.voquill.flutter_video_looper.FlutterVideoLooperPlugin
+import com.voquill.mobile.repos.LocalTranscriptionModelManager
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.IOException
+
+internal object AiConfigBridge {
+    fun setKeyboardAiConfig(
+        args: Map<*, *>,
+        prefs: android.content.SharedPreferences,
+    ) {
+        val transcriptionMode = args["transcriptionMode"] as? String
+        val editor =
+            prefs
+                .edit()
+                .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, transcriptionMode)
+                .putString(VoquillIME.KEY_AI_POST_PROCESSING_MODE, args["postProcessingMode"] as? String)
+
+        fun putOrRemove(key: String, argKey: String) {
+            val value = args[argKey] as? String
+            if (value != null) editor.putString(key, value)
+            else editor.remove(key)
+        }
+
+        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_PROVIDER, "transcriptionProvider")
+        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_API_KEY, "transcriptionApiKey")
+        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_PROVIDER, "postProcessingProvider")
+        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_API_KEY, "postProcessingApiKey")
+        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_BASE_URL, "transcriptionBaseUrl")
+        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_BASE_URL, "postProcessingBaseUrl")
+        if (transcriptionMode != "local") {
+            if ((args["clearTranscriptionModel"] as? String) == "true") {
+                editor.remove(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL)
+            } else {
+                putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, "transcriptionModel")
+            }
+        }
+        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_MODEL, "postProcessingModel")
+        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_AZURE_REGION, "transcriptionAzureRegion")
+
+        editor.apply()
+    }
+}
 
 class MainActivity : FlutterFragmentActivity() {
     private var sharedChannel: MethodChannel? = null
+    private val localTranscriptionModelManager by lazy { LocalTranscriptionModelManager(filesDir) }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -50,6 +91,21 @@ class MainActivity : FlutterFragmentActivity() {
                         result.success(null)
                     }
                     "setKeyboardAiConfig" -> handleSetKeyboardAiConfig(call.arguments, result)
+                    "listLocalTranscriptionModels" -> result.success(
+                        localTranscriptionModelManager.listModels(keyboardPrefs).map { it.toChannelMap() },
+                    )
+                    "downloadLocalTranscriptionModel" -> handleDownloadLocalTranscriptionModel(
+                        call.arguments,
+                        result,
+                    )
+                    "deleteLocalTranscriptionModel" -> handleDeleteLocalTranscriptionModel(
+                        call.arguments,
+                        result,
+                    )
+                    "selectLocalTranscriptionModel" -> handleSelectLocalTranscriptionModel(
+                        call.arguments,
+                        result,
+                    )
                     "isKeyboardEnabled" -> result.success(isVoquillKeyboardEnabled())
                     "openKeyboardSettings" -> {
                         val intent = Intent(Settings.ACTION_INPUT_METHOD_SETTINGS).apply {
@@ -243,27 +299,86 @@ class MainActivity : FlutterFragmentActivity() {
             return
         }
 
-        val editor = keyboardPrefs.edit()
-            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, transcriptionMode)
-            .putString(VoquillIME.KEY_AI_POST_PROCESSING_MODE, postProcessingMode)
+        AiConfigBridge.setKeyboardAiConfig(args ?: emptyMap<String, String>(), keyboardPrefs)
+        val transcriptionModel = args?.get("transcriptionModel") as? String
+        val clearTranscriptionModel = args?.get("clearTranscriptionModel") as? String == "true"
+        when {
+            transcriptionMode == "local" && !transcriptionModel.isNullOrBlank() -> {
+                if (!localTranscriptionModelManager.selectModel(keyboardPrefs, transcriptionModel)) {
+                    localTranscriptionModelManager.clearSelection(keyboardPrefs)
+                }
+            }
+            transcriptionMode == "local" && clearTranscriptionModel -> {
+                localTranscriptionModelManager.clearSelection(keyboardPrefs)
+            }
+            transcriptionMode == "local" -> {
+                localTranscriptionModelManager.clearSelection(keyboardPrefs)
+            }
+            else -> {
+                localTranscriptionModelManager.syncSelectionFromPrefs(keyboardPrefs)
+            }
+        }
+        result.success(null)
+    }
 
-        fun putOrRemove(key: String, argKey: String) {
-            val value = args?.get(argKey) as? String
-            if (value != null) editor.putString(key, value)
-            else editor.remove(key)
+    private fun handleDownloadLocalTranscriptionModel(
+        arguments: Any?,
+        result: MethodChannel.Result,
+    ) {
+        val args = arguments as? Map<*, *>
+        val slug = args?.get("slug") as? String
+        if (slug.isNullOrBlank()) {
+            result.error("INVALID_ARGS", "Missing required arguments", null)
+            return
         }
 
-        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_PROVIDER, "transcriptionProvider")
-        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_API_KEY, "transcriptionApiKey")
-        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_PROVIDER, "postProcessingProvider")
-        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_API_KEY, "postProcessingApiKey")
-        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_BASE_URL, "transcriptionBaseUrl")
-        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_BASE_URL, "postProcessingBaseUrl")
-        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, "transcriptionModel")
-        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_MODEL, "postProcessingModel")
-        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_AZURE_REGION, "transcriptionAzureRegion")
+        Thread {
+            try {
+                if (!localTranscriptionModelManager.downloadModel(slug)) {
+                    runOnUiThread { result.error("INVALID_ARGS", "Missing required arguments", null) }
+                    return@Thread
+                }
+                runOnUiThread { result.success(null) }
+            } catch (error: IOException) {
+                runOnUiThread {
+                    result.error("DOWNLOAD_FAILED", error.message ?: "Failed to download model", null)
+                }
+            }
+        }.start()
+    }
 
-        editor.apply()
+    private fun handleDeleteLocalTranscriptionModel(
+        arguments: Any?,
+        result: MethodChannel.Result,
+    ) {
+        val args = arguments as? Map<*, *>
+        val slug = args?.get("slug") as? String
+        if (slug.isNullOrBlank()) {
+            result.error("INVALID_ARGS", "Missing required arguments", null)
+            return
+        }
+
+        try {
+            if (!localTranscriptionModelManager.deleteModel(keyboardPrefs, slug)) {
+                result.error("INVALID_ARGS", "Missing required arguments", null)
+                return
+            }
+            result.success(null)
+        } catch (error: IOException) {
+            result.error("DELETE_FAILED", error.message ?: "Failed to delete model", null)
+        }
+    }
+
+    private fun handleSelectLocalTranscriptionModel(
+        arguments: Any?,
+        result: MethodChannel.Result,
+    ) {
+        val args = arguments as? Map<*, *>
+        val slug = args?.get("slug") as? String
+        if (slug.isNullOrBlank() || !localTranscriptionModelManager.selectModel(keyboardPrefs, slug)) {
+            result.error("INVALID_ARGS", "Missing required arguments", null)
+            return
+        }
         result.success(null)
     }
 

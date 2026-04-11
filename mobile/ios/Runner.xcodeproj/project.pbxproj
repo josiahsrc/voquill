@@ -12,6 +12,16 @@
 		0CB8A2E8AD5544D54C3BBBDA /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6390BB7A4AB3F2DFD35912C8 /* Pods_RunnerTests.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
+		4DAF80C22F7A100100A1B2C3 /* LocalTranscriptionModelManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DAF80C12F7A100100A1B2C3 /* LocalTranscriptionModelManagerTests.swift */; };
+		4DAF80C42F7B100100A1B2C3 /* TranscriptionBackendResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DAF80C32F7B100100A1B2C3 /* TranscriptionBackendResolverTests.swift */; };
+		5AB3A1012F7A200100A1B2C3 /* LocalTranscriptionModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AB3A1002F7A200100A1B2C3 /* LocalTranscriptionModelManager.swift */; };
+		5AB3A1022F7B200100A1B2C3 /* LocalTranscriptionModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AB3A1002F7A200100A1B2C3 /* LocalTranscriptionModelManager.swift */; };
+		8B5F0A112F7A000100A1B2C3 /* SharedAiConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B5F0A102F7A000100A1B2C3 /* SharedAiConfigTests.swift */; };
+		9C1D7B122F7B200100A1B2C3 /* WhisperCpp in Frameworks */ = {isa = PBXBuildFile; productRef = 9C1D7B142F7B200100A1B2C3 /* WhisperCpp */; };
+		9C1D7B152F7B200100A1B2C3 /* TranscriptionBackendResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C1D7B162F7B200100A1B2C3 /* TranscriptionBackendResolver.swift */; };
+		9C1D7B182F7B300100A1B2C3 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C1D7B172F7B300100A1B2C3 /* libc++.tbd */; };
+		9C1D7B1A2F7B300100A1B2C3 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C1D7B192F7B300100A1B2C3 /* Accelerate.framework */; };
+		9C1D7B1C2F7B300100A1B2C3 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C1D7B1B2F7B300100A1B2C3 /* Metal.framework */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		8A7603B52F29AF05000B5379 /* keyboard.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8A7603AE2F29AF05000B5379 /* keyboard.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -94,6 +104,13 @@
 		2D58969AF02FEEC739E89F60 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4DAF80C12F7A100100A1B2C3 /* LocalTranscriptionModelManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalTranscriptionModelManagerTests.swift; sourceTree = "<group>"; };
+		4DAF80C32F7B100100A1B2C3 /* TranscriptionBackendResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionBackendResolverTests.swift; sourceTree = "<group>"; };
+		8B5F0A102F7A000100A1B2C3 /* SharedAiConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedAiConfigTests.swift; sourceTree = "<group>"; };
+		9C1D7B162F7B200100A1B2C3 /* TranscriptionBackendResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = keyboard/Repos/TranscriptionBackendResolver.swift; sourceTree = "<group>"; };
+		9C1D7B172F7B300100A1B2C3 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.text-based-dylib-definition; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
+		9C1D7B192F7B300100A1B2C3 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		9C1D7B1B2F7B300100A1B2C3 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
 		497C054FF721E03B6762B248 /* Pods-RunnerTests.release-prod.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release-prod.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release-prod.xcconfig"; sourceTree = "<group>"; };
 		4E508FD947EE5F08B545B1FD /* Pods-Runner.debug-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug-dev.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug-dev.xcconfig"; sourceTree = "<group>"; };
@@ -107,6 +124,7 @@
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		74858FB01ED2DC5600515810 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		5AB3A1002F7A200100A1B2C3 /* LocalTranscriptionModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalTranscriptionModelManager.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		7C3977B31B0AF846DB8C75A4 /* Pods-Runner.profile-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile-dev.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile-dev.xcconfig"; sourceTree = "<group>"; };
 		8A7603AE2F29AF05000B5379 /* keyboard.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = keyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -197,6 +215,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				094A1DF0D646421655D722C5 /* Pods_keyboard.framework in Frameworks */,
+				9C1D7B122F7B200100A1B2C3 /* WhisperCpp in Frameworks */,
+				9C1D7B182F7B300100A1B2C3 /* libc++.tbd in Frameworks */,
+				9C1D7B1A2F7B300100A1B2C3 /* Accelerate.framework in Frameworks */,
+				9C1D7B1C2F7B300100A1B2C3 /* Metal.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -232,6 +254,9 @@
 			isa = PBXGroup;
 			children = (
 				331C807B294A618700263BE5 /* RunnerTests.swift */,
+				4DAF80C12F7A100100A1B2C3 /* LocalTranscriptionModelManagerTests.swift */,
+				8B5F0A102F7A000100A1B2C3 /* SharedAiConfigTests.swift */,
+				4DAF80C32F7B100100A1B2C3 /* TranscriptionBackendResolverTests.swift */,
 			);
 			path = RunnerTests;
 			sourceTree = "<group>";
@@ -241,6 +266,9 @@
 			children = (
 				F5EAE51418F8180C64AB0A2E /* Pods_Runner.framework */,
 				6390BB7A4AB3F2DFD35912C8 /* Pods_RunnerTests.framework */,
+				9C1D7B172F7B300100A1B2C3 /* libc++.tbd */,
+				9C1D7B192F7B300100A1B2C3 /* Accelerate.framework */,
+				9C1D7B1B2F7B300100A1B2C3 /* Metal.framework */,
 				8A85E6402F41FA7700A6698B /* WidgetKit.framework */,
 				8A85E6422F41FA7700A6698B /* SwiftUI.framework */,
 				E37E0FC58EC342E89E765FA5 /* Pods_keyboard.framework */,
@@ -266,6 +294,7 @@
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
 				8A7603AF2F29AF05000B5379 /* keyboard */,
+				9C1D7B162F7B200100A1B2C3 /* TranscriptionBackendResolver.swift */,
 				8A85E6442F41FA7700A6698B /* VoquillWidgets */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
@@ -293,6 +322,7 @@
 				8A85E6622F41FCAB00A6698B /* DictationAttributes.swift */,
 				8A85E6602F41FC9F00A6698B /* DarwinNotificationManager.swift */,
 				8A85E65E2F41FC7F00A6698B /* DictationConstants.swift */,
+				5AB3A1002F7A200100A1B2C3 /* LocalTranscriptionModelManager.swift */,
 				74858FB01ED2DC5600515810 /* Runner.entitlements */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
@@ -364,6 +394,8 @@
 				331C8086294A63A400263BE5 /* PBXTargetDependency */,
 			);
 			name = RunnerTests;
+			packageProductDependencies = (
+			);
 			productName = RunnerTests;
 			productReference = 331C8081294A63A400263BE5 /* RunnerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -385,6 +417,9 @@
 				8A7603AF2F29AF05000B5379 /* keyboard */,
 			);
 			name = keyboard;
+			packageProductDependencies = (
+				9C1D7B142F7B200100A1B2C3 /* WhisperCpp */,
+			);
 			productName = keyboard;
 			productReference = 8A7603AE2F29AF05000B5379 /* keyboard.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -472,6 +507,9 @@
 				Base,
 			);
 			mainGroup = 97C146E51CF9000F007C117D;
+			packageReferences = (
+				9C1D7B132F7B200100A1B2C3 /* XCRemoteSwiftPackageReference "WhisperCppKit" */,
+			);
 			productRefGroup = 97C146EF1CF9000F007C117D /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -679,6 +717,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */,
+				4DAF80C22F7A100100A1B2C3 /* LocalTranscriptionModelManagerTests.swift in Sources */,
+				8B5F0A112F7A000100A1B2C3 /* SharedAiConfigTests.swift in Sources */,
+				4DAF80C42F7B100100A1B2C3 /* TranscriptionBackendResolverTests.swift in Sources */,
+				9C1D7B152F7B200100A1B2C3 /* TranscriptionBackendResolver.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -690,6 +732,7 @@
 				8A85E6672F41FCD500A6698B /* DictationConstants.swift in Sources */,
 				8A85E6682F41FCD500A6698B /* DictationService.swift in Sources */,
 				8A85E6692F41FCD500A6698B /* DictationAttributes.swift in Sources */,
+				5AB3A1022F7B200100A1B2C3 /* LocalTranscriptionModelManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -707,6 +750,7 @@
 			files = (
 				8A85E65F2F41FC8300A6698B /* DictationConstants.swift in Sources */,
 				8A85E6612F41FCA200A6698B /* DarwinNotificationManager.swift in Sources */,
+				5AB3A1012F7A200100A1B2C3 /* LocalTranscriptionModelManager.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				8A85E6632F41FCAD00A6698B /* DictationAttributes.swift in Sources */,
@@ -715,6 +759,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		9C1D7B132F7B200100A1B2C3 /* XCRemoteSwiftPackageReference "WhisperCppKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Justmalhar/WhisperCppKit";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 0.1.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9C1D7B142F7B200100A1B2C3 /* WhisperCpp */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9C1D7B132F7B200100A1B2C3 /* XCRemoteSwiftPackageReference "WhisperCppKit" */;
+			productName = WhisperCpp;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXTargetDependency section */
 		331C8086294A63A400263BE5 /* PBXTargetDependency */ = {
@@ -817,6 +880,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9Y84AJHU4X;
 				ENABLE_BITCODE = NO;
+				FLUTTER_TARGET = lib/main_prod.dart;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -948,6 +1012,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9Y84AJHU4X;
 				ENABLE_BITCODE = NO;
+				FLUTTER_TARGET = lib/main_emulators.dart;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1005,6 +1070,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
@@ -1092,6 +1161,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9Y84AJHU4X;
 				ENABLE_BITCODE = NO;
+				FLUTTER_TARGET = lib/main_dev.dart;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1149,6 +1219,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
@@ -1233,6 +1307,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9Y84AJHU4X;
 				ENABLE_BITCODE = NO;
+				FLUTTER_TARGET = lib/main_emulators.dart;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1287,6 +1362,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
@@ -1368,6 +1447,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9Y84AJHU4X;
 				ENABLE_BITCODE = NO;
+				FLUTTER_TARGET = lib/main_dev.dart;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1422,6 +1502,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
@@ -1501,6 +1585,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9Y84AJHU4X;
 				ENABLE_BITCODE = NO;
+				FLUTTER_TARGET = lib/main_emulators.dart;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1555,6 +1640,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
@@ -1634,6 +1723,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9Y84AJHU4X;
 				ENABLE_BITCODE = NO;
+				FLUTTER_TARGET = lib/main_dev.dart;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1689,6 +1779,10 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
+				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
 				MTL_FAST_MATH = YES;
@@ -1729,6 +1823,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
@@ -1774,6 +1872,10 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
+				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
 				MTL_FAST_MATH = YES;
@@ -1814,6 +1916,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
@@ -2702,6 +2808,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9Y84AJHU4X;
 				ENABLE_BITCODE = NO;
+				FLUTTER_TARGET = lib/main_prod.dart;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2727,6 +2834,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9Y84AJHU4X;
 				ENABLE_BITCODE = NO;
+				FLUTTER_TARGET = lib/main_prod.dart;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
