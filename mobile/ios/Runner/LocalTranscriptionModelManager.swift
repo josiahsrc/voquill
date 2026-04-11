@@ -16,7 +16,7 @@ final class LocalTranscriptionModelManager {
   struct LocalModelRecord: Codable, Equatable {
     let slug: String
     let filename: String
-    let sizeBytes: Int64
+    var sizeBytes: Int64
     let languageSupport: String
     var downloaded: Bool
     var valid: Bool
@@ -192,7 +192,7 @@ final class LocalTranscriptionModelManager {
         slug: catalogEntry.slug,
         label: catalogEntry.label,
         helper: catalogEntry.helper,
-        sizeBytes: catalogEntry.sizeBytes,
+        sizeBytes: record.sizeBytes,
         languageSupport: catalogEntry.languageSupport,
         filename: catalogEntry.filename,
         downloadURL: catalogEntry.downloadURL,
@@ -215,6 +215,21 @@ final class LocalTranscriptionModelManager {
     }
 
     try await downloadHandler(catalogEntry.downloadURL, destinationURL)
+
+    let fileSize = try destinationURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+    guard fileSize > 0 else {
+      throw ManagerError.invalidDownloadedArtifact(slug)
+    }
+
+    var records = try loadManifest()
+    for index in records.indices where records[index].slug == slug {
+      records[index].sizeBytes = Int64(fileSize)
+      records[index].downloaded = true
+      records[index].valid = false
+      records[index].selected = false
+      records[index].validationError = nil
+    }
+    try persistManifest(records)
 
     guard try validateModel(slug: slug) else {
       throw ManagerError.invalidDownloadedArtifact(slug)
@@ -358,7 +373,7 @@ final class LocalTranscriptionModelManager {
     var updated = LocalModelRecord(
       slug: catalogEntry.slug,
       filename: catalogEntry.filename,
-      sizeBytes: catalogEntry.sizeBytes,
+      sizeBytes: current.sizeBytes > 0 ? current.sizeBytes : catalogEntry.sizeBytes,
       languageSupport: catalogEntry.languageSupport,
       downloaded: current.downloaded,
       valid: current.valid,
@@ -400,8 +415,27 @@ final class LocalTranscriptionModelManager {
       return updated
     }
 
+    if current.sizeBytes <= 0 {
+      updated.downloaded = false
+      updated.valid = false
+      updated.selected = false
+      updated.validationError = "Model file size is missing."
+      clearDefaultsSelectionIfNeeded(slug: catalogEntry.slug)
+      return updated
+    }
+
+    if Int64(fileSize) != current.sizeBytes {
+      updated.downloaded = false
+      updated.valid = false
+      updated.selected = false
+      updated.validationError = "Model file size mismatch."
+      clearDefaultsSelectionIfNeeded(slug: catalogEntry.slug)
+      return updated
+    }
+
     updated.downloaded = true
     updated.valid = true
+    updated.sizeBytes = Int64(fileSize)
     updated.validationError = nil
     return updated
   }
@@ -450,7 +484,7 @@ final class LocalTranscriptionModelManager {
       return LocalModelRecord(
         slug: catalogEntry.slug,
         filename: catalogEntry.filename,
-        sizeBytes: catalogEntry.sizeBytes,
+        sizeBytes: (record?.sizeBytes ?? 0) > 0 ? (record?.sizeBytes ?? catalogEntry.sizeBytes) : catalogEntry.sizeBytes,
         languageSupport: catalogEntry.languageSupport,
         downloaded: record?.downloaded ?? false,
         valid: record?.valid ?? false,

@@ -1139,18 +1139,43 @@ class KeyboardViewController: UIInputViewController {
         lastDebugLog = msg
     }
 
-    private func buildTranscribeRepo(defaults: UserDefaults, config: RepoConfig?) -> BaseTranscribeAudioRepo? {
-        let mode = defaults.string(forKey: "voquill_ai_transcription_mode") ?? "cloud"
-        if mode == "api",
-           let provider = defaults.string(forKey: "voquill_ai_transcription_provider"),
-           let apiKey = defaults.string(forKey: "voquill_ai_transcription_api_key") {
+    private func buildTranscribeRepo(defaults: UserDefaults, config: RepoConfig?) throws -> BaseTranscribeAudioRepo {
+        let mode = defaults.string(forKey: LocalTranscriptionModelManager.transcriptionModeKey) ?? "cloud"
+        let selectedModel = defaults.string(forKey: LocalTranscriptionModelManager.transcriptionModelKey)
+        let provider = defaults.string(forKey: "voquill_ai_transcription_provider")
+        let apiKey = defaults.string(forKey: "voquill_ai_transcription_api_key")
+        let hasApiConfig = provider != nil && apiKey != nil
+
+        let manager = LocalTranscriptionModelManager(defaults: defaults)
+        let localModelValid = selectedModel.flatMap { slug in
+            try? manager.validateModel(slug: slug)
+        } ?? false
+
+        let backend = try TranscriptionBackendResolver().resolve(
+            transcriptionMode: mode,
+            selectedModel: selectedModel,
+            hasCloudConfig: config != nil,
+            hasApiConfig: hasApiConfig,
+            localModelValid: localModelValid
+        )
+
+        switch backend {
+        case .local(let model):
+            return try LocalTranscribeAudioRepo(modelSlug: model, modelManager: manager)
+        case .api:
+            guard let provider, let apiKey else {
+                throw TranscriptionBackendResolverError.missingApiConfiguration
+            }
             let baseUrl = defaults.string(forKey: "voquill_ai_transcription_base_url")
             let model = defaults.string(forKey: "voquill_ai_transcription_model")
             let azureRegion = defaults.string(forKey: "voquill_ai_transcription_azure_region")
             return ByokTranscribeAudioRepo(apiKey: apiKey, provider: provider, baseUrl: baseUrl, modelOverride: model, azureRegion: azureRegion)
+        case .cloud:
+            guard let config else {
+                throw TranscriptionBackendResolverError.missingCloudConfiguration
+            }
+            return CloudTranscribeAudioRepo(config: config)
         }
-        guard let config = config else { return nil }
-        return CloudTranscribeAudioRepo(config: config)
     }
 
     private func buildGenerateTextRepo(defaults: UserDefaults, config: RepoConfig?) -> BaseGenerateTextRepo? {
@@ -1203,10 +1228,14 @@ class KeyboardViewController: UIInputViewController {
         let continueWithConfig: (RepoConfig?) -> Void = { [weak self] config in
             guard let self = self else { return }
 
-            guard let transcribeRepo = self.buildTranscribeRepo(defaults: defaults, config: config) else {
+            let transcribeRepo: BaseTranscribeAudioRepo
+            do {
+                transcribeRepo = try self.buildTranscribeRepo(defaults: defaults, config: config)
+            } catch {
+                self.dbg("Could not build transcribe repo: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     self.isProcessing = false
-                    self.applyPillVisual(.error("Transcription not configured"), animated: true)
+                    self.applyPillVisual(.error(error.localizedDescription), animated: true)
                 }
                 return
             }

@@ -40,12 +40,12 @@ final class LocalTranscriptionModelManagerTests: XCTestCase {
 
   func testListModelsMarksDownloadedModelAsSelectedAndValid() throws {
     let manager = makeManager()
-    try writeArtifact(for: "tiny", using: manager)
+    let artifactSize = try writeArtifact(for: "tiny", using: manager)
     try manager.saveManifest([
       .init(
         slug: "tiny",
         filename: "ggml-tiny.bin",
-        sizeBytes: 77_000_000,
+        sizeBytes: artifactSize,
         languageSupport: "multilingual",
         downloaded: true,
         valid: true,
@@ -62,6 +62,7 @@ final class LocalTranscriptionModelManagerTests: XCTestCase {
       tiny.downloadURL.absoluteString,
       "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin"
     )
+    XCTAssertEqual(tiny.sizeBytes, artifactSize)
     XCTAssertTrue(tiny.downloaded)
     XCTAssertTrue(tiny.valid)
     XCTAssertTrue(tiny.selected)
@@ -119,7 +120,7 @@ final class LocalTranscriptionModelManagerTests: XCTestCase {
       .init(
         slug: "tiny",
         filename: "ggml-tiny.bin",
-        sizeBytes: 77_000_000,
+        sizeBytes: 11,
         languageSupport: "multilingual",
         downloaded: true,
         valid: true,
@@ -137,6 +138,17 @@ final class LocalTranscriptionModelManagerTests: XCTestCase {
     XCTAssertEqual(tiny.validationError, "Model file is missing.")
   }
 
+  func testValidateModelPreservesActualArtifactSizeInManifest() throws {
+    let manager = makeManager()
+    let artifactSize = try writeArtifact(for: "tiny", using: manager)
+
+    XCTAssertTrue(try manager.validateModel(slug: "tiny"))
+
+    let tinyRecord = try XCTUnwrap(try manager.loadManifest().first { $0.slug == "tiny" })
+    XCTAssertEqual(tinyRecord.sizeBytes, artifactSize)
+    XCTAssertTrue(tinyRecord.valid)
+  }
+
   private func makeManager(
     downloadHandler: @escaping LocalTranscriptionModelManager.DownloadHandler = { _, _ in }
   ) -> LocalTranscriptionModelManager {
@@ -149,12 +161,27 @@ final class LocalTranscriptionModelManagerTests: XCTestCase {
     )
   }
 
-  private func writeArtifact(for slug: String, using manager: LocalTranscriptionModelManager) throws {
+  @discardableResult
+  private func writeArtifact(for slug: String, using manager: LocalTranscriptionModelManager) throws -> Int64 {
     let url = try manager.modelFileURL(for: slug)
     try FileManager.default.createDirectory(
       at: url.deletingLastPathComponent(),
       withIntermediateDirectories: true
     )
-    try Data("artifact".utf8).write(to: url)
+    let data = Data("artifact".utf8)
+    try data.write(to: url)
+    try manager.saveManifest([
+      .init(
+        slug: slug,
+        filename: url.lastPathComponent,
+        sizeBytes: Int64(data.count),
+        languageSupport: "multilingual",
+        downloaded: true,
+        valid: false,
+        selected: false,
+        validationError: nil
+      )
+    ])
+    return Int64(data.count)
   }
 }

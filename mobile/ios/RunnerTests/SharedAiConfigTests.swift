@@ -30,12 +30,12 @@ final class SharedAiConfigTests: XCTestCase {
     defaults.set("local", forKey: "voquill_ai_transcription_mode")
     defaults.set("tiny", forKey: "voquill_ai_transcription_model")
     let manager = makeManager()
-    try writeArtifact(for: "tiny", using: manager)
+    let artifactSize = try writeArtifact(for: "tiny", using: manager)
     try manager.saveManifest([
       .init(
         slug: "tiny",
         filename: "ggml-tiny.bin",
-        sizeBytes: 77_000_000,
+        sizeBytes: artifactSize,
         languageSupport: "multilingual",
         downloaded: true,
         valid: true,
@@ -113,12 +113,27 @@ final class SharedAiConfigTests: XCTestCase {
     )
   }
 
-  private func writeArtifact(for slug: String, using manager: LocalTranscriptionModelManager) throws {
+  @discardableResult
+  private func writeArtifact(for slug: String, using manager: LocalTranscriptionModelManager) throws -> Int64 {
     let url = try manager.modelFileURL(for: slug)
     try FileManager.default.createDirectory(
       at: url.deletingLastPathComponent(),
       withIntermediateDirectories: true
     )
-    try Data("artifact".utf8).write(to: url)
+    let data = Data("artifact".utf8)
+    try data.write(to: url)
+    try manager.saveManifest([
+      .init(
+        slug: slug,
+        filename: url.lastPathComponent,
+        sizeBytes: Int64(data.count),
+        languageSupport: "multilingual",
+        downloaded: true,
+        valid: false,
+        selected: false,
+        validationError: nil
+      )
+    ])
+    return Int64(data.count)
   }
 }
