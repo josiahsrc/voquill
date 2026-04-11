@@ -18,6 +18,8 @@ struct DictationConstants {
     static let heartbeatKey = "voquill_dictation_heartbeat"
     static let heartbeatStaleThreshold: TimeInterval = 5.0
     static let maxRecordingDuration: TimeInterval = 240.0
+    static let idleTimeoutKey = "voquill_idle_timeout_seconds"
+    static let defaultIdleTimeout: TimeInterval = 120.0
 
     static let appGroupId = "group.com.voquill.mobile"
 

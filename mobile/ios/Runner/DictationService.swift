@@ -20,6 +20,7 @@ class DictationService {
     private let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
     private var heartbeatTimer: Timer?
     private var recordingTimeoutTimer: Timer?
+    private var idleTimeoutTimer: Timer?
 
     private init() {}
 
@@ -80,11 +81,13 @@ class DictationService {
         defaults?.set(Float(0), forKey: DictationConstants.audioLevelKey)
         setPhase(.active)
         updateLiveActivity(phase: "active")
+        startIdleTimeout()
     }
 
     func resumeRecording() {
         guard currentPhase == .active else { return }
         NSLog("[VoquillApp] resumeRecording")
+        stopIdleTimeout()
 
         if audioEngine?.isRunning != true {
             NSLog("[VoquillApp] Audio engine not running, attempting restart")
@@ -116,6 +119,7 @@ class DictationService {
         DarwinNotificationManager.shared.removeObserver(DictationConstants.stopDictation)
 
         stopRecordingTimeout()
+        stopIdleTimeout()
         isRecording = false
         stopAudioEngine()
         stopHeartbeat()
@@ -209,6 +213,35 @@ class DictationService {
     private func stopRecordingTimeout() {
         recordingTimeoutTimer?.invalidate()
         recordingTimeoutTimer = nil
+    }
+
+    // MARK: - Idle Timeout
+
+    private func startIdleTimeout() {
+        stopIdleTimeout()
+        let timeout = defaults?.double(forKey: DictationConstants.idleTimeoutKey) ?? 0
+        let duration = timeout > 0 ? timeout : DictationConstants.defaultIdleTimeout
+
+        // 0 means "keep running" — don't create a timer
+        if defaults?.object(forKey: DictationConstants.idleTimeoutKey) != nil && timeout == 0 {
+            NSLog("[VoquillApp] Idle timeout disabled (keep running mode)")
+            return
+        }
+
+        NSLog("[VoquillApp] Starting idle timeout: %.0f seconds", duration)
+        idleTimeoutTimer = Timer.scheduledTimer(
+            withTimeInterval: duration,
+            repeats: false
+        ) { [weak self] _ in
+            guard let self = self, self.currentPhase == .active else { return }
+            NSLog("[VoquillApp] Idle timeout reached, stopping dictation")
+            self.stopDictation()
+        }
+    }
+
+    private func stopIdleTimeout() {
+        idleTimeoutTimer?.invalidate()
+        idleTimeoutTimer = nil
     }
 
     // MARK: - Heartbeat
