@@ -1,6 +1,177 @@
 import Flutter
 import UIKit
 
+struct SharedAiConfigBridge {
+  struct LocalModelDefinition {
+    let slug: String
+    let label: String
+    let helper: String
+    let sizeBytes: Int
+    let languageSupport: String
+  }
+
+  static let downloadedModelsKey = "voquill_local_transcription_downloaded_models"
+
+  static let supportedLocalModels: [LocalModelDefinition] = [
+    .init(
+      slug: "tiny",
+      label: "Whisper Tiny (77 MB)",
+      helper: "Fastest, lowest accuracy",
+      sizeBytes: 77_000_000,
+      languageSupport: "multilingual"
+    ),
+    .init(
+      slug: "base",
+      label: "Whisper Base (148 MB)",
+      helper: "Great balance of speed and accuracy",
+      sizeBytes: 148_000_000,
+      languageSupport: "multilingual"
+    ),
+    .init(
+      slug: "small",
+      label: "Whisper Small (488 MB)",
+      helper: "Recommended with GPU acceleration",
+      sizeBytes: 488_000_000,
+      languageSupport: "multilingual"
+    ),
+    .init(
+      slug: "medium",
+      label: "Whisper Medium (1.53 GB)",
+      helper: "Balanced quality and speed",
+      sizeBytes: 1_530_000_000,
+      languageSupport: "multilingual"
+    ),
+    .init(
+      slug: "turbo",
+      label: "Whisper Large v3 Turbo (1.6 GB)",
+      helper: "Fast large model, great accuracy",
+      sizeBytes: 1_600_000_000,
+      languageSupport: "multilingual"
+    ),
+    .init(
+      slug: "large",
+      label: "Whisper Large v3 (3.1 GB)",
+      helper: "Highest accuracy, requires GPU",
+      sizeBytes: 3_100_000_000,
+      languageSupport: "multilingual"
+    )
+  ]
+
+  static func setKeyboardAiConfig(args: [String: String], defaults: UserDefaults) {
+    let transcriptionMode = args["transcriptionMode"]
+    let postProcessingMode = args["postProcessingMode"]
+
+    defaults.set(transcriptionMode, forKey: "voquill_ai_transcription_mode")
+    defaults.set(postProcessingMode, forKey: "voquill_ai_post_processing_mode")
+    if let provider = args["transcriptionProvider"] {
+      defaults.set(provider, forKey: "voquill_ai_transcription_provider")
+    } else {
+      defaults.removeObject(forKey: "voquill_ai_transcription_provider")
+    }
+    if let apiKey = args["transcriptionApiKey"] {
+      defaults.set(apiKey, forKey: "voquill_ai_transcription_api_key")
+    } else {
+      defaults.removeObject(forKey: "voquill_ai_transcription_api_key")
+    }
+    if let provider = args["postProcessingProvider"] {
+      defaults.set(provider, forKey: "voquill_ai_post_processing_provider")
+    } else {
+      defaults.removeObject(forKey: "voquill_ai_post_processing_provider")
+    }
+    if let apiKey = args["postProcessingApiKey"] {
+      defaults.set(apiKey, forKey: "voquill_ai_post_processing_api_key")
+    } else {
+      defaults.removeObject(forKey: "voquill_ai_post_processing_api_key")
+    }
+    if let baseUrl = args["transcriptionBaseUrl"] {
+      defaults.set(baseUrl, forKey: "voquill_ai_transcription_base_url")
+    } else {
+      defaults.removeObject(forKey: "voquill_ai_transcription_base_url")
+    }
+    if let baseUrl = args["postProcessingBaseUrl"] {
+      defaults.set(baseUrl, forKey: "voquill_ai_post_processing_base_url")
+    } else {
+      defaults.removeObject(forKey: "voquill_ai_post_processing_base_url")
+    }
+    if let model = args["transcriptionModel"] {
+      defaults.set(model, forKey: "voquill_ai_transcription_model")
+    } else {
+      defaults.removeObject(forKey: "voquill_ai_transcription_model")
+    }
+    if let model = args["postProcessingModel"] {
+      defaults.set(model, forKey: "voquill_ai_post_processing_model")
+    } else {
+      defaults.removeObject(forKey: "voquill_ai_post_processing_model")
+    }
+    if let azureRegion = args["transcriptionAzureRegion"] {
+      defaults.set(azureRegion, forKey: "voquill_ai_transcription_azure_region")
+    } else {
+      defaults.removeObject(forKey: "voquill_ai_transcription_azure_region")
+    }
+  }
+
+  static func listLocalTranscriptionModels(defaults: UserDefaults?) -> [[String: Any]] {
+    let downloaded = Set(defaults?.stringArray(forKey: downloadedModelsKey) ?? [])
+    let transcriptionMode = defaults?.string(forKey: "voquill_ai_transcription_mode")
+    let selectedModel = defaults?.string(forKey: "voquill_ai_transcription_model")
+
+    return supportedLocalModels.map { model in
+      let isDownloaded = downloaded.contains(model.slug)
+      return [
+        "slug": model.slug,
+        "label": model.label,
+        "helper": model.helper,
+        "sizeBytes": model.sizeBytes,
+        "languageSupport": model.languageSupport,
+        "downloaded": isDownloaded,
+        "valid": isDownloaded,
+        "selected": transcriptionMode == "local" && selectedModel == model.slug
+      ]
+    }
+  }
+
+  static func downloadLocalTranscriptionModel(slug: String, defaults: UserDefaults) -> Bool {
+    guard supportedLocalModels.contains(where: { $0.slug == slug }) else {
+      return false
+    }
+
+    var downloaded = defaults.stringArray(forKey: downloadedModelsKey) ?? []
+    if !downloaded.contains(slug) {
+      downloaded.append(slug)
+      defaults.set(downloaded, forKey: downloadedModelsKey)
+    }
+    return true
+  }
+
+  static func deleteLocalTranscriptionModel(slug: String, defaults: UserDefaults) -> Bool {
+    guard supportedLocalModels.contains(where: { $0.slug == slug }) else {
+      return false
+    }
+
+    var downloaded = defaults.stringArray(forKey: downloadedModelsKey) ?? []
+    downloaded.removeAll { $0 == slug }
+    defaults.set(downloaded, forKey: downloadedModelsKey)
+    if defaults.string(forKey: "voquill_ai_transcription_model") == slug {
+      defaults.removeObject(forKey: "voquill_ai_transcription_model")
+    }
+    return true
+  }
+
+  static func selectLocalTranscriptionModel(slug: String, defaults: UserDefaults) -> Bool {
+    guard supportedLocalModels.contains(where: { $0.slug == slug }) else {
+      return false
+    }
+    let downloaded = Set(defaults.stringArray(forKey: downloadedModelsKey) ?? [])
+    guard downloaded.contains(slug) else {
+      return false
+    }
+
+    defaults.set("local", forKey: "voquill_ai_transcription_mode")
+    defaults.set(slug, forKey: "voquill_ai_transcription_model")
+    return true
+  }
+}
+
 @main
 @objc class AppDelegate: FlutterAppDelegate {
   private static let appGroupId = "group.com.voquill.mobile"
@@ -182,58 +353,46 @@ import UIKit
 
       case "setKeyboardAiConfig":
         guard let args = call.arguments as? [String: String],
-              let transcriptionMode = args["transcriptionMode"],
-              let postProcessingMode = args["postProcessingMode"],
+              args["transcriptionMode"] != nil,
+              args["postProcessingMode"] != nil,
               let defaults = UserDefaults(suiteName: AppDelegate.appGroupId) else {
           result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
           return
         }
-        defaults.set(transcriptionMode, forKey: "voquill_ai_transcription_mode")
-        defaults.set(postProcessingMode, forKey: "voquill_ai_post_processing_mode")
-        if let provider = args["transcriptionProvider"] {
-          defaults.set(provider, forKey: "voquill_ai_transcription_provider")
-        } else {
-          defaults.removeObject(forKey: "voquill_ai_transcription_provider")
+        SharedAiConfigBridge.setKeyboardAiConfig(args: args, defaults: defaults)
+        result(nil)
+
+      case "listLocalTranscriptionModels":
+        let defaults = UserDefaults(suiteName: AppDelegate.appGroupId)
+        result(SharedAiConfigBridge.listLocalTranscriptionModels(defaults: defaults))
+
+      case "downloadLocalTranscriptionModel":
+        guard let args = call.arguments as? [String: String],
+              let slug = args["slug"],
+              let defaults = UserDefaults(suiteName: AppDelegate.appGroupId),
+              SharedAiConfigBridge.downloadLocalTranscriptionModel(slug: slug, defaults: defaults) else {
+          result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
+          return
         }
-        if let apiKey = args["transcriptionApiKey"] {
-          defaults.set(apiKey, forKey: "voquill_ai_transcription_api_key")
-        } else {
-          defaults.removeObject(forKey: "voquill_ai_transcription_api_key")
+        result(nil)
+
+      case "deleteLocalTranscriptionModel":
+        guard let args = call.arguments as? [String: String],
+              let slug = args["slug"],
+              let defaults = UserDefaults(suiteName: AppDelegate.appGroupId),
+              SharedAiConfigBridge.deleteLocalTranscriptionModel(slug: slug, defaults: defaults) else {
+          result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
+          return
         }
-        if let provider = args["postProcessingProvider"] {
-          defaults.set(provider, forKey: "voquill_ai_post_processing_provider")
-        } else {
-          defaults.removeObject(forKey: "voquill_ai_post_processing_provider")
-        }
-        if let apiKey = args["postProcessingApiKey"] {
-          defaults.set(apiKey, forKey: "voquill_ai_post_processing_api_key")
-        } else {
-          defaults.removeObject(forKey: "voquill_ai_post_processing_api_key")
-        }
-        if let baseUrl = args["transcriptionBaseUrl"] {
-          defaults.set(baseUrl, forKey: "voquill_ai_transcription_base_url")
-        } else {
-          defaults.removeObject(forKey: "voquill_ai_transcription_base_url")
-        }
-        if let baseUrl = args["postProcessingBaseUrl"] {
-          defaults.set(baseUrl, forKey: "voquill_ai_post_processing_base_url")
-        } else {
-          defaults.removeObject(forKey: "voquill_ai_post_processing_base_url")
-        }
-        if let model = args["transcriptionModel"] {
-          defaults.set(model, forKey: "voquill_ai_transcription_model")
-        } else {
-          defaults.removeObject(forKey: "voquill_ai_transcription_model")
-        }
-        if let model = args["postProcessingModel"] {
-          defaults.set(model, forKey: "voquill_ai_post_processing_model")
-        } else {
-          defaults.removeObject(forKey: "voquill_ai_post_processing_model")
-        }
-        if let azureRegion = args["transcriptionAzureRegion"] {
-          defaults.set(azureRegion, forKey: "voquill_ai_transcription_azure_region")
-        } else {
-          defaults.removeObject(forKey: "voquill_ai_transcription_azure_region")
+        result(nil)
+
+      case "selectLocalTranscriptionModel":
+        guard let args = call.arguments as? [String: String],
+              let slug = args["slug"],
+              let defaults = UserDefaults(suiteName: AppDelegate.appGroupId),
+              SharedAiConfigBridge.selectLocalTranscriptionModel(slug: slug, defaults: defaults) else {
+          result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
+          return
         }
         result(nil)
 

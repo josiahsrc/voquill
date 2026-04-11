@@ -1,7 +1,8 @@
 import 'dart:convert';
 
 import 'package:app/model/api_key_model.dart';
-import 'package:app/utils/channel_utils.dart';
+import 'package:app/model/local_transcription_model.dart';
+import 'package:app/utils/channel_utils.dart' as channel_utils;
 import 'package:app/utils/log_utils.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -208,6 +209,22 @@ Future<String?> getApiKeyValue(String id) async {
   return await _secureStorage.read(key: '$_secureKeyPrefix$id');
 }
 
+Future<List<LocalTranscriptionModel>> listLocalTranscriptionModels() {
+  return channel_utils.listLocalTranscriptionModels();
+}
+
+Future<void> downloadLocalTranscriptionModel(String slug) {
+  return channel_utils.downloadLocalTranscriptionModel(slug);
+}
+
+Future<void> deleteLocalTranscriptionModel(String slug) {
+  return channel_utils.deleteLocalTranscriptionModel(slug);
+}
+
+Future<void> selectLocalTranscriptionModel(String slug) {
+  return channel_utils.selectLocalTranscriptionModel(slug);
+}
+
 Future<void> syncKeyboardAiSettings() async {
   try {
     final transcriptionMode = await getTranscriptionMode();
@@ -226,7 +243,10 @@ Future<void> syncKeyboardAiSettings() async {
     String? postProcessingBaseUrl;
     String? postProcessingModel;
 
-    if (transcriptionMode == AiMode.api) {
+    if (transcriptionMode == AiMode.local) {
+      final localModels = await listLocalTranscriptionModels();
+      transcriptionModel = localModels.where((m) => m.selected).firstOrNull?.slug;
+    } else if (transcriptionMode == AiMode.api) {
       final keyId = await getSelectedTranscriptionKeyId();
       if (keyId != null) {
         final keys = await loadApiKeys();
@@ -255,7 +275,7 @@ Future<void> syncKeyboardAiSettings() async {
       }
     }
 
-    await syncKeyboardAiConfig(
+    await channel_utils.syncKeyboardAiConfig(
       transcriptionMode: transcriptionMode.name,
       postProcessingMode: postProcessingMode.name,
       transcriptionProvider: transcriptionProvider,
