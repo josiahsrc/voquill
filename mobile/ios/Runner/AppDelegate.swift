@@ -237,6 +237,16 @@ import UIKit
         }
         result(nil)
 
+      case "setIdleTimeout":
+        guard let args = call.arguments as? [String: Any],
+              let timeoutSeconds = args["timeoutSeconds"] as? Int,
+              let defaults = UserDefaults(suiteName: AppDelegate.appGroupId) else {
+          result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
+          return
+        }
+        defaults.set(Double(timeoutSeconds), forKey: DictationConstants.idleTimeoutKey)
+        result(nil)
+
       case "startDictation":
         DictationService.shared.startDictation()
         result(nil)
