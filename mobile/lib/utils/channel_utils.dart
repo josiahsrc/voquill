@@ -8,13 +8,21 @@ import 'package:app/model/tone_model.dart';
 import 'package:app/utils/env_utils.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 final _logger = createNamedLogger('channel_utils');
 
 const _sharedChannel = MethodChannel('com.voquill.mobile/shared');
 
-bool get _canSync => Platform.isIOS || Platform.isAndroid;
+bool? _canSyncOverrideForTesting;
+
+bool get _canSync => _canSyncOverrideForTesting ?? (Platform.isIOS || Platform.isAndroid);
+
+@visibleForTesting
+void debugSetCanSyncOverride(bool? value) {
+  _canSyncOverrideForTesting = value;
+}
 
 Future<void> syncKeyboardAuth() async {
   if (!_canSync) {
@@ -199,6 +207,7 @@ Future<void> syncKeyboardAiConfig({
   String? transcriptionApiKey,
   String? transcriptionBaseUrl,
   String? transcriptionModel,
+  bool clearTranscriptionModel = false,
   String? transcriptionAzureRegion,
   String? postProcessingProvider,
   String? postProcessingApiKey,
@@ -215,6 +224,7 @@ Future<void> syncKeyboardAiConfig({
       if (transcriptionApiKey != null) 'transcriptionApiKey': transcriptionApiKey,
       if (transcriptionBaseUrl != null) 'transcriptionBaseUrl': transcriptionBaseUrl,
       if (transcriptionModel != null) 'transcriptionModel': transcriptionModel,
+      if (clearTranscriptionModel) 'clearTranscriptionModel': 'true',
       if (transcriptionAzureRegion != null) 'transcriptionAzureRegion': transcriptionAzureRegion,
       if (postProcessingProvider != null) 'postProcessingProvider': postProcessingProvider,
       if (postProcessingApiKey != null) 'postProcessingApiKey': postProcessingApiKey,

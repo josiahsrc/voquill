@@ -60,6 +60,7 @@ struct SharedAiConfigBridge {
   static func setKeyboardAiConfig(args: [String: String], defaults: UserDefaults) {
     let transcriptionMode = args["transcriptionMode"]
     let postProcessingMode = args["postProcessingMode"]
+    let clearTranscriptionModel = args["clearTranscriptionModel"] == "true"
 
     defaults.set(transcriptionMode, forKey: "voquill_ai_transcription_mode")
     defaults.set(postProcessingMode, forKey: "voquill_ai_post_processing_mode")
@@ -93,7 +94,9 @@ struct SharedAiConfigBridge {
     } else {
       defaults.removeObject(forKey: "voquill_ai_post_processing_base_url")
     }
-    if let model = args["transcriptionModel"] {
+    if clearTranscriptionModel {
+      defaults.removeObject(forKey: "voquill_ai_transcription_model")
+    } else if let model = args["transcriptionModel"] {
       defaults.set(model, forKey: "voquill_ai_transcription_model")
     } else {
       defaults.removeObject(forKey: "voquill_ai_transcription_model")

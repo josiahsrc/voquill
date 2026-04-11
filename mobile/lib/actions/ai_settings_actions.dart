@@ -225,6 +225,13 @@ Future<void> selectLocalTranscriptionModel(String slug) {
   return channel_utils.selectLocalTranscriptionModel(slug);
 }
 
+bool shouldClearTranscriptionModelForSync({
+  required AiMode transcriptionMode,
+  required String? transcriptionModel,
+}) {
+  return transcriptionMode == AiMode.local && transcriptionModel == null;
+}
+
 Future<void> syncKeyboardAiSettings() async {
   try {
     final transcriptionMode = await getTranscriptionMode();
@@ -282,6 +289,10 @@ Future<void> syncKeyboardAiSettings() async {
       transcriptionApiKey: transcriptionApiKey,
       transcriptionBaseUrl: transcriptionBaseUrl,
       transcriptionModel: transcriptionModel,
+      clearTranscriptionModel: shouldClearTranscriptionModelForSync(
+        transcriptionMode: transcriptionMode,
+        transcriptionModel: transcriptionModel,
+      ),
       transcriptionAzureRegion: transcriptionAzureRegion,
       postProcessingProvider: postProcessingProvider,
       postProcessingApiKey: postProcessingApiKey,

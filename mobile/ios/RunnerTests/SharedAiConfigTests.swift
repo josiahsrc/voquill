@@ -56,4 +56,20 @@ final class SharedAiConfigTests: XCTestCase {
     XCTAssertNil(defaults.string(forKey: "voquill_ai_transcription_mode"))
     XCTAssertNil(defaults.string(forKey: "voquill_ai_transcription_model"))
   }
+
+  func testSetKeyboardAiConfigClearsLocalModelWhenRequested() {
+    defaults.set("tiny", forKey: "voquill_ai_transcription_model")
+
+    SharedAiConfigBridge.setKeyboardAiConfig(
+      args: [
+        "transcriptionMode": "local",
+        "postProcessingMode": "cloud",
+        "clearTranscriptionModel": "true"
+      ],
+      defaults: defaults
+    )
+
+    XCTAssertEqual(defaults.string(forKey: "voquill_ai_transcription_mode"), "local")
+    XCTAssertNil(defaults.string(forKey: "voquill_ai_transcription_model"))
+  }
 }

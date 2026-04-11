@@ -151,6 +151,41 @@ internal object LocalModelBridge {
     }
 }
 
+internal object AiConfigBridge {
+    fun setKeyboardAiConfig(
+        args: Map<*, *>,
+        prefs: android.content.SharedPreferences,
+    ) {
+        val editor =
+            prefs
+                .edit()
+                .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, args["transcriptionMode"] as? String)
+                .putString(VoquillIME.KEY_AI_POST_PROCESSING_MODE, args["postProcessingMode"] as? String)
+
+        fun putOrRemove(key: String, argKey: String) {
+            val value = args[argKey] as? String
+            if (value != null) editor.putString(key, value)
+            else editor.remove(key)
+        }
+
+        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_PROVIDER, "transcriptionProvider")
+        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_API_KEY, "transcriptionApiKey")
+        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_PROVIDER, "postProcessingProvider")
+        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_API_KEY, "postProcessingApiKey")
+        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_BASE_URL, "transcriptionBaseUrl")
+        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_BASE_URL, "postProcessingBaseUrl")
+        if ((args["clearTranscriptionModel"] as? String) == "true") {
+            editor.remove(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL)
+        } else {
+            putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, "transcriptionModel")
+        }
+        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_MODEL, "postProcessingModel")
+        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_AZURE_REGION, "transcriptionAzureRegion")
+
+        editor.apply()
+    }
+}
+
 class MainActivity : FlutterFragmentActivity() {
     private var sharedChannel: MethodChannel? = null
 
@@ -395,27 +430,7 @@ class MainActivity : FlutterFragmentActivity() {
             return
         }
 
-        val editor = keyboardPrefs.edit()
-            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, transcriptionMode)
-            .putString(VoquillIME.KEY_AI_POST_PROCESSING_MODE, postProcessingMode)
-
-        fun putOrRemove(key: String, argKey: String) {
-            val value = args?.get(argKey) as? String
-            if (value != null) editor.putString(key, value)
-            else editor.remove(key)
-        }
-
-        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_PROVIDER, "transcriptionProvider")
-        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_API_KEY, "transcriptionApiKey")
-        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_PROVIDER, "postProcessingProvider")
-        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_API_KEY, "postProcessingApiKey")
-        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_BASE_URL, "transcriptionBaseUrl")
-        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_BASE_URL, "postProcessingBaseUrl")
-        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, "transcriptionModel")
-        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_MODEL, "postProcessingModel")
-        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_AZURE_REGION, "transcriptionAzureRegion")
-
-        editor.apply()
+        AiConfigBridge.setKeyboardAiConfig(args ?: emptyMap<String, String>(), keyboardPrefs)
         result.success(null)
     }
 
