@@ -9,8 +9,22 @@ import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
 final _logger = createNamedLogger('revenue_cat');
 
+bool get _hasRevenueCatApiKey =>
+    revenueCatAppleApiKey != null && revenueCatAppleApiKey!.isNotEmpty;
+
+PurchasesConfiguration? buildRevenueCatConfiguration() {
+  if (!_hasRevenueCatApiKey) {
+    return null;
+  }
+  return PurchasesConfiguration(revenueCatAppleApiKey!);
+}
+
 Future<void> initializeRevenueCat() async {
-  final config = PurchasesConfiguration(revenueCatAppleApiKey);
+  final config = buildRevenueCatConfiguration();
+  if (config == null) {
+    _logger.w('RevenueCat Apple API key not set, skipping initialization');
+    return;
+  }
   if (!Flavor.current.isProd) {
     await Purchases.setLogLevel(LogLevel.debug);
   }
@@ -19,6 +33,10 @@ Future<void> initializeRevenueCat() async {
 }
 
 Future<void> loginRevenueCat(String uid) async {
+  if (!_hasRevenueCatApiKey) {
+    _logger.w('RevenueCat Apple API key not set, skipping login');
+    return;
+  }
   try {
     await Purchases.logIn(uid);
     _logger.i('RevenueCat logged in user $uid');
@@ -28,6 +46,10 @@ Future<void> loginRevenueCat(String uid) async {
 }
 
 Future<void> logoutRevenueCat() async {
+  if (!_hasRevenueCatApiKey) {
+    _logger.w('RevenueCat Apple API key not set, skipping logout');
+    return;
+  }
   try {
     await Purchases.logOut();
     _logger.i('RevenueCat logged out');
@@ -61,11 +83,19 @@ void presentPaywall() {
 }
 
 Future<void> presentCustomerCenter() async {
+  if (!_hasRevenueCatApiKey) {
+    _logger.w('RevenueCat Apple API key not set, skipping customer center');
+    return;
+  }
   await RevenueCatUI.presentCustomerCenter();
   await refreshMemberUntilChange();
 }
 
 Future<void> restorePurchases() async {
+  if (!_hasRevenueCatApiKey) {
+    _logger.w('RevenueCat Apple API key not set, skipping restore purchases');
+    return;
+  }
   try {
     await Purchases.restorePurchases();
     await refreshMemberUntilChange();
