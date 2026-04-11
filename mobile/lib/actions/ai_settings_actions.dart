@@ -245,12 +245,22 @@ Future<bool> _isSelectedLocalTranscriptionModel(String slug) async {
       true;
 }
 
+Future<LocalTranscriptionModel?> _firstSelectableLocalTranscriptionModel() async {
+  final models = await listLocalTranscriptionModels();
+  return models.where((model) => model.downloaded && model.valid).firstOrNull;
+}
+
 Future<void> deleteLocalTranscriptionModel(String slug) async {
   final wasSelected = await _isSelectedLocalTranscriptionModel(slug);
   final didDelete = await channel_utils.deleteLocalTranscriptionModel(slug);
   if (!didDelete) return;
 
   if (wasSelected) {
+    final fallbackModel = await _firstSelectableLocalTranscriptionModel();
+    if (fallbackModel != null) {
+      await channel_utils.selectLocalTranscriptionModel(fallbackModel.slug);
+    }
+
     // Native model lists only report selected=true when native transcription mode is local.
     await _persistTranscriptionMode(AiMode.local);
   }

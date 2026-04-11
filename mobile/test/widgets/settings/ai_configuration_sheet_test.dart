@@ -233,6 +233,93 @@ void main() {
     },
   );
 
+  testWidgets(
+    'deleting the selected local model falls back to the next downloaded model',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'ai_transcription_mode': AiMode.local.name,
+      });
+
+      channel_utils.debugSetCanSyncOverride(true);
+      final calls = <MethodCall>[];
+      var models = <Map<String, Object?>>[
+        localModel(
+          slug: 'tiny',
+          label: 'Whisper Tiny',
+          helper: 'Fastest, lowest accuracy',
+          sizeBytes: 77000000,
+          languageSupport: 'multilingual',
+          downloaded: true,
+          valid: true,
+          selected: true,
+        ),
+        localModel(
+          slug: 'base',
+          label: 'Whisper Base',
+          helper: 'Great balance of speed and accuracy',
+          sizeBytes: 148000000,
+          languageSupport: 'englishOnly',
+          downloaded: true,
+          valid: true,
+          selected: false,
+        ),
+      ];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            calls.add(call);
+            if (call.method == 'listLocalTranscriptionModels') {
+              return models;
+            }
+            if (call.method == 'deleteLocalTranscriptionModel') {
+              models = [
+                {
+                  ...models.first,
+                  'downloaded': false,
+                  'valid': false,
+                  'selected': false,
+                },
+                models.last,
+              ];
+            }
+            if (call.method == 'selectLocalTranscriptionModel') {
+              final slug = (call.arguments as Map)['slug'] as String;
+              models = [
+                for (final model in models)
+                  {...model, 'selected': model['slug'] == slug},
+              ];
+            }
+            return null;
+          });
+
+      await pumpSheet(tester, AiConfigContext.transcription);
+
+      final tinyCard = find.ancestor(
+        of: find.text('Whisper Tiny'),
+        matching: find.byType(Card),
+      );
+      await tester.tap(
+        find.descendant(
+          of: tinyCard,
+          matching: find.widgetWithText(TextButton, 'Delete'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final baseCard = find.ancestor(
+        of: find.text('Whisper Base'),
+        matching: find.byType(Card),
+      );
+      expect(
+        find.descendant(of: baseCard, matching: find.text('Selected')),
+        findsOneWidget,
+      );
+      expect(
+        calls.where((call) => call.method == 'selectLocalTranscriptionModel'),
+        hasLength(1),
+      );
+    },
+  );
+
   testWidgets('post-processing settings keep cloud and api key modes only', (
     tester,
   ) async {
