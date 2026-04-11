@@ -47,9 +47,5 @@ jobs:
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
       - name: Deploy preview channel
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          projectId: voquill-prod
-          expires: 7d
-          entryPoint: apps/web
+        working-directory: apps/web
+        run: npx firebase-tools@latest hosting:channel:deploy pr-${{ github.event.pull_request.number }} --expires 7d --project voquill-prod --non-interactive --config firebase.json
