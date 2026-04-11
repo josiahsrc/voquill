@@ -1,6 +1,7 @@
 import 'package:app/actions/idle_timeout_actions.dart';
 import 'package:app/utils/theme_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class IdleTimeoutSheet extends StatefulWidget {
   const IdleTimeoutSheet({super.key});
@@ -21,10 +22,12 @@ class IdleTimeoutSheet extends StatefulWidget {
 class _IdleTimeoutSheetState extends State<IdleTimeoutSheet> {
   static const _presets = [60, 120, 300]; // 1m, 2m, 5m
   static const _presetLabels = ['1 min', '2 min', '5 min'];
+  static const _maxMinutes = 60;
 
   int _selectedSeconds = 120;
   bool _keepRunning = false;
   bool _loading = true;
+  bool _saving = false;
   final _customController = TextEditingController();
 
   @override
@@ -46,7 +49,7 @@ class _IdleTimeoutSheetState extends State<IdleTimeoutSheet> {
       setState(() {
         _selectedSeconds = seconds;
         _keepRunning = keepRunning;
-        if (!_presets.contains(seconds)) {
+        if (!_presets.contains(seconds) && seconds > 0) {
           _customController.text = (seconds / 60).round().toString();
         }
         _loading = false;
@@ -55,6 +58,8 @@ class _IdleTimeoutSheetState extends State<IdleTimeoutSheet> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
     await setIdleTimeout(seconds: _selectedSeconds, keepRunning: _keepRunning);
     if (mounted) Navigator.pop(context);
   }
@@ -70,7 +75,14 @@ class _IdleTimeoutSheetState extends State<IdleTimeoutSheet> {
     final minutes = int.tryParse(value);
     if (minutes != null && minutes > 0) {
       setState(() {
-        _selectedSeconds = minutes * 60;
+        _selectedSeconds = minutes.clamp(1, _maxMinutes) * 60;
+      });
+    } else if (value.isEmpty) {
+      setState(() {
+        // Field cleared — revert to default unless a preset is already selected
+        if (!_presets.contains(_selectedSeconds)) {
+          _selectedSeconds = 120;
+        }
       });
     }
   }
@@ -156,8 +168,12 @@ class _IdleTimeoutSheetState extends State<IdleTimeoutSheet> {
                 controller: _customController,
                 enabled: !_keepRunning,
                 keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(2),
+                ],
                 decoration: InputDecoration(
-                  labelText: 'Custom (minutes)',
+                  labelText: 'Custom (1–$_maxMinutes minutes)',
                   hintText: 'e.g. 10',
                   border: const OutlineInputBorder(),
                   suffixText: 'min',
@@ -201,8 +217,14 @@ class _IdleTimeoutSheetState extends State<IdleTimeoutSheet> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: _save,
-                  child: const Text('Save'),
+                  onPressed: _saving ? null : _save,
+                  child: _saving
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Save'),
                 ),
               ),
             ],
@@ -213,6 +235,7 @@ class _IdleTimeoutSheetState extends State<IdleTimeoutSheet> {
   }
 
   String _formatDuration(int seconds) {
+    if (seconds <= 0) return '2 min';
     if (seconds < 60) return '${seconds}s';
     final minutes = seconds ~/ 60;
     final remaining = seconds % 60;
