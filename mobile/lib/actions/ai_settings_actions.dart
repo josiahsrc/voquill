@@ -24,6 +24,7 @@ Future<AiMode> getTranscriptionMode() async {
   final prefs = await SharedPreferences.getInstance();
   final value = prefs.getString(_kTranscriptionMode);
   if (value == AiMode.api.name) return AiMode.api;
+  if (value == AiMode.local.name) return AiMode.local;
   return AiMode.cloud;
 }
 
