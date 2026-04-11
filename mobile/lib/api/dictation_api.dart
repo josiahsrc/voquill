@@ -53,6 +53,10 @@ abstract class DictationSession {
 
 Future<DictationSession> createDictationSession() async {
   final mode = await getTranscriptionMode();
+  if (mode == AiMode.local) {
+    throw UnsupportedError('Local transcription is not available yet.');
+  }
+
   if (mode == AiMode.api) {
     final keyId = await getSelectedTranscriptionKeyId();
     if (keyId != null) {

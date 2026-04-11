@@ -62,6 +62,7 @@ class _AiConfigurationSheetState extends State<AiConfigurationSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isTranscription = widget.configContext == AiConfigContext.transcription;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -89,15 +90,25 @@ class _AiConfigurationSheetState extends State<AiConfigurationSheet> {
             ),
             const SizedBox(height: 16),
             if (!_loading) ...[
-              _ModeSelector(mode: _mode, onChanged: _setMode),
+              _ModeSelector(
+                mode: _mode,
+                onChanged: _setMode,
+                includeLocal: isTranscription,
+              ),
               const SizedBox(height: 16),
               Expanded(
-                child: _mode == AiMode.cloud
-                    ? _CloudContent(scrollController: scrollController)
-                    : ApiKeyListWidget(
-                        configContext: widget.configContext,
-                        scrollController: scrollController,
-                      ),
+                child: switch (_mode) {
+                  AiMode.cloud => _CloudContent(
+                    scrollController: scrollController,
+                  ),
+                  AiMode.local when isTranscription => _LocalContent(
+                    scrollController: scrollController,
+                  ),
+                  _ => ApiKeyListWidget(
+                    configContext: widget.configContext,
+                    scrollController: scrollController,
+                  ),
+                },
               ),
             ],
             if (_loading)
@@ -114,17 +125,24 @@ class _AiConfigurationSheetState extends State<AiConfigurationSheet> {
 class _ModeSelector extends StatelessWidget {
   final AiMode mode;
   final ValueChanged<AiMode> onChanged;
+  final bool includeLocal;
 
-  const _ModeSelector({required this.mode, required this.onChanged});
+  const _ModeSelector({
+    required this.mode,
+    required this.onChanged,
+    this.includeLocal = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: Theming.padding.onlyHorizontal(),
       child: SegmentedButton<AiMode>(
-        segments: const [
-          ButtonSegment(value: AiMode.cloud, label: Text('Cloud')),
-          ButtonSegment(value: AiMode.api, label: Text('API Key')),
+        segments: [
+          const ButtonSegment(value: AiMode.cloud, label: Text('Cloud')),
+          if (includeLocal)
+            const ButtonSegment(value: AiMode.local, label: Text('Local')),
+          const ButtonSegment(value: AiMode.api, label: Text('API Key')),
         ],
         selected: {mode},
         onSelectionChanged: (selection) => onChanged(selection.first),
@@ -164,6 +182,43 @@ class _CloudContent extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           'Transcription and post-processing are handled by Voquill\'s cloud service. No configuration needed.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withAlpha(153),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}
+
+class _LocalContent extends StatelessWidget {
+  final ScrollController scrollController;
+
+  const _LocalContent({required this.scrollController});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return ListView(
+      controller: scrollController,
+      padding: Theming.padding,
+      children: [
+        Icon(
+          Icons.memory_outlined,
+          size: 48,
+          color: theme.colorScheme.primary,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'On-device transcription',
+          style: theme.textTheme.titleMedium,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Local transcription is selected. Model download and device setup controls will land in a follow-up task.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurface.withAlpha(153),
           ),
