@@ -13,6 +13,7 @@ import 'package:app/widgets/common/app_sliver_app_bar.dart';
 import 'package:app/widgets/common/list_tile_section.dart';
 import 'package:app/widgets/settings/ai_configuration_sheet.dart';
 import 'package:app/widgets/settings/edit_profile_dialog.dart';
+import 'package:app/widgets/settings/idle_timeout_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -110,6 +111,13 @@ class SettingsPage extends StatelessWidget {
                     context,
                     AiConfigContext.postProcessing,
                   ),
+                ),
+                AppListTile(
+                  leading: const Icon(Icons.timer_outlined),
+                  title: const Text('Idle timeout'),
+                  subtitle: const Text('Auto-stop mic after inactivity'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => IdleTimeoutSheet.show(context),
                 ),
               ],
             ),
