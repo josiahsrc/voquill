@@ -1,7 +1,9 @@
 import 'package:app/actions/ai_settings_actions.dart';
 import 'package:app/model/api_key_model.dart';
+import 'package:app/model/local_transcription_model.dart';
 import 'package:app/utils/theme_utils.dart';
 import 'package:app/widgets/settings/api_key_list_widget.dart';
+import 'package:app/widgets/settings/local_transcription_model_list.dart';
 import 'package:flutter/material.dart';
 
 enum AiConfigContext { transcription, postProcessing }
@@ -11,7 +13,10 @@ class AiConfigurationSheet extends StatefulWidget {
 
   const AiConfigurationSheet({super.key, required this.configContext});
 
-  static Future<void> show(BuildContext context, AiConfigContext configContext) {
+  static Future<void> show(
+    BuildContext context,
+    AiConfigContext configContext,
+  ) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -99,10 +104,7 @@ class _AiConfigurationSheetState extends State<AiConfigurationSheet> {
             ),
             Padding(
               padding: Theming.padding.withBottom(0),
-              child: Text(
-                _title,
-                style: theme.textTheme.titleLarge,
-              ),
+              child: Text(_title, style: theme.textTheme.titleLarge),
             ),
             const SizedBox(height: 16),
             if (!_loading) ...[
@@ -131,9 +133,7 @@ class _AiConfigurationSheetState extends State<AiConfigurationSheet> {
               ),
             ],
             if (_loading)
-              const Expanded(
-                child: Center(child: CircularProgressIndicator()),
-              ),
+              const Expanded(child: Center(child: CircularProgressIndicator())),
           ],
         );
       },
@@ -171,9 +171,7 @@ class _ModeSelector extends StatelessWidget {
           }
         },
         showSelectedIcon: false,
-        style: SegmentedButton.styleFrom(
-          visualDensity: VisualDensity.compact,
-        ),
+        style: SegmentedButton.styleFrom(visualDensity: VisualDensity.compact),
       ),
     );
   }
@@ -192,11 +190,7 @@ class _CloudContent extends StatelessWidget {
       controller: scrollController,
       padding: Theming.padding,
       children: [
-        Icon(
-          Icons.cloud_outlined,
-          size: 48,
-          color: theme.colorScheme.primary,
-        ),
+        Icon(Icons.cloud_outlined, size: 48, color: theme.colorScheme.primary),
         const SizedBox(height: 16),
         Text(
           'Voquill Cloud',
@@ -216,38 +210,114 @@ class _CloudContent extends StatelessWidget {
   }
 }
 
-class _LocalContent extends StatelessWidget {
+class _LocalContent extends StatefulWidget {
   final ScrollController scrollController;
 
   const _LocalContent({required this.scrollController});
 
   @override
+  State<_LocalContent> createState() => _LocalContentState();
+}
+
+class _LocalContentState extends State<_LocalContent> {
+  List<LocalTranscriptionModel> _models = [];
+  bool _loading = true;
+  bool _refreshing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadModels();
+  }
+
+  Future<void> _loadModels({bool showSpinner = true}) async {
+    if (mounted) {
+      setState(() {
+        if (showSpinner && _models.isEmpty) {
+          _loading = true;
+        } else {
+          _refreshing = true;
+        }
+      });
+    }
+
+    final models = await listLocalTranscriptionModels();
+    if (!mounted) return;
+    setState(() {
+      _models = models;
+      _loading = false;
+      _refreshing = false;
+    });
+  }
+
+  Future<void> _runAndRefresh(Future<void> Function() action) async {
+    if (!mounted) return;
+    setState(() => _refreshing = true);
+    await action();
+    await _loadModels(showSpinner: false);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return ListView(
-      controller: scrollController,
+      controller: widget.scrollController,
       padding: Theming.padding,
       children: [
-        Icon(
-          Icons.memory_outlined,
-          size: 48,
-          color: theme.colorScheme.primary,
-        ),
-        const SizedBox(height: 16),
         Text(
-          'On-device transcription',
-          style: theme.textTheme.titleMedium,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Local transcription is selected. Model download and device setup controls will land in a follow-up task.',
+          'Choose a local model to run on-device transcription.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurface.withAlpha(153),
           ),
-          textAlign: TextAlign.center,
         ),
+        if (_refreshing) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Refreshing model status...',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withAlpha(153),
+                ),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 8),
+        if (_models.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Text(
+              'No local models available right now.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withAlpha(153),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          )
+        else
+          LocalTranscriptionModelList(
+            models: _models,
+            onDownload: (slug) =>
+                _runAndRefresh(() => downloadLocalTranscriptionModel(slug)),
+            onDelete: (slug) =>
+                _runAndRefresh(() => deleteLocalTranscriptionModel(slug)),
+            onSelect: (slug) =>
+                _runAndRefresh(() => selectLocalTranscriptionModel(slug)),
+          ),
       ],
     );
   }

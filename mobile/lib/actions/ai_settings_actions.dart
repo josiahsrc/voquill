@@ -86,7 +86,10 @@ Future<List<ApiKey>> loadApiKeys() async {
 
 Future<void> _saveApiKeyList(List<ApiKey> keys) async {
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(_kApiKeys, jsonEncode(keys.map((k) => k.toJson()).toList()));
+  await prefs.setString(
+    _kApiKeys,
+    jsonEncode(keys.map((k) => k.toJson()).toList()),
+  );
 }
 
 Future<ApiKey> createApiKey({
@@ -100,7 +103,9 @@ Future<ApiKey> createApiKey({
 }) async {
   final keys = await loadApiKeys();
   final id = const Uuid().v4();
-  final suffix = keyValue.length >= 4 ? keyValue.substring(keyValue.length - 4) : keyValue;
+  final suffix = keyValue.length >= 4
+      ? keyValue.substring(keyValue.length - 4)
+      : keyValue;
   final now = DateTime.now().toUtc().toIso8601String();
 
   final apiKey = ApiKey(
@@ -214,7 +219,20 @@ Future<String?> getApiKeyValue(String id) async {
 }
 
 Future<List<LocalTranscriptionModel>> listLocalTranscriptionModels() {
-  return channel_utils.listLocalTranscriptionModels();
+  return channel_utils.listLocalTranscriptionModels().then((models) {
+    final order = <String, int>{};
+    for (var i = 0; i < LocalTranscriptionModel.supportedSlugs.length; i++) {
+      order[LocalTranscriptionModel.supportedSlugs[i]] = i;
+    }
+
+    final sorted = [...models];
+    sorted.sort((a, b) {
+      final aOrder = order[a.slug] ?? order.length;
+      final bOrder = order[b.slug] ?? order.length;
+      return aOrder.compareTo(bOrder);
+    });
+    return sorted;
+  });
 }
 
 Future<void> downloadLocalTranscriptionModel(String slug) {
@@ -223,7 +241,8 @@ Future<void> downloadLocalTranscriptionModel(String slug) {
 
 Future<bool> _isSelectedLocalTranscriptionModel(String slug) async {
   final models = await listLocalTranscriptionModels();
-  return models.where((model) => model.slug == slug).firstOrNull?.selected == true;
+  return models.where((model) => model.slug == slug).firstOrNull?.selected ==
+      true;
 }
 
 Future<void> deleteLocalTranscriptionModel(String slug) async {
@@ -274,7 +293,10 @@ Future<void> syncKeyboardAiSettings() async {
 
     if (transcriptionMode == AiMode.local) {
       final localModels = await listLocalTranscriptionModels();
-      transcriptionModel = localModels.where((m) => m.selected).firstOrNull?.slug;
+      transcriptionModel = localModels
+          .where((m) => m.selected)
+          .firstOrNull
+          ?.slug;
     } else if (transcriptionMode == AiMode.api) {
       final keyId = await getSelectedTranscriptionKeyId();
       if (keyId != null) {
