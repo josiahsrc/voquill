@@ -220,14 +220,14 @@ class DictationService {
     private func startIdleTimeout() {
         stopIdleTimeout()
         let timeout = defaults?.double(forKey: DictationConstants.idleTimeoutKey) ?? 0
-        let duration = timeout > 0 ? timeout : DictationConstants.defaultIdleTimeout
 
-        // 0 means "keep running" — don't create a timer
+        // 0 with key present means "keep running" — skip timer
         if defaults?.object(forKey: DictationConstants.idleTimeoutKey) != nil && timeout == 0 {
             NSLog("[VoquillApp] Idle timeout disabled (keep running mode)")
             return
         }
 
+        let duration = timeout > 0 ? timeout : DictationConstants.defaultIdleTimeout
         NSLog("[VoquillApp] Starting idle timeout: %.0f seconds", duration)
         idleTimeoutTimer = Timer.scheduledTimer(
             withTimeInterval: duration,
@@ -242,6 +242,13 @@ class DictationService {
     private func stopIdleTimeout() {
         idleTimeoutTimer?.invalidate()
         idleTimeoutTimer = nil
+    }
+
+    /// Restart idle timer with current settings if in `.active` phase.
+    /// Called when timeout setting changes via Flutter so the new value takes effect immediately.
+    func restartIdleTimeoutIfActive() {
+        guard currentPhase == .active else { return }
+        startIdleTimeout()
     }
 
     // MARK: - Heartbeat
