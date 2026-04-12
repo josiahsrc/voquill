@@ -16,8 +16,8 @@ const CALLBACK_PATH: &str = "/callback";
 
 pub fn run(env: Env, site_override: Option<String>) -> Result<()> {
     let state = random_state();
-    let listener = TcpListener::bind(("127.0.0.1", 0))
-        .context("Failed to bind local HTTP server")?;
+    let listener =
+        TcpListener::bind(("127.0.0.1", 0)).context("Failed to bind local HTTP server")?;
     let port = listener.local_addr()?.port();
 
     let site = site_override.unwrap_or_else(|| env.default_site().to_string());
@@ -109,8 +109,7 @@ fn handle_request(
         return Ok(None);
     }
 
-    let request = std::str::from_utf8(&buffer[..bytes_read])
-        .context("Invalid request encoding")?;
+    let request = std::str::from_utf8(&buffer[..bytes_read]).context("Invalid request encoding")?;
 
     let request_line = request
         .split("\r\n")

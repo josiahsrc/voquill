@@ -24,13 +24,11 @@ pub fn credentials_path(env: Env) -> Result<PathBuf> {
 
 pub fn save(env: Env, credentials: &Credentials) -> Result<PathBuf> {
     let dir = config_dir()?;
-    std::fs::create_dir_all(&dir)
-        .with_context(|| format!("Failed to create {}", dir.display()))?;
+    std::fs::create_dir_all(&dir).with_context(|| format!("Failed to create {}", dir.display()))?;
 
     let path = credentials_path(env)?;
     let json = serde_json::to_vec_pretty(credentials)?;
-    std::fs::write(&path, json)
-        .with_context(|| format!("Failed to write {}", path.display()))?;
+    std::fs::write(&path, json).with_context(|| format!("Failed to write {}", path.display()))?;
 
     #[cfg(unix)]
     {

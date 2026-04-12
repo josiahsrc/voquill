@@ -2,10 +2,10 @@
 
 This crate builds three binaries, one per backend environment.
 
-| Binary | Firebase project | Default `--site` |
-| --- | --- | --- |
-| `voquill` | `voquill-prod` | `https://voquill.com` |
-| `voquill-dev` | `voquill-dev` | `http://localhost:4321` |
+| Binary             | Firebase project                                  | Default `--site`        |
+| ------------------ | ------------------------------------------------- | ----------------------- |
+| `voquill`          | `voquill-prod`                                    | `https://voquill.com`   |
+| `voquill-dev`      | `voquill-dev`                                     | `http://localhost:4321` |
 | `voquill-emulator` | `voquill-dev` + Auth emulator on `127.0.0.1:9099` | `http://localhost:4321` |
 
 Each binary writes its credentials to `~/.config/voquill/<env>.json` (mode `0600` on Unix). Running one won't overwrite another's session.
