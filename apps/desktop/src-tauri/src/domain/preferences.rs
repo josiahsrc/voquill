@@ -76,6 +76,8 @@ pub struct UserPreferences {
     pub remote_receiver_auto_start: bool,
     #[serde(default = "default_dictation_audio_dim")]
     pub dictation_audio_dim: f64,
+    #[serde(default)]
+    pub menu_bar_icon_hidden: bool,
 }
 
 fn default_dictation_pill_visibility() -> String {
