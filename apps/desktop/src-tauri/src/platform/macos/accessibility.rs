@@ -879,6 +879,86 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {
     Ok(())
 }
 
+pub fn check_focused_paste_target() -> crate::commands::PasteTargetState {
+    use crate::commands::PasteTargetState;
+    catch_unwind(AssertUnwindSafe(|| unsafe { check_focused_paste_target_impl() }))
+        .unwrap_or(PasteTargetState::Unknown)
+}
+
+unsafe fn check_focused_paste_target_impl() -> crate::commands::PasteTargetState {
+    use crate::commands::PasteTargetState;
+
+    let ax_focused_ui_element = CFString::new("AXFocusedUIElement");
+    let ax_role = CFString::new("AXRole");
+    let ax_value = CFString::new("AXValue");
+    let ax_selected_text = CFString::new("AXSelectedText");
+
+    let system_wide = AXUIElementCreateSystemWide();
+    if system_wide.is_null() {
+        return PasteTargetState::Unknown;
+    }
+
+    let mut focused: CFTypeRef = ptr::null();
+    let result = AXUIElementCopyAttributeValue(
+        system_wide,
+        ax_focused_ui_element.as_concrete_TypeRef(),
+        &mut focused,
+    );
+    CFRelease(system_wide);
+
+    if result != AX_ERROR_SUCCESS {
+        return PasteTargetState::Unknown;
+    }
+    if focused.is_null() {
+        return PasteTargetState::NotEditable;
+    }
+
+    let role = get_string_attribute(focused, ax_role.as_concrete_TypeRef());
+
+    let editable_roles = [
+        "AXTextField",
+        "AXTextArea",
+        "AXComboBox",
+        "AXSearchField",
+    ];
+    if let Some(ref r) = role {
+        if editable_roles.iter().any(|er| er == r) {
+            CFRelease(focused);
+            return PasteTargetState::Editable;
+        }
+    }
+
+    if is_element_inside_web_area(focused) {
+        CFRelease(focused);
+        return PasteTargetState::Unknown;
+    }
+
+    let mut settable = false;
+    let settable_result = AXUIElementIsAttributeSettable(
+        focused,
+        ax_selected_text.as_concrete_TypeRef(),
+        &mut settable,
+    );
+    if settable_result == AX_ERROR_SUCCESS && settable {
+        CFRelease(focused);
+        return PasteTargetState::Editable;
+    }
+
+    settable = false;
+    let value_settable_result = AXUIElementIsAttributeSettable(
+        focused,
+        ax_value.as_concrete_TypeRef(),
+        &mut settable,
+    );
+    CFRelease(focused);
+
+    if value_settable_result == AX_ERROR_SUCCESS && settable {
+        return PasteTargetState::Editable;
+    }
+
+    PasteTargetState::NotEditable
+}
+
 pub fn get_selected_text() -> Option<String> {
     use std::{thread, time::Duration};
 

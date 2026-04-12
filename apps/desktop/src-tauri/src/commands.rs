@@ -51,6 +51,14 @@ pub struct ScreenContextInfo {
     pub screen_context: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PasteTargetState {
+    Editable,
+    NotEditable,
+    Unknown,
+}
+
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppTargetUpsertArgs {
@@ -1422,6 +1430,19 @@ pub async fn get_selected_text() -> Result<Option<String>, String> {
     )
     .await
     .map_err(|_| "get_selected_text timed out".to_string())?
+    .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn check_focused_paste_target() -> Result<PasteTargetState, String> {
+    tokio::time::timeout(
+        std::time::Duration::from_secs(1),
+        tauri::async_runtime::spawn_blocking(
+            crate::platform::accessibility::check_focused_paste_target,
+        ),
+    )
+    .await
+    .map_err(|_| "check_focused_paste_target timed out".to_string())?
     .map_err(|err| err.to_string())
 }
 

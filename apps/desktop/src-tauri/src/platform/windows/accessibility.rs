@@ -434,6 +434,15 @@ pub fn get_selected_text() -> Option<String> {
     get_selected_text_clipboard()
 }
 
+pub fn check_focused_paste_target() -> crate::commands::PasteTargetState {
+    use crate::commands::PasteTargetState;
+    match try_is_text_input_focused() {
+        Ok(true) => PasteTargetState::Editable,
+        Ok(false) => PasteTargetState::NotEditable,
+        Err(_) => PasteTargetState::Unknown,
+    }
+}
+
 fn try_get_selected_text_uia() -> Result<Option<String>, windows::core::Error> {
     unsafe {
         let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
