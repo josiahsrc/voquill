@@ -16,6 +16,8 @@ fn client() -> Result<reqwest::blocking::Client> {
 
 fn stream_client() -> Result<reqwest::blocking::Client> {
     reqwest::blocking::Client::builder()
+        .connect_timeout(Duration::from_secs(10))
+        .tcp_keepalive(Duration::from_secs(30))
         .build()
         .context("Failed to build HTTP client")
 }
@@ -62,6 +64,23 @@ pub fn create_session(env: Env, creds: &Credentials, session_id: &str, name: &st
         let status = response.status();
         let text = response.text().unwrap_or_default();
         bail!("RTDB create failed ({status}): {text}");
+    }
+
+    Ok(())
+}
+
+pub fn touch_session(env: Env, creds: &Credentials, session_id: &str) -> Result<()> {
+    let body = json!({ "lastActive": now_millis() });
+    let response = client()?
+        .patch(session_url(env, creds, session_id))
+        .json(&body)
+        .send()
+        .context("Failed to touch session")?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let text = response.text().unwrap_or_default();
+        bail!("RTDB touch failed ({status}): {text}");
     }
 
     Ok(())

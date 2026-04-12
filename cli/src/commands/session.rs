@@ -9,6 +9,7 @@ use std::thread;
 use pty::fork::Fork;
 
 use crate::Env;
+use crate::auth;
 use crate::credentials::{self, Credentials};
 use crate::random_name;
 use crate::rtdb;
@@ -115,15 +116,19 @@ fn parent_loop(
     let listener_session_id = session_id.to_string();
     let listener_stop = stop.clone();
     thread::spawn(move || {
-        if let Err(err) = paste_listener(
+        paste_listener(
             env,
-            &listener_creds,
-            &listener_session_id,
+            listener_creds,
+            listener_session_id,
             master_fd,
-            &listener_stop,
-        ) {
-            eprintln!("\r\nPaste listener stopped: {err}\r");
-        }
+            listener_stop,
+        );
+    });
+
+    let heartbeat_session_id = session_id.to_string();
+    let heartbeat_stop = stop.clone();
+    thread::spawn(move || {
+        heartbeat(env, heartbeat_session_id, heartbeat_stop);
     });
 
     let stop_reader = stop.clone();
@@ -253,29 +258,134 @@ fn propagate_winsize(src_fd: RawFd, dst_fd: RawFd) {
     }
 }
 
+fn heartbeat(env: Env, session_id: String, stop: Arc<AtomicBool>) {
+    const INTERVAL: std::time::Duration = std::time::Duration::from_secs(60);
+    loop {
+        if sleep_with_stop(&stop, INTERVAL) {
+            return;
+        }
+        let Ok(Some(creds)) = credentials::load(env) else {
+            continue;
+        };
+        if let Err(err) = rtdb::touch_session(env, &creds, &session_id) {
+            eprintln!("\r\nHeartbeat failed: {err}\r");
+        }
+    }
+}
+
 fn paste_listener(
+    env: Env,
+    mut creds: Credentials,
+    session_id: String,
+    master_fd: RawFd,
+    stop: Arc<AtomicBool>,
+) {
+    let mut last_ts: i64 = 0;
+    let mut backoff_secs: u64 = 1;
+
+    while !stop.load(Ordering::Relaxed) {
+        if auth::needs_refresh(&creds)
+            && let Err(err) = auth::refresh(env, &mut creds)
+        {
+            eprintln!("\r\nPaste listener: token refresh failed: {err}\r");
+            if sleep_with_stop(&stop, std::time::Duration::from_secs(backoff_secs)) {
+                return;
+            }
+            backoff_secs = (backoff_secs * 2).min(30);
+            continue;
+        }
+
+        match run_stream_once(env, &creds, &session_id, master_fd, &stop, &mut last_ts) {
+            StreamOutcome::Stopped => return,
+            StreamOutcome::AuthFailed => {
+                if let Err(err) = auth::refresh(env, &mut creds) {
+                    eprintln!("\r\nPaste listener: token refresh failed: {err}\r");
+                    if sleep_with_stop(&stop, std::time::Duration::from_secs(backoff_secs)) {
+                        return;
+                    }
+                    backoff_secs = (backoff_secs * 2).min(30);
+                    continue;
+                }
+                backoff_secs = 1;
+            }
+            StreamOutcome::Reconnect => {
+                if sleep_with_stop(&stop, std::time::Duration::from_secs(backoff_secs)) {
+                    return;
+                }
+                backoff_secs = (backoff_secs * 2).min(30);
+            }
+            StreamOutcome::Healthy => {
+                backoff_secs = 1;
+            }
+        }
+    }
+}
+
+enum StreamOutcome {
+    Stopped,
+    AuthFailed,
+    Reconnect,
+    Healthy,
+}
+
+fn sleep_with_stop(stop: &AtomicBool, total: std::time::Duration) -> bool {
+    let start = std::time::Instant::now();
+    while start.elapsed() < total {
+        if stop.load(Ordering::Relaxed) {
+            return true;
+        }
+        thread::sleep(std::time::Duration::from_millis(100));
+    }
+    false
+}
+
+fn run_stream_once(
     env: Env,
     creds: &Credentials,
     session_id: &str,
     master_fd: RawFd,
     stop: &AtomicBool,
-) -> Result<()> {
+    last_ts: &mut i64,
+) -> StreamOutcome {
     use std::io::BufRead;
 
-    let response = rtdb::stream_session(env, creds, session_id)?;
-    let reader = std::io::BufReader::new(response);
+    let response = match rtdb::stream_session(env, creds, session_id) {
+        Ok(r) => r,
+        Err(err) => {
+            let msg = format!("{err:?}");
+            if msg.contains("401") || msg.contains("unauthorized") || msg.contains("Auth") {
+                return StreamOutcome::AuthFailed;
+            }
+            return StreamOutcome::Reconnect;
+        }
+    };
 
+    let reader = std::io::BufReader::new(response);
     let mut event: Option<String> = None;
-    let mut last_ts: i64 = 0;
     let mut current_text: Option<String> = None;
     let mut current_ts: Option<i64> = None;
+    let mut saw_data = false;
 
     for line in reader.lines() {
         if stop.load(Ordering::Relaxed) {
-            break;
+            return StreamOutcome::Stopped;
         }
-        let line = line.context("Failed to read RTDB stream")?;
+        let line = match line {
+            Ok(l) => l,
+            Err(_) => {
+                return if saw_data {
+                    StreamOutcome::Healthy
+                } else {
+                    StreamOutcome::Reconnect
+                };
+            }
+        };
 
+        saw_data = true;
+
+        if line == "event: auth_revoked" {
+            return StreamOutcome::AuthFailed;
+        }
         if let Some(rest) = line.strip_prefix("event: ") {
             event = Some(rest.to_string());
             continue;
@@ -306,9 +416,9 @@ fn paste_listener(
         apply_update(path, &payload, &mut current_text, &mut current_ts);
 
         if let (Some(text), Some(ts)) = (current_text.as_deref(), current_ts)
-            && ts > last_ts
+            && ts > *last_ts
         {
-            last_ts = ts;
+            *last_ts = ts;
             if let Err(err) = write_all_fd(master_fd, text.as_bytes())
                 .and_then(|()| write_all_fd(master_fd, b"\r"))
             {
@@ -322,7 +432,11 @@ fn paste_listener(
         }
     }
 
-    Ok(())
+    if saw_data {
+        StreamOutcome::Healthy
+    } else {
+        StreamOutcome::Reconnect
+    }
 }
 
 fn apply_update(

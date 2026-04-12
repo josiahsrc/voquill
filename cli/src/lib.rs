@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod commands;
 pub mod credentials;
 pub mod random_name;
@@ -26,6 +27,26 @@ impl Env {
         match self {
             Env::Prod => "https://voquill.com",
             Env::Dev | Env::Emulator => "http://localhost:4321",
+        }
+    }
+
+    pub fn api_key(self) -> &'static str {
+        match self {
+            Env::Prod => "AIzaSyDZV0yVGw8lzyZcQFEVQe9SbgFtXH2Tv94",
+            Env::Dev | Env::Emulator => "AIzaSyAteG4sQc4z6nJcHZ2oX5fsUAYqHzM6IAE",
+        }
+    }
+
+    pub fn secure_token_url(self) -> String {
+        match self {
+            Env::Prod | Env::Dev => format!(
+                "https://securetoken.googleapis.com/v1/token?key={}",
+                self.api_key()
+            ),
+            Env::Emulator => format!(
+                "http://127.0.0.1:9099/securetoken.googleapis.com/v1/token?key={}",
+                self.api_key()
+            ),
         }
     }
 }
