@@ -3,8 +3,8 @@ use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE, KEYBDINPUT,
     KEYEVENTF_KEYUP, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEINPUT, VIRTUAL_KEY,
-    VK_C, VK_CONTROL, VK_INSERT, VK_LCONTROL, VK_LMENU, VK_LSHIFT, VK_LWIN, VK_MENU, VK_RCONTROL,
-    VK_RMENU, VK_RSHIFT, VK_RWIN, VK_SHIFT, VK_V,
+    VK_A, VK_C, VK_CONTROL, VK_DELETE, VK_INSERT, VK_LCONTROL, VK_LMENU, VK_LSHIFT, VK_LWIN,
+    VK_MENU, VK_RCONTROL, VK_RIGHT, VK_RMENU, VK_RSHIFT, VK_RWIN, VK_SHIFT, VK_V,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     GetClassNameW, GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW,
@@ -100,6 +100,47 @@ pub(crate) fn simulate_copy_keystroke() {
     thread::sleep(Duration::from_millis(20));
     send_key_up(VK_C);
     send_key_up(VK_CONTROL);
+}
+
+pub(crate) fn select_all_keystroke() {
+    release_modifier_keys();
+    thread::sleep(Duration::from_millis(30));
+    send_key_down(VK_CONTROL);
+    send_key_down(VK_A);
+    thread::sleep(Duration::from_millis(20));
+    send_key_up(VK_A);
+    send_key_up(VK_CONTROL);
+}
+
+pub(crate) fn type_text_via_keystrokes(text: &str) -> Result<(), String> {
+    if text.is_empty() {
+        return Ok(());
+    }
+    use enigo::{Enigo, KeyboardControllable};
+    let mut enigo = Enigo::new();
+    release_modifier_keys();
+    thread::sleep(Duration::from_millis(50));
+    enigo.key_sequence(text);
+    Ok(())
+}
+
+pub(crate) fn shift_select_right(count: usize) {
+    if count == 0 {
+        return;
+    }
+    send_key_down(VK_SHIFT);
+    for _ in 0..count {
+        send_key_down(VK_RIGHT);
+        send_key_up(VK_RIGHT);
+        thread::sleep(Duration::from_millis(5));
+    }
+    send_key_up(VK_SHIFT);
+}
+
+pub(crate) fn send_delete_keystroke() {
+    send_key_down(VK_DELETE);
+    thread::sleep(Duration::from_millis(10));
+    send_key_up(VK_DELETE);
 }
 
 fn release_modifier_keys() {
