@@ -14,6 +14,12 @@ fn client() -> Result<reqwest::blocking::Client> {
         .context("Failed to build HTTP client")
 }
 
+fn stream_client() -> Result<reqwest::blocking::Client> {
+    reqwest::blocking::Client::builder()
+        .build()
+        .context("Failed to build HTTP client")
+}
+
 fn session_url(env: Env, creds: &Credentials, session_id: &str) -> String {
     let path = format!("session/{}/{}", creds.uid, session_id);
     match env {
@@ -59,6 +65,43 @@ pub fn create_session(env: Env, creds: &Credentials, session_id: &str, name: &st
     }
 
     Ok(())
+}
+
+pub fn clear_paste(env: Env, creds: &Credentials, session_id: &str) -> Result<()> {
+    let body = json!({ "pasteText": null, "pasteTimestamp": null });
+    let response = client()?
+        .patch(session_url(env, creds, session_id))
+        .json(&body)
+        .send()
+        .context("Failed to clear paste")?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let text = response.text().unwrap_or_default();
+        bail!("RTDB patch failed ({status}): {text}");
+    }
+
+    Ok(())
+}
+
+pub fn stream_session(
+    env: Env,
+    creds: &Credentials,
+    session_id: &str,
+) -> Result<reqwest::blocking::Response> {
+    let response = stream_client()?
+        .get(session_url(env, creds, session_id))
+        .header("Accept", "text/event-stream")
+        .send()
+        .context("Failed to open RTDB stream")?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let text = response.text().unwrap_or_default();
+        bail!("RTDB stream failed ({status}): {text}");
+    }
+
+    Ok(response)
 }
 
 pub fn delete_session(env: Env, creds: &Credentials, session_id: &str) -> Result<()> {
