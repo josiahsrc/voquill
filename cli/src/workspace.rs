@@ -48,20 +48,16 @@ pub fn clear_workspace(dir: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn instruction_suffix(session_name: &str) -> String {
+pub fn instruction_prefix(session_name: &str) -> String {
     format!(
-        "\n\n---\nRules for every turn:\n\
-         - Never propose multiple-choice options. Keep everything conversational and open-ended.\n\
-         - Do not enter plan mode.\n\
-         - Reply naturally, as if we're chatting.\n\n\
-         At the end of this turn, write output files into the folder .voquill/{name}/ :\n\n\
-         - summary.txt  (REQUIRED) One-line, high-level overview of what you just did. Always write this.\n\
-         - review-0.txt, review-1.txt, review-2.txt, ...  (optional) Each file is one thing you want the user to approve or reject. The user will swipe through them one at a time. Only write these when you have something for the user to review.\n\
-         - question-0.txt, question-1.txt, question-2.txt, ...  (optional) Each file is ONE open-ended question for the user. No multiple choice. No bundled questions. Only write these when you actually need clarification.\n\n\
-         Write only the files you need. summary.txt is the only one that is always required. Number the review and question files starting at 0 with no gaps.\n\n\
-         As your very last action, create an empty file named complete in that same folder. The complete file must be written AFTER every other file. This signals the turn is over.\n\n\
-         Do not delete anything from .voquill/{name}/ — the CLI manages cleanup. Just write the files and move on.\n\n\
-         Do this on every turn.",
+        "This session is relayed to a remote UI. Handle the user's prompt below however you normally would.\n\n\
+         To send content back to the UI, write plain text files into .voquill/{name}/ . Each file's contents become one message surfaced in the UI. Use whichever of the following file types fit what you want to communicate this turn — any combination, or none:\n\n\
+         - summary.txt — a recap of what you did, found, or are proposing.\n\
+         - review-0.txt, review-1.txt, ... — items for the user to approve or reject, one per file, numbered from 0 with no gaps.\n\
+         - question-0.txt, question-1.txt, ... — questions for the user, one per file, numbered from 0 with no gaps.\n\n\
+         Decide what (if anything) to write based on what's actually useful for this turn. When you're done writing files, create an empty file named `complete` in the same folder to signal the turn is over. Do not delete files in this folder — the CLI manages cleanup.\n\n\
+         ---\n\n\
+         User prompt:\n\n",
         name = session_name,
     )
 }
