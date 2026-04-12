@@ -1,9 +1,9 @@
 pub(crate) fn paste_text_into_focused_field(
     text: &str,
     keybind: Option<&str>,
-) -> Result<crate::commands::PasteMethod, String> {
+) -> Result<(), String> {
     if text.trim().is_empty() {
-        return Ok(crate::commands::PasteMethod::Clipboard);
+        return Ok(());
     }
 
     let override_text = std::env::var("VOQUILL_DEBUG_PASTE_TEXT").ok();
@@ -15,9 +15,8 @@ pub(crate) fn paste_text_into_focused_field(
 
     if super::detect::is_wayland() {
         log::info!("Wayland session detected");
-        super::wl::input::paste_text(target, keybind)?;
+        super::wl::input::paste_text(target, keybind)
     } else {
-        super::x11::input::paste_text(target, keybind)?;
+        super::x11::input::paste_text(target, keybind)
     }
-    Ok(crate::commands::PasteMethod::Clipboard)
 }

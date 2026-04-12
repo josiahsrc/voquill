@@ -3,14 +3,14 @@ import type {
   RouteTranscriptOutputArgs,
   RouteTranscriptOutputResult,
 } from "@voquill/types";
-import { showToast } from "../actions/toast.actions";
 import { getIntl } from "../i18n/intl";
 import { getAppState } from "../store";
 import { getLogger } from "./log.utils";
+import { sendPillFlashMessage } from "./overlay.utils";
 import { sanitizeIndentation } from "./string.utils";
 import { getMyUserPreferences } from "./user.utils";
 
-type PasteMethod = "accessibility" | "clipboard" | "noTarget";
+type PasteTargetState = "editable" | "not_editable" | "unknown";
 
 export const routeTranscriptOutput = async (
   args: RouteTranscriptOutputArgs,
@@ -61,30 +61,45 @@ export const insertLocalTranscriptOutput = async (
   keybind: string | null,
 ): Promise<void> => {
   const sanitized = sanitizeIndentation(text);
-  if (!sanitized.trim()) return;
 
-  let method: PasteMethod;
+  checkFocusedPasteTarget().then((target) => {
+    if (target === "not_editable") {
+      getLogger().info(
+        "Focused element was not editable, copying transcription to clipboard",
+      );
+      copyToClipboardFallback(sanitized);
+    }
+  });
+
+  await invoke<void>("paste", {
+    text: sanitized,
+    keybind,
+  });
+};
+
+const checkFocusedPasteTarget = async (): Promise<PasteTargetState> => {
   try {
-    method = await invoke<PasteMethod>("paste", {
-      text: sanitized,
-      keybind,
-    });
+    return await invoke<PasteTargetState>("check_focused_paste_target");
   } catch (error) {
-    getLogger().error(`Paste command failed: ${error}`);
-    method = "noTarget";
+    getLogger().verbose(`check_focused_paste_target failed: ${error}`);
+    return "unknown";
   }
+};
 
-  if (method !== "noTarget") return;
-
+const copyToClipboardFallback = async (text: string): Promise<void> => {
   try {
-    await invoke<void>("copy_to_clipboard", { text: sanitized });
-    await showToast({
-      message: getIntl().formatMessage({
-        defaultMessage: "Text copied to clipboard",
+    await invoke<void>("copy_to_clipboard", { text });
+    sendPillFlashMessage(
+      getIntl().formatMessage({
+        defaultMessage: "Transcript copied to clipboard",
       }),
-      toastType: "info",
-    });
+    );
   } catch (error) {
     getLogger().error(`Clipboard fallback failed: ${error}`);
+    sendPillFlashMessage(
+      getIntl().formatMessage({
+        defaultMessage: "Couldn't paste transcription",
+      }),
+    );
   }
 };

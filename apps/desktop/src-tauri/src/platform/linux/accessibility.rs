@@ -18,6 +18,10 @@ pub fn get_screen_context() -> ScreenContextInfo {
     }
 }
 
+pub fn check_focused_paste_target() -> crate::commands::PasteTargetState {
+    crate::commands::PasteTargetState::Unknown
+}
+
 pub fn get_selected_text() -> Option<String> {
     if super::detect::is_wayland() {
         super::wl::accessibility::get_selected_text()
