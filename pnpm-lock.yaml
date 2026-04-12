@@ -257,6 +257,9 @@ importers:
       astro:
         specifier: ^5.18.1
         version: 5.18.1(@types/node@25.5.2)(jiti@2.6.1)(lightningcss@1.32.0)(rollup@4.60.1)(tsx@4.21.0)(typescript@6.0.2)(yaml@2.8.3)
+      firebase:
+        specifier: ^11.2.0
+        version: 11.10.0
       marked:
         specifier: ^16.4.2
         version: 16.4.2
