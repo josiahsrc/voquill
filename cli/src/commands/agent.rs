@@ -13,6 +13,8 @@ use crate::auth;
 use crate::credentials::{self, Credentials};
 use crate::random_name;
 use crate::rtdb;
+use crate::workspace;
+use std::sync::Mutex;
 
 pub fn run(env: Env, command: Vec<String>) -> Result<()> {
     if command.is_empty() {
@@ -27,11 +29,13 @@ pub fn run(env: Env, command: Vec<String>) -> Result<()> {
 
     rtdb::create_session(env, &creds, &session_id, &name).context("Failed to create session")?;
 
+    workspace::prepare_workspace(&name).context("Failed to prepare workspace")?;
+
     eprintln!("\x1b[2mSession \"{name}\" started.\x1b[0m");
 
-    let cleanup = SessionCleanup::new(env, creds.clone(), session_id.clone());
+    let cleanup = SessionCleanup::new(env, creds.clone(), session_id.clone(), name.clone());
 
-    let exit_code = run_pty(&command, env, &creds, &session_id)?;
+    let exit_code = run_pty(&command, env, &creds, &session_id, &name)?;
 
     drop(cleanup);
     eprintln!("\x1b[2mSession \"{name}\" ended.\x1b[0m");
@@ -42,15 +46,17 @@ struct SessionCleanup {
     env: Env,
     creds: Credentials,
     session_id: String,
+    session_name: String,
     done: bool,
 }
 
 impl SessionCleanup {
-    fn new(env: Env, creds: Credentials, session_id: String) -> Self {
+    fn new(env: Env, creds: Credentials, session_id: String, session_name: String) -> Self {
         Self {
             env,
             creds,
             session_id,
+            session_name,
             done: false,
         }
     }
@@ -65,15 +71,27 @@ impl Drop for SessionCleanup {
         if let Err(err) = rtdb::delete_session(self.env, &self.creds, &self.session_id) {
             eprintln!("Warning: failed to clean up session: {err}");
         }
+        let dir = workspace::workspace_dir(&self.session_name);
+        if dir.exists()
+            && let Err(err) = std::fs::remove_dir_all(&dir)
+        {
+            eprintln!("Warning: failed to remove {}: {err}", dir.display());
+        }
     }
 }
 
-fn run_pty(command: &[String], env: Env, creds: &Credentials, session_id: &str) -> Result<i32> {
+fn run_pty(
+    command: &[String],
+    env: Env,
+    creds: &Credentials,
+    session_id: &str,
+    session_name: &str,
+) -> Result<i32> {
     let fork = Fork::from_ptmx().map_err(|err| anyhow::anyhow!("Failed to open pty: {err:?}"))?;
 
     match fork {
         Fork::Child(_) => exec_child(command),
-        Fork::Parent(pid, master) => parent_loop(master, pid, env, creds, session_id),
+        Fork::Parent(pid, master) => parent_loop(master, pid, env, creds, session_id, session_name),
     }
 }
 
@@ -101,6 +119,7 @@ fn parent_loop(
     env: Env,
     creds: &Credentials,
     session_id: &str,
+    session_name: &str,
 ) -> Result<i32> {
     let stdin_fd = std::io::stdin().as_raw_fd();
     let stdout_fd = std::io::stdout().as_raw_fd();
@@ -114,12 +133,14 @@ fn parent_loop(
 
     let listener_creds = creds.clone();
     let listener_session_id = session_id.to_string();
+    let listener_session_name = session_name.to_string();
     let listener_stop = stop.clone();
     thread::spawn(move || {
         paste_listener(
             env,
             listener_creds,
             listener_session_id,
+            listener_session_name,
             master_fd,
             listener_stop,
         );
@@ -277,11 +298,13 @@ fn paste_listener(
     env: Env,
     mut creds: Credentials,
     session_id: String,
+    session_name: String,
     master_fd: RawFd,
     stop: Arc<AtomicBool>,
 ) {
     let mut last_ts: i64 = 0;
     let mut backoff_secs: u64 = 1;
+    let active_watcher: Mutex<Option<Arc<AtomicBool>>> = Mutex::new(None);
 
     while !stop.load(Ordering::Relaxed) {
         if auth::needs_refresh(&creds)
@@ -295,7 +318,16 @@ fn paste_listener(
             continue;
         }
 
-        match run_stream_once(env, &creds, &session_id, master_fd, &stop, &mut last_ts) {
+        match run_stream_once(
+            env,
+            &creds,
+            &session_id,
+            &session_name,
+            master_fd,
+            &stop,
+            &mut last_ts,
+            &active_watcher,
+        ) {
             StreamOutcome::Stopped => return,
             StreamOutcome::AuthFailed => {
                 if let Err(err) = auth::refresh(env, &mut creds) {
@@ -339,13 +371,16 @@ fn sleep_with_stop(stop: &AtomicBool, total: std::time::Duration) -> bool {
     false
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_stream_once(
     env: Env,
     creds: &Credentials,
     session_id: &str,
+    session_name: &str,
     master_fd: RawFd,
     stop: &AtomicBool,
     last_ts: &mut i64,
+    active_watcher: &Mutex<Option<Arc<AtomicBool>>>,
 ) -> StreamOutcome {
     use std::io::BufRead;
 
@@ -419,16 +454,17 @@ fn run_stream_once(
             && ts > *last_ts
         {
             *last_ts = ts;
-            if let Err(err) = write_all_fd(master_fd, text.as_bytes())
-                .and_then(|()| write_all_fd(master_fd, b"\r"))
-            {
-                eprintln!("\r\nFailed to write paste to pty: {err}\r");
-            }
+            handle_paste(
+                env,
+                creds,
+                session_id,
+                session_name,
+                master_fd,
+                text,
+                active_watcher,
+            );
             current_text = None;
             current_ts = None;
-            if let Err(err) = rtdb::clear_paste(env, creds, session_id) {
-                eprintln!("\r\nFailed to clear paste in RTDB: {err}\r");
-            }
         }
     }
 
@@ -437,6 +473,50 @@ fn run_stream_once(
     } else {
         StreamOutcome::Reconnect
     }
+}
+
+fn handle_paste(
+    env: Env,
+    creds: &Credentials,
+    session_id: &str,
+    session_name: &str,
+    master_fd: RawFd,
+    text: &str,
+    active_watcher: &Mutex<Option<Arc<AtomicBool>>>,
+) {
+    if let Some(prev) = active_watcher.lock().unwrap().take() {
+        prev.store(true, Ordering::Relaxed);
+    }
+
+    let dir = workspace::workspace_dir(session_name);
+    if let Err(err) = workspace::prepare_workspace(session_name) {
+        eprintln!("\r\nFailed to prepare workspace: {err}\r");
+    }
+    if let Err(err) = workspace::clear_workspace(&dir) {
+        eprintln!("\r\nFailed to clear workspace: {err}\r");
+    }
+
+    let augmented = format!("{text}{}", workspace::instruction_suffix(session_name));
+
+    if let Err(err) = write_paste_sequence(master_fd, &augmented) {
+        eprintln!("\r\nFailed to write paste to pty: {err}\r");
+    }
+
+    if let Err(err) = rtdb::clear_paste(env, creds, session_id) {
+        eprintln!("\r\nFailed to clear paste in RTDB: {err}\r");
+    }
+
+    let cancel = workspace::spawn_watcher(env, creds.clone(), session_id.to_string(), dir);
+    *active_watcher.lock().unwrap() = Some(cancel);
+}
+
+fn write_paste_sequence(master_fd: RawFd, text: &str) -> std::io::Result<()> {
+    write_all_fd(master_fd, b"\x1b[200~")?;
+    write_all_fd(master_fd, text.as_bytes())?;
+    write_all_fd(master_fd, b"\x1b[201~")?;
+    thread::sleep(std::time::Duration::from_millis(150));
+    write_all_fd(master_fd, b"\r")?;
+    Ok(())
 }
 
 fn apply_update(

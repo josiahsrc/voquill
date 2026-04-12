@@ -86,6 +86,54 @@ pub fn touch_session(env: Env, creds: &Credentials, session_id: &str) -> Result<
     Ok(())
 }
 
+fn history_url(env: Env, creds: &Credentials, session_id: &str) -> String {
+    let path = format!("session/{}/{}/history", creds.uid, session_id);
+    match env {
+        Env::Prod => format!(
+            "https://voquill-prod-default-rtdb.firebaseio.com/{path}.json?auth={}",
+            creds.id_token
+        ),
+        Env::Dev => format!(
+            "https://voquill-dev-default-rtdb.firebaseio.com/{path}.json?auth={}",
+            creds.id_token
+        ),
+        Env::Emulator => format!(
+            "http://127.0.0.1:9000/{path}.json?ns=voquill-dev-default-rtdb&auth={}",
+            creds.id_token
+        ),
+    }
+}
+
+pub fn append_history_entry(
+    env: Env,
+    creds: &Credentials,
+    session_id: &str,
+    role: &str,
+    time: i64,
+    message: &str,
+) -> Result<()> {
+    let entry = json!({
+        "type": role,
+        "time": time,
+        "message": message,
+    });
+    let entry_str = serde_json::to_string(&entry)?;
+
+    let response = client()?
+        .post(history_url(env, creds, session_id))
+        .json(&entry_str)
+        .send()
+        .context("Failed to append history entry")?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let text = response.text().unwrap_or_default();
+        bail!("RTDB history append failed ({status}): {text}");
+    }
+
+    Ok(())
+}
+
 pub fn clear_paste(env: Env, creds: &Credentials, session_id: &str) -> Result<()> {
     let body = json!({ "pasteText": null, "pasteTimestamp": null });
     let response = client()?

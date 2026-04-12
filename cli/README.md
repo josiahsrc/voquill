@@ -69,18 +69,17 @@ voquill-dev login --site https://staging.voquill.com
 
 The CLI appends `/authorize` itself, so just give it the origin.
 
-## Sessions
+## Agent sessions
 
-Wrap a command in a Voquill session:
+Wrap an agent command in a Voquill session:
 
 ```sh
-voquill session claude
-voquill session -- bash -l
+voquill agent [claude|codex|codebuff]
 ```
 
 Each session gets a random name (e.g. `brave-octopus`) and is written to the Realtime Database under `session/<uid>/<sessionId>`. The wrapped command runs inside a pty, so interactive TUIs like `claude` work. Exiting the wrapped command deletes the session.
 
-You need to `login` first so the CLI has a token to talk to RTDB. `voquill-emulator session` talks to the RTDB emulator on `127.0.0.1:9000` — start it with `firebase emulators:start --only auth,database --project voquill-dev`.
+You need to `login` first so the CLI has a token to talk to RTDB. `voquill-emulator agent` talks to the RTDB emulator on `127.0.0.1:9000` — start it with `firebase emulators:start --only auth,database --project voquill-dev`.
 
 ## One-time Firebase setup
 

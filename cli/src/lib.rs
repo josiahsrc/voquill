@@ -3,6 +3,7 @@ pub mod commands;
 pub mod credentials;
 pub mod random_name;
 pub mod rtdb;
+pub mod workspace;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -68,8 +69,8 @@ enum Command {
     },
     /// Remove stored credentials for this environment.
     Logout,
-    /// Create a Voquill session and run a command inside it.
-    Session {
+    /// Wrap an agent command in a Voquill session.
+    Agent {
         /// Command (and args) to run inside the session.
         #[arg(trailing_var_arg = true, required = true, allow_hyphen_values = true)]
         command: Vec<String>,
@@ -81,6 +82,6 @@ pub fn run(env: Env) -> Result<()> {
     match cli.command {
         Command::Login { site } => commands::login::run(env, site),
         Command::Logout => commands::logout::run(env),
-        Command::Session { command } => commands::session::run(env, command),
+        Command::Agent { command } => commands::agent::run(env, command),
     }
 }

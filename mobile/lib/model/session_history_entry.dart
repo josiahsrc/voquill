@@ -4,14 +4,17 @@ import 'package:equatable/equatable.dart';
 
 enum SessionHistoryEntryType {
   user,
-  assistant;
+  assistant,
+  summary,
+  review,
+  question;
 
   String toWire() => name;
 
   static SessionHistoryEntryType fromWire(String? value) {
     return SessionHistoryEntryType.values.firstWhere(
       (t) => t.name == value,
-      orElse: () => SessionHistoryEntryType.user,
+      orElse: () => SessionHistoryEntryType.assistant,
     );
   }
 }
