@@ -15,6 +15,11 @@ pub(crate) fn paste_text_into_focused_field(
         return Ok(crate::commands::PasteMethod::Accessibility);
     }
 
+    if !accessibility::is_text_input_focused() {
+        log::info!("No text input focused, signalling noTarget for clipboard fallback");
+        return Ok(crate::commands::PasteMethod::NoTarget);
+    }
+
     match accessibility::insert_text_at_cursor(text) {
         Ok(accessibility::TextInsertOutcome::Inserted) => {
             Ok(crate::commands::PasteMethod::Accessibility)
@@ -32,12 +37,8 @@ pub(crate) fn paste_text_into_focused_field(
         }
         Err(err) => {
             log::error!("Accessibility insert failed unexpectedly: {err}");
-            if text.trim().is_empty() {
-                Ok(crate::commands::PasteMethod::Accessibility)
-            } else {
-                paste_via_clipboard(text)?;
-                Ok(crate::commands::PasteMethod::Clipboard)
-            }
+            paste_via_clipboard(text)?;
+            Ok(crate::commands::PasteMethod::Clipboard)
         }
     }
 }

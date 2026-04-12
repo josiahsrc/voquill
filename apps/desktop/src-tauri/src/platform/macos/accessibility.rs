@@ -842,10 +842,7 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<TextInsertOutcome, St
     }
 
     let role = get_string_attribute(focused_element, ax_role.as_concrete_TypeRef());
-    if !matches!(
-        role.as_deref(),
-        Some("AXTextField" | "AXTextArea" | "AXSearchField" | "AXComboBox")
-    ) {
+    if is_non_text_role(role.as_deref().unwrap_or("unknown")) {
         CFRelease(focused_element);
         return Ok(TextInsertOutcome::NoTarget(format!(
             "focused element role is not text-input capable: {}",
@@ -860,7 +857,6 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<TextInsertOutcome, St
         ));
     }
 
-    // Check if the focused element actually supports setting AXSelectedText
     let mut settable = false;
     let settable_result = AXUIElementIsAttributeSettable(
         focused_element,
@@ -875,7 +871,6 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<TextInsertOutcome, St
         ));
     }
 
-    // Snapshot the field value before inserting so we can verify
     let value_before = get_string_attribute(focused_element, ax_value.as_concrete_TypeRef());
 
     let cf_text = CFString::new(text);
@@ -892,7 +887,6 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<TextInsertOutcome, St
         )));
     }
 
-    // Verify: if we can read the value and it didn't change, the insert silently failed
     let value_after = get_string_attribute(focused_element, ax_value.as_concrete_TypeRef());
     CFRelease(focused_element);
 
@@ -905,6 +899,96 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<TextInsertOutcome, St
     }
 
     Ok(TextInsertOutcome::Inserted)
+}
+
+/// Reject roles that are definitively NOT text inputs. Matches the Windows
+/// deny-list approach: buttons, toggles, indicators, menus, containers like
+/// lists/tables/trees, and window chrome are rejected. Everything else (text
+/// fields, web areas, groups, scroll areas, custom/unknown roles, etc.) is
+/// assumed to potentially accept text.
+fn is_non_text_role(role: &str) -> bool {
+    matches!(
+        role,
+        // Buttons / toggles
+        "AXButton"
+            | "AXPopUpButton"
+            | "AXMenuButton"
+            | "AXCheckBox"
+            | "AXRadioButton"
+            | "AXDisclosureTriangle"
+            // Indicators / sliders
+            | "AXSlider"
+            | "AXProgressIndicator"
+            | "AXBusyIndicator"
+            | "AXLevelIndicator"
+            | "AXValueIndicator"
+            | "AXIncrementor"
+            // Visual / pickers
+            | "AXImage"
+            | "AXColorWell"
+            // Menus
+            | "AXMenu"
+            | "AXMenuBar"
+            | "AXMenuItem"
+            // Lists / tables / trees (Finder desktop, outlines, data grids)
+            | "AXList"
+            | "AXOutline"
+            | "AXTable"
+            | "AXGrid"
+            | "AXRow"
+            | "AXColumn"
+            | "AXCell"
+            // Tabs
+            | "AXTabGroup"
+            // Links
+            | "AXLink"
+            // Non-editable text / content areas
+            | "AXStaticText"
+            | "AXHeading"
+            // Generic containers
+            | "AXGroup"
+            | "AXScrollArea"
+            // Window chrome
+            | "AXScrollBar"
+            | "AXToolbar"
+            | "AXGrowArea"
+            | "AXRuler"
+            | "AXSplitter"
+            | "AXHandle"
+            | "AXMatte"
+            // Top-level containers
+            | "AXWindow"
+            | "AXApplication"
+    )
+}
+
+pub fn is_text_input_focused() -> bool {
+    unsafe {
+        let ax_focused = CFString::new("AXFocusedUIElement");
+        let ax_role = CFString::new("AXRole");
+
+        let system_wide = AXUIElementCreateSystemWide();
+        if system_wide.is_null() {
+            return false;
+        }
+
+        let mut focused: CFTypeRef = ptr::null();
+        let result = AXUIElementCopyAttributeValue(
+            system_wide,
+            ax_focused.as_concrete_TypeRef(),
+            &mut focused,
+        );
+        CFRelease(system_wide);
+
+        if result != AX_ERROR_SUCCESS || focused.is_null() {
+            return false;
+        }
+
+        let role = get_string_attribute(focused, ax_role.as_concrete_TypeRef());
+        CFRelease(focused);
+
+        !is_non_text_role(role.as_deref().unwrap_or("unknown"))
+    }
 }
 
 pub fn get_selected_text() -> Option<String> {
