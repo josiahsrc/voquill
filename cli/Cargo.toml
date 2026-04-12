@@ -1,0 +1,7 @@
+[package]
+name = "voquill-cli"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+pty = "0.2.2"
