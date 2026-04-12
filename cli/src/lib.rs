@@ -43,11 +43,14 @@ enum Command {
         #[arg(long)]
         site: Option<String>,
     },
+    /// Remove stored credentials for this environment.
+    Logout,
 }
 
 pub fn run(env: Env) -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
         Command::Login { site } => commands::login::run(env, site),
+        Command::Logout => commands::logout::run(env),
     }
 }
