@@ -96,21 +96,42 @@ fn run_pty(
 }
 
 fn exec_child(command: &[String]) -> ! {
-    let program = CString::new(command[0].clone()).expect("command contains interior null byte");
-    let args: Vec<CString> = command
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
+    let joined = command
         .iter()
-        .map(|arg| CString::new(arg.clone()).expect("argument contains interior null byte"))
-        .collect();
-    let mut argv: Vec<*const libc::c_char> = args.iter().map(|a| a.as_ptr()).collect();
-    argv.push(std::ptr::null());
+        .map(|arg| shell_quote(arg))
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    let program = CString::new(shell.clone()).expect("SHELL contains interior null byte");
+    let flag = CString::new("-ic").unwrap();
+    let cmd = CString::new(joined).expect("command contains interior null byte");
+    let argv: [*const libc::c_char; 4] = [
+        program.as_ptr(),
+        flag.as_ptr(),
+        cmd.as_ptr(),
+        std::ptr::null(),
+    ];
 
     unsafe {
         libc::execvp(program.as_ptr(), argv.as_ptr());
     }
 
     let err = std::io::Error::last_os_error();
-    eprintln!("Failed to exec {}: {err}", command[0]);
+    eprintln!("Failed to exec {shell}: {err}");
     std::process::exit(127);
+}
+
+fn shell_quote(arg: &str) -> String {
+    if !arg.is_empty()
+        && arg
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'-' | b'.' | b'/' | b':' | b'=' | b',' | b'@' | b'+'))
+    {
+        return arg.to_string();
+    }
+    let escaped = arg.replace('\'', "'\\''");
+    format!("'{escaped}'")
 }
 
 fn parent_loop(
@@ -496,7 +517,7 @@ fn handle_paste(
         eprintln!("\r\nFailed to clear workspace: {err}\r");
     }
 
-    let augmented = format!("{text}{}", workspace::instruction_suffix(session_name));
+    let augmented = format!("{}{text}", workspace::instruction_prefix(session_name));
 
     if let Err(err) = write_paste_sequence(master_fd, &augmented) {
         eprintln!("\r\nFailed to write paste to pty: {err}\r");
