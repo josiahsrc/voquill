@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 mod constants;
 mod draw;
 mod gfx;

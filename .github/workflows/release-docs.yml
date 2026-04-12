@@ -10,6 +10,10 @@ on:
       - ".github/workflows/release-docs.yml"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   deploy:
     name: Build and deploy docs site
@@ -35,34 +39,15 @@ jobs:
       - name: Build docs workspace
         run: pnpm exec turbo run build --filter=docs...
 
-      - name: Configure Firebase credentials
-        env:
-          FIREBASE_ADMIN_BASE64: ${{ secrets.FIREBASE_ADMIN_BASE64 }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${FIREBASE_ADMIN_BASE64:-}" ]]; then
-            echo "FIREBASE_ADMIN_BASE64 GitHub secret is not configured." >&2
-            exit 1
-          fi
-
-          CREDENTIALS_PATH="${HOME}/firebase-admin.json"
-          echo "${FIREBASE_ADMIN_BASE64}" | base64 --decode > "${CREDENTIALS_PATH}"
-          chmod 600 "${CREDENTIALS_PATH}"
-          echo "GOOGLE_APPLICATION_CREDENTIALS=${CREDENTIALS_PATH}" >> "${GITHUB_ENV}"
-
-          PROJECT_ID="$(jq -r '.project_id // empty' "${CREDENTIALS_PATH}")"
-          if [[ -z "${PROJECT_ID}" ]]; then
-            echo "Unable to read project_id from decoded Firebase credentials." >&2
-            exit 1
-          fi
-          echo "FIREBASE_PROJECT_ID=${PROJECT_ID}" >> "${GITHUB_ENV}"
-          echo "Config complete!"
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
       - name: Deploy to Firebase Hosting
         working-directory: apps/docs
-        env:
-          FIREBASE_PROJECT_ID: ${{ env.FIREBASE_PROJECT_ID }}
         run: |
           set -euo pipefail
-          echo "Deploying docs hosting for project: ${FIREBASE_PROJECT_ID}"
-          npx firebase-tools@latest deploy --only hosting:voquill-docs --project "${FIREBASE_PROJECT_ID}" --non-interactive --force --config firebase.json
+          echo "Deploying docs hosting for project: voquill-prod"
+          npx firebase-tools@latest deploy --only hosting:voquill-docs --project voquill-prod --non-interactive --force --config firebase.json

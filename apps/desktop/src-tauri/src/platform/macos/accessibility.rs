@@ -800,7 +800,7 @@ unsafe fn gather_screen_context(element: CFTypeRef, depth: usize) -> String {
     texts.join("\n")
 }
 
-pub fn insert_text_at_cursor(text: &str) -> Result<(), String> {
+pub(crate) fn insert_text_at_cursor(text: &str) -> Result<TextInsertOutcome, String> {
     let text = text.to_string();
     run_on_main_thread(move || {
         catch_unwind(AssertUnwindSafe(move || unsafe {
@@ -810,10 +810,18 @@ pub fn insert_text_at_cursor(text: &str) -> Result<(), String> {
     })
 }
 
-unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {
+#[derive(Debug)]
+pub(crate) enum TextInsertOutcome {
+    Inserted,
+    RequiresClipboardPaste(String),
+    NoTarget(String),
+}
+
+unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<TextInsertOutcome, String> {
     let ax_focused_ui_element = CFString::new("AXFocusedUIElement");
     let ax_selected_text = CFString::new("AXSelectedText");
     let ax_value = CFString::new("AXValue");
+    let ax_role = CFString::new("AXRole");
 
     let system_wide = AXUIElementCreateSystemWide();
     if system_wide.is_null() {
@@ -830,15 +838,25 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {
     CFRelease(system_wide);
 
     if result != AX_ERROR_SUCCESS || focused_element.is_null() {
-        return Err("no focused element".to_string());
+        return Ok(TextInsertOutcome::NoTarget("no focused element".to_string()));
+    }
+
+    let role = get_string_attribute(focused_element, ax_role.as_concrete_TypeRef());
+    if is_non_text_role(role.as_deref().unwrap_or("unknown")) {
+        CFRelease(focused_element);
+        return Ok(TextInsertOutcome::NoTarget(format!(
+            "focused element role is not text-input capable: {}",
+            role.unwrap_or_else(|| "unknown".to_string())
+        )));
     }
 
     if is_element_inside_web_area(focused_element) {
         CFRelease(focused_element);
-        return Err("focused element is inside AXWebArea".to_string());
+        return Ok(TextInsertOutcome::RequiresClipboardPaste(
+            "focused text input is inside AXWebArea".to_string(),
+        ));
     }
 
-    // Check if the focused element actually supports setting AXSelectedText
     let mut settable = false;
     let settable_result = AXUIElementIsAttributeSettable(
         focused_element,
@@ -848,10 +866,11 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {
 
     if settable_result != AX_ERROR_SUCCESS || !settable {
         CFRelease(focused_element);
-        return Err("AXSelectedText is not settable on focused element".to_string());
+        return Ok(TextInsertOutcome::RequiresClipboardPaste(
+            "AXSelectedText is not settable on focused element".to_string(),
+        ));
     }
 
-    // Snapshot the field value before inserting so we can verify
     let value_before = get_string_attribute(focused_element, ax_value.as_concrete_TypeRef());
 
     let cf_text = CFString::new(text);
@@ -863,20 +882,113 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {
 
     if set_result != AX_ERROR_SUCCESS {
         CFRelease(focused_element);
-        return Err(format!("AXUIElementSetAttributeValue failed: {set_result}"));
+        return Ok(TextInsertOutcome::RequiresClipboardPaste(format!(
+            "AXUIElementSetAttributeValue failed: {set_result}"
+        )));
     }
 
-    // Verify: if we can read the value and it didn't change, the insert silently failed
     let value_after = get_string_attribute(focused_element, ax_value.as_concrete_TypeRef());
     CFRelease(focused_element);
 
     if let (Some(before), Some(after)) = (&value_before, &value_after) {
         if before == after {
-            return Err("AXSelectedText accepted but field value unchanged".to_string());
+            return Ok(TextInsertOutcome::RequiresClipboardPaste(
+                "AXSelectedText accepted but field value unchanged".to_string(),
+            ));
         }
     }
 
-    Ok(())
+    Ok(TextInsertOutcome::Inserted)
+}
+
+/// Reject roles that are definitively NOT text inputs. Matches the Windows
+/// deny-list approach: buttons, toggles, indicators, menus, containers like
+/// lists/tables/trees, and window chrome are rejected. Everything else (text
+/// fields, web areas, groups, scroll areas, custom/unknown roles, etc.) is
+/// assumed to potentially accept text.
+fn is_non_text_role(role: &str) -> bool {
+    matches!(
+        role,
+        // Buttons / toggles
+        "AXButton"
+            | "AXPopUpButton"
+            | "AXMenuButton"
+            | "AXCheckBox"
+            | "AXRadioButton"
+            | "AXDisclosureTriangle"
+            // Indicators / sliders
+            | "AXSlider"
+            | "AXProgressIndicator"
+            | "AXBusyIndicator"
+            | "AXLevelIndicator"
+            | "AXValueIndicator"
+            | "AXIncrementor"
+            // Visual / pickers
+            | "AXImage"
+            | "AXColorWell"
+            // Menus
+            | "AXMenu"
+            | "AXMenuBar"
+            | "AXMenuItem"
+            // Lists / tables / trees (Finder desktop, outlines, data grids)
+            | "AXList"
+            | "AXOutline"
+            | "AXTable"
+            | "AXGrid"
+            | "AXRow"
+            | "AXColumn"
+            | "AXCell"
+            // Tabs
+            | "AXTabGroup"
+            // Links
+            | "AXLink"
+            // Non-editable text / content areas
+            | "AXStaticText"
+            | "AXHeading"
+            // Generic containers
+            | "AXGroup"
+            | "AXScrollArea"
+            // Window chrome
+            | "AXScrollBar"
+            | "AXToolbar"
+            | "AXGrowArea"
+            | "AXRuler"
+            | "AXSplitter"
+            | "AXHandle"
+            | "AXMatte"
+            // Top-level containers
+            | "AXWindow"
+            | "AXApplication"
+    )
+}
+
+pub fn is_text_input_focused() -> bool {
+    unsafe {
+        let ax_focused = CFString::new("AXFocusedUIElement");
+        let ax_role = CFString::new("AXRole");
+
+        let system_wide = AXUIElementCreateSystemWide();
+        if system_wide.is_null() {
+            return false;
+        }
+
+        let mut focused: CFTypeRef = ptr::null();
+        let result = AXUIElementCopyAttributeValue(
+            system_wide,
+            ax_focused.as_concrete_TypeRef(),
+            &mut focused,
+        );
+        CFRelease(system_wide);
+
+        if result != AX_ERROR_SUCCESS || focused.is_null() {
+            return false;
+        }
+
+        let role = get_string_attribute(focused, ax_role.as_concrete_TypeRef());
+        CFRelease(focused);
+
+        !is_non_text_role(role.as_deref().unwrap_or("unknown"))
+    }
 }
 
 pub fn get_selected_text() -> Option<String> {
@@ -901,4 +1013,3 @@ pub fn get_selected_text() -> Option<String> {
 
     selected.filter(|s| !s.is_empty())
 }
-

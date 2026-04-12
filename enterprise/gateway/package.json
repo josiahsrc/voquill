@@ -4,7 +4,7 @@
   "private": true,
   "main": "dist/index.js",
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist/index.js --external:bcrypt --external:pg-native && rm -rf dist/db/migrations && mkdir -p dist/db && cp -r src/db/migrations dist/db/migrations",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist/index.js --external:bcrypt --external:pg-native && node -e \"const fs=require('fs');fs.rmSync('dist/db/migrations',{recursive:true,force:true});fs.mkdirSync('dist/db',{recursive:true});fs.cpSync('src/db/migrations','dist/db/migrations',{recursive:true})\"",
     "dev": "nodemon --exec \"pnpm run build && node dist/index.js\"",
     "start": "node dist/index.js",
     "check-types": "tsc --noEmit",

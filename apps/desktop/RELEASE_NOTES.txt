@@ -1,3 +1,4 @@
-- Add support for Shift+Insert pasting
-- Improve flame affordances
-- Add toast messages to pill for better communication of actions
+- Fix deepgram provider auto detect
+- Fix occasional rendering artifact issue on some windows machines
+- Fix MacOS issue where pasting wasn't working on some text fields
+- Support configuring whether "last style" is remembered

@@ -10,7 +10,7 @@ use windows::Win32::UI::Accessibility::{
     UIA_AppBarControlTypeId, UIA_ButtonControlTypeId, UIA_CalendarControlTypeId,
     UIA_CheckBoxControlTypeId, UIA_ComboBoxControlTypeId, UIA_ControlTypePropertyId,
     UIA_CustomControlTypeId, UIA_DataGridControlTypeId, UIA_DataItemControlTypeId,
-    UIA_DocumentControlTypeId, UIA_EditControlTypeId, UIA_GroupControlTypeId,
+    UIA_DocumentControlTypeId, UIA_GroupControlTypeId,
     UIA_HeaderControlTypeId, UIA_HeaderItemControlTypeId, UIA_HelpTextPropertyId,
     UIA_HyperlinkControlTypeId, UIA_ImageControlTypeId, UIA_ListControlTypeId,
     UIA_ListItemControlTypeId, UIA_MenuBarControlTypeId, UIA_MenuControlTypeId,
@@ -110,25 +110,49 @@ fn try_is_text_input_focused() -> Result<bool, windows::core::Error> {
         let focused = automation.GetFocusedElement()?;
         let control_type = get_control_type(&focused);
 
-        if matches!(
-            control_type,
-            value if value == UIA_EditControlTypeId.0 || value == UIA_DocumentControlTypeId.0
-        ) {
-            return Ok(true);
-        }
-
-        let text_pattern = focused.GetCurrentPattern(UIA_TextPatternId)?;
-        if !text_pattern.as_raw().is_null() {
-            return Ok(true);
-        }
-
-        let value_pattern = focused.GetCurrentPattern(UIA_ValuePatternId)?;
-        if !value_pattern.as_raw().is_null() {
-            return Ok(true);
-        }
-
-        Ok(false)
+        // Rather than trying to prove a control IS a text input (which
+        // is unreliable — many editors use MSAA, custom frameworks, or
+        // web renderers that don't expose UIA patterns), reject control
+        // types that are definitively NOT text inputs. Everything else
+        // (Edit, Document, Custom, Pane, ComboBox, etc.) is assumed to
+        // potentially accept text.
+        Ok(!is_non_text_control(control_type))
     }
+}
+
+fn is_non_text_control(control_type: i32) -> bool {
+    [
+        UIA_AppBarControlTypeId.0,
+        UIA_ButtonControlTypeId.0,
+        UIA_CalendarControlTypeId.0,
+        UIA_CheckBoxControlTypeId.0,
+        UIA_DataGridControlTypeId.0,
+        UIA_HeaderControlTypeId.0,
+        UIA_HeaderItemControlTypeId.0,
+        UIA_HyperlinkControlTypeId.0,
+        UIA_ImageControlTypeId.0,
+        UIA_ListControlTypeId.0,
+        UIA_ListItemControlTypeId.0,
+        UIA_MenuControlTypeId.0,
+        UIA_MenuBarControlTypeId.0,
+        UIA_MenuItemControlTypeId.0,
+        UIA_ProgressBarControlTypeId.0,
+        UIA_RadioButtonControlTypeId.0,
+        UIA_SemanticZoomControlTypeId.0,
+        UIA_SliderControlTypeId.0,
+        UIA_SplitButtonControlTypeId.0,
+        UIA_StatusBarControlTypeId.0,
+        UIA_TabControlTypeId.0,
+        UIA_TabItemControlTypeId.0,
+        UIA_TableControlTypeId.0,
+        UIA_ThumbControlTypeId.0,
+        UIA_TitleBarControlTypeId.0,
+        UIA_ToolBarControlTypeId.0,
+        UIA_TreeControlTypeId.0,
+        UIA_TreeItemControlTypeId.0,
+        UIA_WindowControlTypeId.0,
+    ]
+    .contains(&control_type)
 }
 
 pub fn get_screen_context() -> ScreenContextInfo {

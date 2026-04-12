@@ -58,6 +58,7 @@ export const MoreSettingsDialog = () => {
     dictationLimitMinutes,
     disablePillRewards,
     accurateDictationEnabled,
+    disableAutoStyleLoading,
     isCloudUser,
   ] = useAppStore((state) => {
     const prefs = getMyUserPreferences(state);
@@ -75,6 +76,7 @@ export const MoreSettingsDialog = () => {
       getEffectiveDictationLimitMinutes(prefs),
       state.local.disablePillRewards,
       state.local.accurateDictationEnabled,
+      state.local.disableAutoStyleLoading ?? false,
       getIsVoquillCloudUser(state),
     ] as const;
   });
@@ -164,6 +166,14 @@ export const MoreSettingsDialog = () => {
   ) => {
     produceAppState((draft) => {
       draft.local.accurateDictationEnabled = event.target.checked;
+    });
+  };
+
+  const handleToggleAutoStyleLoading = (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    produceAppState((draft) => {
+      draft.local.disableAutoStyleLoading = !event.target.checked;
     });
   };
 
@@ -338,6 +348,24 @@ export const MoreSettingsDialog = () => {
                     step: 1,
                     inputMode: "numeric",
                   }}
+                />
+              }
+            />
+          )}
+
+          {stylingMode === "manual" && (
+            <SettingSection
+              title={
+                <FormattedMessage defaultMessage="Automatic style loading" />
+              }
+              description={
+                <FormattedMessage defaultMessage="Automatically load the manual style configured for the current app when starting dictation." />
+              }
+              action={
+                <Switch
+                  edge="end"
+                  checked={!disableAutoStyleLoading}
+                  onChange={handleToggleAutoStyleLoading}
                 />
               }
             />

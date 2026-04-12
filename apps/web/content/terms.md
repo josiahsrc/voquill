@@ -2,7 +2,7 @@
 
 _Last updated: February 24, 2026_
 
-These Terms of Service ("Terms") are a legal agreement between you and **Handaptive LLC** ("we," "us," or "our"), governing your use of the Voquill application, website, and related services (collectively, the "Service"). **By using Voquill, you agree to these Terms.** If you do not agree, do not use the Service.
+These Terms of Service ("Terms") are a legal agreement between you and **Voquill, Inc.** ("we," "us," or "our"), governing your use of the Voquill application, website, and related services (collectively, the "Service"). **By using Voquill, you agree to these Terms.** If you do not agree, do not use the Service.
 
 ## 1. Description of the Service
 
@@ -83,13 +83,13 @@ Voice-to-text transcription and AI post-processing are inherently imperfect. You
 
 ## 13. Limitation of Liability
 
-TO THE MAXIMUM EXTENT PERMITTED BY LAW, HANDAPTIVE LLC SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, DATA, USE, OR GOODWILL, ARISING OUT OF OR RELATED TO YOUR USE OF THE SERVICE, REGARDLESS OF THE THEORY OF LIABILITY.
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, VOQUILL, INC. SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, DATA, USE, OR GOODWILL, ARISING OUT OF OR RELATED TO YOUR USE OF THE SERVICE, REGARDLESS OF THE THEORY OF LIABILITY.
 
 OUR TOTAL AGGREGATE LIABILITY FOR ANY CLAIMS ARISING FROM OR RELATED TO THESE TERMS OR THE SERVICE SHALL NOT EXCEED THE AMOUNT YOU HAVE PAID US IN THE TWELVE (12) MONTHS PRECEDING THE CLAIM, OR ONE HUNDRED DOLLARS ($100), WHICHEVER IS GREATER.
 
 ## 14. Indemnification
 
-You agree to indemnify and hold harmless Handaptive LLC and its officers, employees, and agents from any claims, damages, losses, or expenses (including reasonable attorneys' fees) arising from your use of the Service or violation of these Terms.
+You agree to indemnify and hold harmless Voquill, Inc. and its officers, employees, and agents from any claims, damages, losses, or expenses (including reasonable attorneys' fees) arising from your use of the Service or violation of these Terms.
 
 ## 15. Termination
 
@@ -109,7 +109,7 @@ If any provision of these Terms is found to be unenforceable, the remaining prov
 
 ## 19. Entire Agreement
 
-These Terms, together with the Privacy Policy, constitute the entire agreement between you and Handaptive LLC regarding the Service and supersede any prior agreements.
+These Terms, together with the Privacy Policy, constitute the entire agreement between you and Voquill, Inc. regarding the Service and supersede any prior agreements.
 
 ## 20. Contact
 

@@ -3,9 +3,14 @@ import type {
   RouteTranscriptOutputArgs,
   RouteTranscriptOutputResult,
 } from "@voquill/types";
+import { showToast } from "../actions/toast.actions";
+import { getIntl } from "../i18n/intl";
 import { getAppState } from "../store";
+import { getLogger } from "./log.utils";
 import { sanitizeIndentation } from "./string.utils";
 import { getMyUserPreferences } from "./user.utils";
+
+type PasteMethod = "accessibility" | "clipboard" | "noTarget";
 
 export const routeTranscriptOutput = async (
   args: RouteTranscriptOutputArgs,
@@ -55,8 +60,31 @@ export const insertLocalTranscriptOutput = async (
   text: string,
   keybind: string | null,
 ): Promise<void> => {
-  await invoke<void>("paste", {
-    text: sanitizeIndentation(text),
-    keybind,
-  });
+  const sanitized = sanitizeIndentation(text);
+  if (!sanitized.trim()) return;
+
+  let method: PasteMethod;
+  try {
+    method = await invoke<PasteMethod>("paste", {
+      text: sanitized,
+      keybind,
+    });
+  } catch (error) {
+    getLogger().error(`Paste command failed: ${error}`);
+    method = "noTarget";
+  }
+
+  if (method !== "noTarget") return;
+
+  try {
+    await invoke<void>("copy_to_clipboard", { text: sanitized });
+    await showToast({
+      message: getIntl().formatMessage({
+        defaultMessage: "Text copied to clipboard",
+      }),
+      toastType: "info",
+    });
+  } catch (error) {
+    getLogger().error(`Clipboard fallback failed: ${error}`);
+  }
 };

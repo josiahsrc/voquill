@@ -8,6 +8,7 @@ export type LocalState = {
   disablePillRewards: boolean;
   accurateDictationEnabled?: boolean;
   hasHiddenTrialExtensionCard: boolean;
+  disableAutoStyleLoading?: boolean;
 };
 
 export const INITIAL_LOCAL_STATE: LocalState = {
@@ -20,4 +21,5 @@ export const INITIAL_LOCAL_STATE: LocalState = {
   disablePillRewards: false,
   accurateDictationEnabled: false,
   hasHiddenTrialExtensionCard: false,
+  disableAutoStyleLoading: false,
 };

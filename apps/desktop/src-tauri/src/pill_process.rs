@@ -30,11 +30,20 @@ pub fn try_spawn_pill(app: &tauri::AppHandle, pill_path: &std::path::Path) -> bo
     let spawn_time = Instant::now();
     log::info!("Spawning pill overlay from: {}", pill_path.display());
 
-    let mut child = match Command::new(pill_path)
+    let mut command = Command::new(pill_path);
+    command
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::inherit())
-        .spawn()
+        .stderr(Stdio::inherit());
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    let mut child = match command.spawn()
     {
         Ok(child) => child,
         Err(err) => {

@@ -47,6 +47,7 @@ export const AffordancesSideEffects = () => {
   useEffect(() => {
     if (!isCloudDictation) return;
     if (!dictationUnlocked) return;
+    if (!isOnOriginalTrial) return;
     if (isActiveSession) return;
 
     const check = () => {
