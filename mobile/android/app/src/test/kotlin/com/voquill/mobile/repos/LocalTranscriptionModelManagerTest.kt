@@ -123,7 +123,9 @@ class LocalTranscriptionModelManagerTest {
                     LocalTranscriptionModelDownloader { url, destination ->
                         requestedUrl = url
                         destination.parentFile?.mkdirs()
-                        destination.writeText("turbo-model")
+                        destination.outputStream().use { stream ->
+                            stream.write(ByteArray(1_200_000))
+                        }
                     },
             )
 
@@ -152,7 +154,9 @@ class LocalTranscriptionModelManagerTest {
                         downloadStarted.countDown()
                         assertTrue(allowDownloadToFinish.await(5, TimeUnit.SECONDS))
                         destination.parentFile?.mkdirs()
-                        destination.writeText("tiny-model")
+                        destination.outputStream().use { stream ->
+                            stream.write(ByteArray(1_200_000))
+                        }
                     },
             )
 

@@ -87,11 +87,23 @@ private class HttpLocalTranscriptionModelDownloader : LocalTranscriptionModelDow
                 throw IOException("Model download failed with HTTP ${connection.responseCode}")
             }
 
+            val contentType = connection.contentType?.lowercase()
+            if (contentType != null &&
+                (contentType.startsWith("text/") || contentType.contains("html"))
+            ) {
+                throw IOException("Model download returned unexpected content type: $contentType")
+            }
+
             destination.parentFile?.mkdirs()
             connection.inputStream.buffered().use { input ->
                 destination.outputStream().buffered().use { output ->
                     input.copyTo(output)
                 }
+            }
+
+            val expectedBytes = connection.contentLengthLong
+            if (expectedBytes > 0L && destination.length() != expectedBytes) {
+                throw IOException("Downloaded model file is incomplete")
             }
         } finally {
             connection.disconnect()
@@ -211,6 +223,9 @@ internal class LocalTranscriptionModelManager(
             val fileSize = tempFile.length()
             if (fileSize <= 0L) {
                 throw IOException("Downloaded model file is empty")
+            }
+            if (fileSize < 1_000_000L) {
+                throw IOException("Downloaded model file is unexpectedly small")
             }
 
             synchronized(manifestLock) {
