@@ -5,59 +5,51 @@ use std::{thread, time::Duration};
 use super::accessibility;
 
 const KEY_C: CGKeyCode = 8;
+const KEY_SPACE: CGKeyCode = 49;
 const KEY_V: CGKeyCode = 9;
 
 pub(crate) fn paste_text_into_focused_field(
     text: &str,
     _keybind: Option<&str>,
-) -> Result<crate::commands::PasteMethod, String> {
+) -> Result<(), String> {
     if text.trim().is_empty() {
-        return Ok(crate::commands::PasteMethod::Accessibility);
-    }
-
-    if !accessibility::is_text_input_focused() {
-        log::info!("No text input focused, signalling noTarget for clipboard fallback");
-        return Ok(crate::commands::PasteMethod::NoTarget);
+        return Ok(());
     }
 
     match accessibility::insert_text_at_cursor(text) {
-        Ok(accessibility::TextInsertOutcome::Inserted) => {
-            Ok(crate::commands::PasteMethod::Accessibility)
-        }
-        Ok(accessibility::TextInsertOutcome::RequiresClipboardPaste(reason)) => {
-            log::warn!(
-                "Accessibility insert failed ({reason}), falling back to clipboard paste"
-            );
-            paste_via_clipboard(text)?;
-            Ok(crate::commands::PasteMethod::Clipboard)
-        }
-        Ok(accessibility::TextInsertOutcome::NoTarget(reason)) => {
-            log::warn!("No text field target: {reason}");
-            Ok(crate::commands::PasteMethod::NoTarget)
-        }
+        Ok(()) => Ok(()),
         Err(err) => {
-            log::error!("Accessibility insert failed unexpectedly: {err}");
-            paste_via_clipboard(text)?;
-            Ok(crate::commands::PasteMethod::Clipboard)
+            log::warn!("Accessibility insert failed ({err}), falling back to clipboard paste");
+            paste_via_clipboard(text)
         }
     }
 }
 
 fn paste_via_clipboard(text: &str) -> Result<(), String> {
-    let mut clipboard =
-        arboard::Clipboard::new().map_err(|err| format!("clipboard unavailable: {err}"))?;
-    let previous = crate::platform::SavedClipboard::save(&mut clipboard);
-    clipboard
-        .set_text(text.to_string())
-        .map_err(|err| format!("failed to store clipboard text: {err}"))?;
+    let trimmed_text = text.trim_end_matches(' ');
+    let trailing_spaces = text.len() - trimmed_text.len();
 
-    thread::sleep(Duration::from_millis(50));
-    simulate_cmd_v()?;
+    if !trimmed_text.is_empty() {
+        let mut clipboard =
+            arboard::Clipboard::new().map_err(|err| format!("clipboard unavailable: {err}"))?;
+        let previous = crate::platform::SavedClipboard::save(&mut clipboard);
+        clipboard
+            .set_text(trimmed_text.to_string())
+            .map_err(|err| format!("failed to store clipboard text: {err}"))?;
 
-    thread::spawn(move || {
-        thread::sleep(Duration::from_millis(800));
-        previous.restore();
-    });
+        thread::sleep(Duration::from_millis(50));
+        simulate_cmd_v()?;
+
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(800));
+            previous.restore();
+        });
+    }
+
+    for _ in 0..trailing_spaces {
+        thread::sleep(Duration::from_millis(10));
+        simulate_keypress(KEY_SPACE, CGEventFlags::empty())?;
+    }
 
     Ok(())
 }

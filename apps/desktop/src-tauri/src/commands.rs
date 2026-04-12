@@ -17,14 +17,6 @@ use sqlx::Row;
 
 use crate::platform::input::paste_text_into_focused_field as platform_paste_text;
 
-#[derive(serde::Serialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
-pub enum PasteMethod {
-    Accessibility,
-    Clipboard,
-    NoTarget,
-}
-
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StopRecordingResponse {
@@ -1277,7 +1269,7 @@ pub fn copy_to_clipboard(text: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn paste(text: String, keybind: Option<String>) -> Result<PasteMethod, String> {
+pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> {
     let join_result = tauri::async_runtime::spawn_blocking(move || {
         platform_paste_text(&text, keybind.as_deref())
     })
