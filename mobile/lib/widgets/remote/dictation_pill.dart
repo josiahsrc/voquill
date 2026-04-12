@@ -37,9 +37,7 @@ class DictationPill extends StatelessWidget {
       onTapDown: onTapDown,
       onTapUp: onTapUp,
       onTapCancel: onTapCancel,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
+      child: Container(
         width: width,
         height: height,
         decoration: BoxDecoration(
@@ -50,10 +48,8 @@ class DictationPill extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            AnimatedOpacity(
-              opacity: _isIdle ? 1 : 0,
-              duration: const Duration(milliseconds: 150),
-              child: Row(
+            if (_isIdle)
+              Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.mic_rounded, size: 28, color: colors.onPrimary),
@@ -67,30 +63,23 @@ class DictationPill extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-            AnimatedOpacity(
-              opacity: _isRecording ? 1 : 0,
-              duration: const Duration(milliseconds: 150),
-              child: Padding(
+            if (_isRecording)
+              Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: AudioWaveform(
                   audioLevel: audioLevel,
-                  active: _isRecording,
+                  active: true,
                   strokeColor: colors.onPrimary,
                 ),
               ),
-            ),
-            AnimatedOpacity(
-              opacity: _isProcessing ? 1 : 0,
-              duration: const Duration(milliseconds: 150),
-              child: SizedBox(
+            if (_isProcessing)
+              SizedBox(
                 width: width,
                 child: LinearProgressIndicator(
                   backgroundColor: colors.onPrimary.withValues(alpha: 0.2),
                   valueColor: AlwaysStoppedAnimation(colors.onPrimary),
                 ),
               ),
-            ),
             if (_isRecording || _isProcessing)
               Positioned.fill(
                 child: IgnorePointer(

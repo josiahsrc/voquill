@@ -2,26 +2,28 @@ import 'dart:async';
 
 import 'package:app/actions/session_actions.dart';
 import 'package:app/api/dictation_api.dart';
+import 'package:app/model/session_history_entry.dart';
 import 'package:app/store/store.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/utils/audio_utils.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:app/utils/theme_utils.dart';
+import 'package:app/widgets/common/app_animated_size.dart';
+import 'package:app/widgets/common/app_animated_switcher.dart';
+import 'package:app/widgets/remote/dictation_cancel_button.dart';
 import 'package:app/widgets/remote/dictation_message.dart';
 import 'package:app/widgets/remote/dictation_pill.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:record/record.dart';
+
+const _holdThreshold = Duration(milliseconds: 250);
 
 final _logger = createNamedLogger('remote_dictation');
 
 enum _DictationMode { waitingForMode, hold, toggle }
-
-class _SentMessage {
-  final String text;
-  final DateTime sentAt;
-
-  const _SentMessage({required this.text, required this.sentAt});
-}
 
 class RemoteDictationView extends StatefulWidget {
   const RemoteDictationView({super.key, required this.sessionId});
@@ -38,25 +40,55 @@ class _RemoteDictationViewState extends State<RemoteDictationView>
   DictationSession? _session;
   StreamSubscription? _audioSub;
   StreamSubscription? _partialSub;
+  StreamSubscription<DatabaseEvent>? _historySub;
 
   double _audioLevel = 0;
   DictationPillStatus _status = DictationPillStatus.idle;
   _DictationMode? _mode;
   Timer? _holdTimer;
   String _partialText = '';
-  final _history = <_SentMessage>[];
+  List<SessionHistoryEntry> _history = const [];
 
   bool get _isRecording => _status == DictationPillStatus.recording;
   bool get _isIdle => _status == DictationPillStatus.idle;
-  bool get _isProcessing => _status == DictationPillStatus.processing;
 
   @override
   bool get wantKeepAlive => true;
 
   @override
+  void initState() {
+    super.initState();
+    _subscribeToHistory();
+  }
+
+  @override
   void dispose() {
+    _historySub?.cancel();
     _cancel();
     super.dispose();
+  }
+
+  void _subscribeToHistory() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final historyRef = FirebaseDatabase.instance.ref(
+      'session/$uid/${widget.sessionId}/history',
+    );
+    _historySub = historyRef.onValue.listen((event) {
+      final raw = event.snapshot.value;
+      final entries = <SessionHistoryEntry>[];
+      if (raw is Map) {
+        for (final value in raw.values) {
+          if (value is String) {
+            final entry = SessionHistoryEntry.tryDecode(value);
+            if (entry != null) entries.add(entry);
+          }
+        }
+        entries.sort((a, b) => a.time.compareTo(b.time));
+      }
+      if (mounted) setState(() => _history = entries);
+    });
   }
 
   Future<void> _startRecording() async {
@@ -105,42 +137,80 @@ class _RemoteDictationViewState extends State<RemoteDictationView>
   Future<void> _stopRecording() async {
     if (!_isRecording) return;
 
+    final recorder = _recorder;
+    final session = _session;
+    final audioSub = _audioSub;
+    final partialSub = _partialSub;
+
+    _recorder = null;
+    _session = null;
+    _audioSub = null;
+    _partialSub = null;
+
     setState(() {
-      _status = DictationPillStatus.processing;
+      _status = DictationPillStatus.idle;
       _audioLevel = 0;
+      _partialText = '';
     });
 
+    unawaited(_finalizeInBackground(recorder, session, audioSub, partialSub));
+  }
+
+  Future<void> _finalizeInBackground(
+    AudioRecorder? recorder,
+    DictationSession? session,
+    StreamSubscription? audioSub,
+    StreamSubscription? partialSub,
+  ) async {
     try {
-      await _recorder?.stop();
-      _audioSub?.cancel();
-      _partialSub?.cancel();
+      await recorder?.stop();
+      await audioSub?.cancel();
+      await partialSub?.cancel();
 
-      final result = await _session!.finalize();
+      if (session == null) return;
+      final result = await session.finalize();
       final text = result.text.trim();
-
       if (text.isNotEmpty) {
         await sendPasteText(widget.sessionId, text);
-        setState(
-          () =>
-              _history.add(_SentMessage(text: text, sentAt: DateTime.now())),
-        );
       }
     } catch (e) {
       _logger.e('Failed to finalize: $e');
     } finally {
-      _session?.dispose();
-      _recorder?.dispose();
-      _recorder = null;
-      _session = null;
-      _audioSub = null;
-      _partialSub = null;
-      if (mounted) {
-        setState(() {
-          _status = DictationPillStatus.idle;
-          _partialText = '';
-        });
-      }
+      session?.dispose();
+      recorder?.dispose();
     }
+  }
+
+  void _cancelRecording() {
+    if (!_isRecording) return;
+
+    final recorder = _recorder;
+    final session = _session;
+    final audioSub = _audioSub;
+    final partialSub = _partialSub;
+
+    _recorder = null;
+    _session = null;
+    _audioSub = null;
+    _partialSub = null;
+    _mode = null;
+    _holdTimer?.cancel();
+
+    setState(() {
+      _status = DictationPillStatus.idle;
+      _audioLevel = 0;
+      _partialText = '';
+    });
+
+    unawaited(() async {
+      try {
+        await recorder?.stop();
+        await audioSub?.cancel();
+        await partialSub?.cancel();
+      } catch (_) {}
+      session?.dispose();
+      recorder?.dispose();
+    }());
   }
 
   void _cancel() {
@@ -158,13 +228,13 @@ class _RemoteDictationViewState extends State<RemoteDictationView>
   }
 
   void _onTapDown(TapDownDetails _) {
-    if (_isProcessing) return;
-
+    HapticFeedback.mediumImpact();
     if (_isIdle) {
       _mode = _DictationMode.waitingForMode;
       _startRecording();
-      _holdTimer = Timer(const Duration(seconds: 1), () {
+      _holdTimer = Timer(_holdThreshold, () {
         if (_mode == _DictationMode.waitingForMode) {
+          HapticFeedback.mediumImpact();
           setState(() => _mode = _DictationMode.hold);
         }
       });
@@ -179,6 +249,7 @@ class _RemoteDictationViewState extends State<RemoteDictationView>
       _holdTimer?.cancel();
       setState(() => _mode = _DictationMode.toggle);
     } else if (_mode == _DictationMode.hold) {
+      HapticFeedback.lightImpact();
       _stopRecording();
       _mode = null;
     }
@@ -225,12 +296,30 @@ class _RemoteDictationViewState extends State<RemoteDictationView>
         ),
         Expanded(
           child: Center(
-            child: DictationPill(
-              status: _status,
-              audioLevel: _audioLevel,
-              onTapDown: _onTapDown,
-              onTapUp: _onTapUp,
-              onTapCancel: _onTapCancel,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DictationPill(
+                  status: _status,
+                  audioLevel: _audioLevel,
+                  onTapDown: _onTapDown,
+                  onTapUp: _onTapUp,
+                  onTapCancel: _onTapCancel,
+                ),
+                AppAnimatedSize(
+                  child: AppAnimatedSwitcher(
+                    child: _isRecording
+                        ? Padding(
+                            key: const ValueKey('cancel'),
+                            padding: const EdgeInsets.only(left: 12),
+                            child: DictationCancelButton(
+                              onTap: _cancelRecording,
+                            ),
+                          )
+                        : const SizedBox.shrink(key: ValueKey('cancel-empty')),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -289,7 +378,7 @@ class _RemoteDictationViewState extends State<RemoteDictationView>
         }
 
         final entry = _history[reversedIndex];
-        return DictationMessage(text: entry.text, sentAt: entry.sentAt);
+        return DictationMessage(text: entry.message, sentAt: entry.sentAt);
       },
     );
   }
