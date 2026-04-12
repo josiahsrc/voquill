@@ -14,6 +14,7 @@ import {
 import { Box, Button, Chip, Stack, TextField, Typography } from "@mui/material";
 import { useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
+import communicationImage from "../../assets/5-communication.png";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
 import { produceAppState } from "../../store";
 import { trackButtonClick } from "../../utils/analytics.utils";
@@ -146,7 +147,7 @@ export const ReferralSourceForm = () => {
   const rightContent = (
     <Box
       component="img"
-      src="https://illustrations.popsy.co/amber/communication.svg"
+      src={communicationImage}
       alt="Illustration"
       sx={{ maxWidth: 400, maxHeight: 400 }}
     />

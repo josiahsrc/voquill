@@ -4,6 +4,7 @@ import { FormattedMessage } from "react-intl";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
 import { useAppStore } from "../../store";
 import { trackButtonClick } from "../../utils/analytics.utils";
+import designerImage from "../../assets/3-designer.png";
 import { AIPostProcessingConfiguration } from "../settings/AIPostProcessingConfiguration";
 import {
   BackButton,
@@ -55,7 +56,7 @@ export const ChooseLlmForm = () => {
   const rightContent = (
     <Box
       component="img"
-      src="https://illustrations.popsy.co/amber/designer.svg"
+      src={designerImage}
       alt="Illustration"
       sx={{ maxWidth: 400, maxHeight: 400 }}
     />
