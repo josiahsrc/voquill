@@ -30,6 +30,18 @@ void main() {
     expect(buildRevenueCatConfiguration(), isNull);
   });
 
+  test(
+    'buildRevenueCatConfiguration returns null when apple key is whitespace only',
+    () {
+      dotenv.loadFromString(
+        envString: 'REVENUE_CAT_APPLE_API_KEY=   ',
+        isOptional: true,
+      );
+
+      expect(buildRevenueCatConfiguration(), isNull);
+    },
+  );
+
   test('loginRevenueCat does not call plugin when apple key is missing',
       () async {
     dotenv.loadFromString(envString: '', isOptional: true);

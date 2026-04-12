@@ -18,7 +18,7 @@ object TranscriptionBackendResolver {
         hasCloudConfig: Boolean,
         localModelValid: Boolean,
     ): TranscriptionBackend? =
-        when (transcriptionMode) {
+        when (transcriptionMode?.takeIf { it.isNotBlank() } ?: "cloud") {
             "local" -> selectedModel?.takeIf { localModelValid }?.let { TranscriptionBackend.Local(it) }
             "api" -> TranscriptionBackend.Api.takeIf { hasApiKey }
             "cloud" -> TranscriptionBackend.Cloud.takeIf { hasCloudConfig }

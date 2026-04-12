@@ -11,6 +11,7 @@ enum TranscriptionBackendResolverError: Error, LocalizedError, Equatable {
   case missingApiConfiguration
   case missingLocalModelSelection
   case invalidLocalModel(String)
+  case invalidTranscriptionMode(String)
 
   var errorDescription: String? {
     switch self {
@@ -22,6 +23,8 @@ enum TranscriptionBackendResolverError: Error, LocalizedError, Equatable {
       return "Local transcription needs a downloaded model. Open Voquill to choose one."
     case .invalidLocalModel:
       return "Selected local model is missing or invalid. Open Voquill to re-download it."
+    case .invalidTranscriptionMode(let mode):
+      return "Unsupported transcription mode '\(mode)'."
     }
   }
 }
@@ -34,7 +37,10 @@ struct TranscriptionBackendResolver {
     hasApiConfig: Bool,
     localModelValid: Bool
   ) throws -> TranscriptionBackend {
-    switch transcriptionMode ?? "cloud" {
+    let normalizedMode = transcriptionMode?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let mode = (normalizedMode?.isEmpty == false) ? normalizedMode! : "cloud"
+
+    switch mode {
     case "local":
       guard let model = selectedModel?.trimmingCharacters(in: .whitespacesAndNewlines),
             !model.isEmpty else {
@@ -49,11 +55,13 @@ struct TranscriptionBackendResolver {
         return .api
       }
       throw TranscriptionBackendResolverError.missingApiConfiguration
-    default:
+    case "cloud":
       guard hasCloudConfig else {
         throw TranscriptionBackendResolverError.missingCloudConfiguration
       }
       return .cloud
+    default:
+      throw TranscriptionBackendResolverError.invalidTranscriptionMode(mode)
     }
   }
 }

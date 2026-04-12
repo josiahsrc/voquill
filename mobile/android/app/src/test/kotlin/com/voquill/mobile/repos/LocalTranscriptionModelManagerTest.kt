@@ -241,6 +241,27 @@ class LocalTranscriptionModelManagerTest {
         assertTrue(readManifestFile().contains(""""selected": true"""))
     }
 
+    @Test
+    fun listModels_preservesSelectedModelWhenModeIsNotLocal() {
+        writeInstalledModel(slug = "tiny", fileContents = "tiny-model".encodeToByteArray())
+        prefs
+            .edit()
+            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, "local")
+            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, "tiny")
+            .commit()
+        val manager = manager()
+        manager.syncSelectionFromPrefs(prefs)
+
+        prefs
+            .edit()
+            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, "cloud")
+            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, "tiny")
+            .commit()
+
+        val tiny = manager.listModels(prefs).first { it.slug == "tiny" }
+        assertTrue(tiny.selected)
+    }
+
     private fun manager(
         downloader: LocalTranscriptionModelDownloader = LocalTranscriptionModelDownloader { _, _ -> },
     ) = LocalTranscriptionModelManager(appFilesDir = appFilesDir, downloader = downloader, clock = { 1_700_000_000_000L })

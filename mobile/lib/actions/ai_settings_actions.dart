@@ -261,7 +261,7 @@ Future<void> deleteLocalTranscriptionModel(String slug) async {
       await channel_utils.selectLocalTranscriptionModel(fallbackModel.slug);
     }
 
-    // Native model lists only report selected=true when native transcription mode is local.
+    // Keep local transcription mode after selecting a fallback model.
     await _persistTranscriptionMode(AiMode.local);
   }
 

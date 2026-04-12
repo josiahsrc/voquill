@@ -397,9 +397,8 @@ internal class LocalTranscriptionModelManager(
         preserveExistingSelection: Boolean = false,
     ): MutableMap<String, LocalTranscriptionModelManifestEntry> {
         val selectedSlug =
-            if (prefs?.getString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, null) == "local") {
-                prefs.getString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, null)
-            } else if (preserveExistingSelection) {
+            prefs?.getString(VoquillIME.KEY_AI_TRANSCRIPTION_MODEL, null)
+                ?: if (preserveExistingSelection) {
                 entries.values.firstOrNull { it.selected }?.slug
             } else {
                 null

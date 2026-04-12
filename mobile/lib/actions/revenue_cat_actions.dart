@@ -9,14 +9,17 @@ import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
 final _logger = createNamedLogger('revenue_cat');
 
+String? get _normalizedRevenueCatApiKey => revenueCatAppleApiKey?.trim();
+
 bool get _hasRevenueCatApiKey =>
-    revenueCatAppleApiKey != null && revenueCatAppleApiKey!.isNotEmpty;
+    _normalizedRevenueCatApiKey != null &&
+    _normalizedRevenueCatApiKey!.isNotEmpty;
 
 PurchasesConfiguration? buildRevenueCatConfiguration() {
   if (!_hasRevenueCatApiKey) {
     return null;
   }
-  return PurchasesConfiguration(revenueCatAppleApiKey!);
+  return PurchasesConfiguration(_normalizedRevenueCatApiKey!);
 }
 
 Future<void> initializeRevenueCat() async {

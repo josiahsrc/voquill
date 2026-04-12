@@ -52,9 +52,7 @@ class _LocalTranscriptionModelTile extends StatelessWidget {
 
   String get _statusLabel {
     if (_isDownloading) {
-      return model.downloadProgress == null
-          ? 'Downloading'
-          : '${(model.downloadProgress!.clamp(0.0, 1.0) * 100).round()}% downloaded';
+      return '${(model.downloadProgress!.clamp(0.0, 1.0) * 100).round()}% downloaded';
     }
     if (model.selected) {
       return 'Currently selected';

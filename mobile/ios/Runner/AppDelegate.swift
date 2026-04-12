@@ -81,15 +81,13 @@ struct SharedAiConfigBridge {
       defaults: defaults,
       appGroupId: DictationConstants.appGroupId
     )
-    let transcriptionMode = defaults?.string(forKey: LocalTranscriptionModelManager.transcriptionModeKey)
     let selectedModel = defaults?.string(forKey: LocalTranscriptionModelManager.transcriptionModelKey)
 
     do {
       return try manager.listModels().map { model in
         model.asDictionary(
           selectedOverride:
-            transcriptionMode == "local"
-            && selectedModel == model.slug
+            selectedModel == model.slug
             && model.selected
             && model.valid
         )

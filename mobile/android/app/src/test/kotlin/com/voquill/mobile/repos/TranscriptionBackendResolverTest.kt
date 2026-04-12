@@ -87,4 +87,28 @@ class TranscriptionBackendResolverTest {
             ),
         )
     }
+
+    @Test
+    fun resolve_treats_null_or_blank_mode_as_cloud() {
+        assertEquals(
+            TranscriptionBackend.Cloud,
+            TranscriptionBackendResolver.resolve(
+                transcriptionMode = null,
+                selectedModel = null,
+                hasApiKey = false,
+                hasCloudConfig = true,
+                localModelValid = false,
+            ),
+        )
+        assertEquals(
+            TranscriptionBackend.Cloud,
+            TranscriptionBackendResolver.resolve(
+                transcriptionMode = "   ",
+                selectedModel = null,
+                hasApiKey = false,
+                hasCloudConfig = true,
+                localModelValid = false,
+            ),
+        )
+    }
 }

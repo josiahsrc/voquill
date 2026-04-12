@@ -57,6 +57,7 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
   bool get _isRecording => _status == _PageStatus.recording;
   bool get _isIdle => _status == _PageStatus.idle;
   bool get _isProcessing => _status == _PageStatus.processing;
+  bool get _isModeLoading => _transcriptionMode == null;
   bool get _localModeUnavailable => _transcriptionMode == AiMode.local;
 
   @override
@@ -78,7 +79,7 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
   }
 
   Future<void> _startRecording() async {
-    if (_isRecording || _localModeUnavailable) return;
+    if (_isRecording || _isModeLoading || _localModeUnavailable) return;
 
     setState(() => _status = _PageStatus.recording);
 
@@ -117,6 +118,9 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
     } catch (e) {
       _logger.e('Failed to start recording: $e');
       _cancel();
+      if (mounted) {
+        setState(() => _status = _PageStatus.idle);
+      }
     }
   }
 
@@ -168,12 +172,13 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
     _recorder = null;
     _session = null;
     _mode = null;
+    _status = _PageStatus.idle;
     _audioLevel = 0;
     _partialText = '';
   }
 
   void _onTapDown(TapDownDetails _) {
-    if (_isProcessing) return;
+    if (_isProcessing || _isModeLoading || _localModeUnavailable) return;
 
     if (_isIdle) {
       _mode = _DictationMode.waitingForMode;

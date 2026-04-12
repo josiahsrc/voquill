@@ -117,7 +117,12 @@ private final class WhisperCppContext {
     whisper_free(context)
   }
 
-  func transcribe(pcm16k: [Float], language: String?, threads: Int32) throws -> [WhisperCppSegment] {
+  func transcribe(
+    pcm16k: [Float],
+    prompt: String?,
+    language: String?,
+    threads: Int32
+  ) throws -> [WhisperCppSegment] {
     var params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY)
     params.print_progress = false
     params.print_realtime = false
@@ -126,11 +131,31 @@ private final class WhisperCppContext {
     params.translate = false
     params.n_threads = max(1, threads)
 
+    let normalizedPrompt = prompt?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let promptToUse = (normalizedPrompt?.isEmpty == false) ? normalizedPrompt : nil
+    let normalizedLanguage = language?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let languageToUse = (normalizedLanguage?.isEmpty == false) ? normalizedLanguage : nil
+
     let code: Int32
-    if let language {
-      code = language.withCString { cString in
+    if let promptToUse {
+      code = promptToUse.withCString { promptCString in
+        var promptParams = params
+        promptParams.initial_prompt = promptCString
+
+        if let languageToUse {
+          return languageToUse.withCString { languageCString in
+            var localParams = promptParams
+            localParams.language = languageCString
+            return whisper_full(context, localParams, pcm16k, Int32(pcm16k.count))
+          }
+        }
+
+        return whisper_full(context, promptParams, pcm16k, Int32(pcm16k.count))
+      }
+    } else if let languageToUse {
+      code = languageToUse.withCString { languageCString in
         var localParams = params
-        localParams.language = cString
+        localParams.language = languageCString
         return whisper_full(context, localParams, pcm16k, Int32(pcm16k.count))
       }
     } else {
@@ -190,6 +215,7 @@ final class LocalTranscribeAudioRepo: BaseTranscribeAudioRepo {
       let normalizedLanguage = language?.trimmingCharacters(in: .whitespacesAndNewlines)
       let segments = try context.transcribe(
         pcm16k: pcm16k,
+        prompt: prompt,
         language: (normalizedLanguage?.isEmpty == false && normalizedLanguage != "auto") ? normalizedLanguage : nil,
         threads: Int32(ProcessInfo.processInfo.activeProcessorCount - 1)
       )

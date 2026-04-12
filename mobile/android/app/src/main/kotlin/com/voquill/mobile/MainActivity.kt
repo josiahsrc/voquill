@@ -358,15 +358,22 @@ class MainActivity : FlutterFragmentActivity() {
             return
         }
 
-        try {
-            if (!localTranscriptionModelManager.deleteModel(keyboardPrefs, slug)) {
-                result.error("INVALID_ARGS", "Missing required arguments", null)
-                return
+        Thread {
+            try {
+                val deleted = localTranscriptionModelManager.deleteModel(keyboardPrefs, slug)
+                runOnUiThread {
+                    if (!deleted) {
+                        result.error("INVALID_ARGS", "Missing required arguments", null)
+                    } else {
+                        result.success(null)
+                    }
+                }
+            } catch (error: IOException) {
+                runOnUiThread {
+                    result.error("DELETE_FAILED", error.message ?: "Failed to delete model", null)
+                }
             }
-            result.success(null)
-        } catch (error: IOException) {
-            result.error("DELETE_FAILED", error.message ?: "Failed to delete model", null)
-        }
+        }.start()
     }
 
     private fun handleSelectLocalTranscriptionModel(

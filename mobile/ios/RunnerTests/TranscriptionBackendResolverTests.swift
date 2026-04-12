@@ -53,4 +53,37 @@ final class TranscriptionBackendResolverTests: XCTestCase {
       )
     }
   }
+
+  func testResolverDefaultsNilModeToCloudOnly() throws {
+    let resolver = TranscriptionBackendResolver()
+
+    let result = try resolver.resolve(
+      transcriptionMode: nil,
+      selectedModel: nil,
+      hasCloudConfig: true,
+      hasApiConfig: false,
+      localModelValid: false
+    )
+
+    XCTAssertEqual(result, .cloud)
+  }
+
+  func testResolverRejectsUnknownMode() {
+    let resolver = TranscriptionBackendResolver()
+
+    XCTAssertThrowsError(
+      try resolver.resolve(
+        transcriptionMode: "unexpected-mode",
+        selectedModel: nil,
+        hasCloudConfig: true,
+        hasApiConfig: false,
+        localModelValid: false
+      )
+    ) { error in
+      XCTAssertEqual(
+        error as? TranscriptionBackendResolverError,
+        .invalidTranscriptionMode("unexpected-mode")
+      )
+    }
+  }
 }

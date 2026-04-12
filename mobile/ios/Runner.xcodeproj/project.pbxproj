@@ -1012,7 +1012,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9Y84AJHU4X;
 				ENABLE_BITCODE = NO;
-				FLUTTER_TARGET = lib/main_emulators.dart;
+				FLUTTER_TARGET = lib/main_dev.dart;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1161,7 +1161,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9Y84AJHU4X;
 				ENABLE_BITCODE = NO;
-				FLUTTER_TARGET = lib/main_dev.dart;
+				FLUTTER_TARGET = lib/main_emulators.dart;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1307,7 +1307,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9Y84AJHU4X;
 				ENABLE_BITCODE = NO;
-				FLUTTER_TARGET = lib/main_emulators.dart;
+				FLUTTER_TARGET = lib/main_dev.dart;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1447,7 +1447,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9Y84AJHU4X;
 				ENABLE_BITCODE = NO;
-				FLUTTER_TARGET = lib/main_dev.dart;
+				FLUTTER_TARGET = lib/main_emulators.dart;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

@@ -113,7 +113,7 @@ Expected: PASS
 **Step 5: Commit**
 
 ```bash
-cd /Users/chintan/Personal/repos/voquill
+cd <repo-root>
 git add mobile/lib/model/local_transcription_model.dart mobile/lib/model/api_key_model.dart mobile/lib/actions/ai_settings_actions.dart mobile/test/actions/ai_settings_actions_test.dart
 git commit -m "feat(mobile): add local transcription settings state"
 ```
@@ -193,7 +193,7 @@ Expected: PASS
 **Step 5: Commit**
 
 ```bash
-cd /Users/chintan/Personal/repos/voquill
+cd <repo-root>
 git add mobile/lib/utils/channel_utils.dart mobile/lib/actions/ai_settings_actions.dart mobile/test/utils/channel_utils_test.dart mobile/ios/Runner/AppDelegate.swift mobile/ios/RunnerTests/SharedAiConfigTests.swift mobile/android/app/src/main/kotlin/com/voquill/mobile/MainActivity.kt mobile/android/app/src/test/kotlin/com/voquill/mobile/MainActivityLocalModelBridgeTest.kt
 git commit -m "feat(mobile): add local model bridge methods"
 ```
@@ -262,7 +262,7 @@ Expected: PASS
 **Step 5: Commit**
 
 ```bash
-cd /Users/chintan/Personal/repos/voquill
+cd <repo-root>
 git add mobile/lib/widgets/settings/ai_configuration_sheet.dart mobile/lib/widgets/settings/local_transcription_model_list.dart mobile/lib/actions/ai_settings_actions.dart mobile/test/widgets/settings/ai_configuration_sheet_test.dart
 git commit -m "feat(mobile): add local model chooser UI"
 ```
@@ -338,7 +338,7 @@ Expected: PASS
 **Step 5: Commit**
 
 ```bash
-cd /Users/chintan/Personal/repos/voquill
+cd <repo-root>
 git add mobile/ios/Runner/LocalTranscriptionModelManager.swift mobile/ios/Runner/AppDelegate.swift mobile/ios/Runner/DictationConstants.swift mobile/ios/Podfile mobile/ios/RunnerTests/LocalTranscriptionModelManagerTests.swift
 git commit -m "feat(ios): add local model manager"
 ```
@@ -408,7 +408,7 @@ Expected: TEST PASS and successful iOS build
 **Step 5: Commit**
 
 ```bash
-cd /Users/chintan/Personal/repos/voquill
+cd <repo-root>
 git add mobile/ios/keyboard/Repos/LocalTranscribeAudioRepo.swift mobile/ios/keyboard/Repos/TranscriptionBackendResolver.swift mobile/ios/keyboard/KeyboardViewController.swift mobile/ios/keyboard/Repos/TranscribeAudioRepo.swift mobile/ios/RunnerTests/TranscriptionBackendResolverTests.swift
 git commit -m "feat(ios): add local keyboard transcription"
 ```
@@ -482,7 +482,7 @@ Expected: PASS
 **Step 5: Commit**
 
 ```bash
-cd /Users/chintan/Personal/repos/voquill
+cd <repo-root>
 git add mobile/android/app/src/main/kotlin/com/voquill/mobile/repos/LocalTranscriptionModelManager.kt mobile/android/app/src/main/kotlin/com/voquill/mobile/MainActivity.kt mobile/android/app/build.gradle.kts mobile/android/app/src/test/kotlin/com/voquill/mobile/repos/LocalTranscriptionModelManagerTest.kt
 git commit -m "feat(android): add local model manager"
 ```
@@ -552,7 +552,7 @@ Expected: TEST PASS and `BUILD SUCCESSFUL`
 **Step 5: Commit**
 
 ```bash
-cd /Users/chintan/Personal/repos/voquill
+cd <repo-root>
 git add mobile/android/app/src/main/kotlin/com/voquill/mobile/repos/LocalTranscribeAudioRepo.kt mobile/android/app/src/main/kotlin/com/voquill/mobile/repos/TranscriptionBackendResolver.kt mobile/android/app/src/main/kotlin/com/voquill/mobile/VoquillIME.kt mobile/android/app/src/main/kotlin/com/voquill/mobile/repos/TranscribeAudioRepo.kt mobile/android/app/src/test/kotlin/com/voquill/mobile/repos/TranscriptionBackendResolverTest.kt
 git commit -m "feat(android): add local ime transcription"
 ```
@@ -629,7 +629,7 @@ Expected: PASS
 **Step 5: Commit**
 
 ```bash
-cd /Users/chintan/Personal/repos/voquill
+cd <repo-root>
 git add mobile/lib/api/dictation_api.dart mobile/lib/widgets/remote/remote_dictation_page.dart mobile/lib/widgets/settings/settings_page.dart mobile/test/api/dictation_api_test.dart mobile/test/widgets/remote/remote_dictation_page_test.dart
 git commit -m "fix(mobile): make local transcription routing explicit"
 ```
@@ -676,7 +676,7 @@ If the mobile UI copy or setup flow now references downloadable local models, up
 **Step 5: Commit**
 
 ```bash
-cd /Users/chintan/Personal/repos/voquill
+cd <repo-root>
 git add mobile apps/docs/src/content/docs/guides/transcription.md apps/docs/src/content/docs/getting-started/introduction.md
 git commit -m "test(mobile): verify local transcription end to end"
 ```

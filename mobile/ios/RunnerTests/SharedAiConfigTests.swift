@@ -52,6 +52,30 @@ final class SharedAiConfigTests: XCTestCase {
     XCTAssertEqual(tiny?["selected"] as? Bool, true)
   }
 
+  func testListLocalTranscriptionModelsKeepsSelectionWhenModeIsNotLocal() throws {
+    defaults.set("cloud", forKey: "voquill_ai_transcription_mode")
+    defaults.set("tiny", forKey: "voquill_ai_transcription_model")
+    let manager = makeManager()
+    let artifactSize = try writeArtifact(for: "tiny", using: manager)
+    try manager.saveManifest([
+      .init(
+        slug: "tiny",
+        filename: "ggml-tiny.bin",
+        sizeBytes: artifactSize,
+        languageSupport: "multilingual",
+        downloaded: true,
+        valid: true,
+        selected: true,
+        validationError: nil
+      )
+    ])
+
+    let models = SharedAiConfigBridge.listLocalTranscriptionModels(defaults: defaults, manager: manager)
+    let tiny = models.first { ($0["slug"] as? String) == "tiny" }
+
+    XCTAssertEqual(tiny?["selected"] as? Bool, true)
+  }
+
   func testSelectLocalTranscriptionModelPersistsLocalKeys() throws {
     let manager = makeManager()
     try writeArtifact(for: "tiny", using: manager)

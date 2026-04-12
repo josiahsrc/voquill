@@ -241,20 +241,28 @@ class _LocalContentState extends State<_LocalContent> {
       });
     }
 
-    final models = await listLocalTranscriptionModels();
-    if (!mounted) return;
-    setState(() {
-      _models = models;
-      _loading = false;
-      _refreshing = false;
-    });
+    try {
+      final models = await listLocalTranscriptionModels();
+      if (!mounted) return;
+      setState(() => _models = models);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _refreshing = false;
+        });
+      }
+    }
   }
 
   Future<void> _runAndRefresh(Future<void> Function() action) async {
     if (!mounted) return;
     setState(() => _refreshing = true);
-    await action();
-    await _loadModels(showSpinner: false);
+    try {
+      await action();
+    } finally {
+      await _loadModels(showSpinner: false);
+    }
   }
 
   @override

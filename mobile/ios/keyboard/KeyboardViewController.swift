@@ -1142,9 +1142,13 @@ class KeyboardViewController: UIInputViewController {
     private func buildTranscribeRepo(defaults: UserDefaults, config: RepoConfig?) throws -> BaseTranscribeAudioRepo {
         let mode = defaults.string(forKey: LocalTranscriptionModelManager.transcriptionModeKey) ?? "cloud"
         let selectedModel = defaults.string(forKey: LocalTranscriptionModelManager.transcriptionModelKey)
-        let provider = defaults.string(forKey: "voquill_ai_transcription_provider")
-        let apiKey = defaults.string(forKey: "voquill_ai_transcription_api_key")
-        let hasApiConfig = provider != nil && apiKey != nil
+        let provider = defaults
+            .string(forKey: "voquill_ai_transcription_provider")?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let apiKey = defaults
+            .string(forKey: "voquill_ai_transcription_api_key")?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasApiConfig = !(provider?.isEmpty ?? true) && !(apiKey?.isEmpty ?? true)
 
         let manager = LocalTranscriptionModelManager(defaults: defaults)
         let localModelValid = selectedModel.flatMap { slug in
@@ -1163,7 +1167,7 @@ class KeyboardViewController: UIInputViewController {
         case .local(let model):
             return try LocalTranscribeAudioRepo(modelSlug: model, modelManager: manager)
         case .api:
-            guard let provider, let apiKey else {
+            guard let provider, !provider.isEmpty, let apiKey, !apiKey.isEmpty else {
                 throw TranscriptionBackendResolverError.missingApiConfiguration
             }
             let baseUrl = defaults.string(forKey: "voquill_ai_transcription_base_url")
