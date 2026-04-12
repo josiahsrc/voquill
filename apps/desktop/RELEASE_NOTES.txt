@@ -1,4 +1,3 @@
-- Fix deepgram provider auto detect
-- Fix occasional rendering artifact issue on some windows machines
-- Fix MacOS issue where pasting wasn't working on some text fields
-- Support configuring whether "last style" is remembered
+- Fix issue with MacOS pasting on Arc browser and Discord
+- Update onboarding flow to use fun watercolor images
+- Bug fixes and improvements
