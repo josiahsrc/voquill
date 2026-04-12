@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use crate::Env;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Credentials {
     pub id_token: String,
     pub refresh_token: String,
@@ -39,4 +39,17 @@ pub fn save(env: Env, credentials: &Credentials) -> Result<PathBuf> {
     }
 
     Ok(path)
+}
+
+pub fn load(env: Env) -> Result<Option<Credentials>> {
+    let path = credentials_path(env)?;
+    match std::fs::read(&path) {
+        Ok(bytes) => {
+            let credentials: Credentials = serde_json::from_slice(&bytes)
+                .with_context(|| format!("Failed to parse {}", path.display()))?;
+            Ok(Some(credentials))
+        }
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(err) => Err(err).with_context(|| format!("Failed to read {}", path.display())),
+    }
 }
