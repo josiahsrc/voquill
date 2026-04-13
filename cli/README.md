@@ -10,6 +10,74 @@ This crate builds three binaries, one per backend environment.
 
 Each binary writes its credentials to `~/.config/voquill/<env>.json` (mode `0600` on Unix). Running one won't overwrite another's session.
 
+## Install
+
+Pick whichever method matches your platform. Add `--dev` (or `-Dev` on PowerShell) to any script installer to get `voquill-dev` instead. The package managers publish both `voquill` and `voquill-dev` as separate packages.
+
+### macOS / Linux (shell)
+
+```sh
+curl -fsSL https://voquill.com/install.sh | sh
+```
+
+Options: `--dev` to install `voquill-dev`, `--version X.Y.Z` to pin a version. The script drops the binary in `~/.voquill/bin` and appends it to your shell's PATH (zsh, bash, fish supported). Override the location with `VOQUILL_INSTALL=/some/dir`.
+
+### Windows (PowerShell)
+
+```powershell
+iwr https://voquill.com/install.ps1 -UseBasicParsing | iex
+```
+
+To pass flags, wrap it in a scriptblock:
+
+```powershell
+& ([scriptblock]::Create((iwr https://voquill.com/install.ps1 -UseBasicParsing))) -Dev
+& ([scriptblock]::Create((iwr https://voquill.com/install.ps1 -UseBasicParsing))) -Version 1.2.3
+```
+
+Installs to `%USERPROFILE%\.voquill\bin` and adds it to your user PATH.
+
+### Homebrew (macOS / Linux)
+
+```sh
+brew install voquill/voquill/voquill
+# or, for the dev build:
+brew install voquill/voquill/voquill-dev
+```
+
+### Debian / Ubuntu (APT)
+
+```sh
+curl -fsSL https://voquill.github.io/apt/gpg-key.asc \
+  | sudo gpg --dearmor -o /usr/share/keyrings/voquill.gpg
+echo "deb [signed-by=/usr/share/keyrings/voquill.gpg] https://voquill.github.io/apt stable main" \
+  | sudo tee /etc/apt/sources.list.d/voquill.list
+sudo apt-get update
+sudo apt-get install voquill   # or voquill-dev
+```
+
+Swap `stable` for `dev` to track dev releases.
+
+### Fedora / RHEL / openSUSE (RPM)
+
+```sh
+sudo tee /etc/yum.repos.d/voquill.repo <<'EOF'
+[voquill]
+name=Voquill
+baseurl=https://voquill.github.io/rpm/packages/stable
+enabled=1
+gpgcheck=1
+gpgkey=https://voquill.github.io/rpm/gpg-key.asc
+EOF
+sudo dnf install voquill   # or voquill-dev
+```
+
+Swap `stable` for `dev` to track dev releases.
+
+### Manual download
+
+Pre-built archives (`.tar.gz` / `.zip`) and `.deb` / `.rpm` packages for every release live at <https://github.com/voquill/voquill/releases>. Prod tags are `cli-v*`; dev tags are `cli-dev-v*`.
+
 ## Build
 
 ```sh
