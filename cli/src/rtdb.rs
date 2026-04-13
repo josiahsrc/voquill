@@ -110,6 +110,9 @@ pub fn append_history_entry(
     session_id: &str,
     entry: &serde_json::Value,
 ) -> Result<()> {
+    // History entries are stored as JSON-encoded strings (not objects) because
+    // the mobile client reads each entry as a string and jsonDecode()s it itself
+    // (see SessionHistoryEntry.tryDecode in mobile/lib/model/session_history_entry.dart).
     let entry_str = serde_json::to_string(entry)?;
 
     let response = client()?
