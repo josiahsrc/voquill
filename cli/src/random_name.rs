@@ -154,6 +154,26 @@ pub fn name() -> String {
     format!("{adj}-{animal}")
 }
 
+pub fn kebab(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let mut prev_dash = true;
+    for ch in input.chars() {
+        if ch.is_ascii_alphanumeric() {
+            for lower in ch.to_lowercase() {
+                out.push(lower);
+            }
+            prev_dash = false;
+        } else if !prev_dash {
+            out.push('-');
+            prev_dash = true;
+        }
+    }
+    while out.ends_with('-') {
+        out.pop();
+    }
+    out
+}
+
 pub fn id() -> String {
     let mut rng = OsRng;
     let a: u64 = rng.r#gen();

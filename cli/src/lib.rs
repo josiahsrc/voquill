@@ -4,7 +4,7 @@ pub mod credentials;
 pub mod platform;
 pub mod random_name;
 pub mod rtdb;
-pub mod workspace;
+pub mod server;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -72,6 +72,9 @@ enum Command {
     Logout,
     /// Wrap an agent command in a Voquill session.
     Agent {
+        /// Custom session name (will be kebab-cased). Defaults to a random name.
+        #[arg(long)]
+        slug: Option<String>,
         /// Command (and args) to run inside the session.
         #[arg(trailing_var_arg = true, required = true, allow_hyphen_values = true)]
         command: Vec<String>,
@@ -85,7 +88,7 @@ pub fn run(env: Env) -> Result<()> {
     match cli.command {
         Command::Login { site } => commands::login::run(env, site),
         Command::Logout => commands::logout::run(env),
-        Command::Agent { command } => commands::agent::run(env, command),
+        Command::Agent { slug, command } => commands::agent::run(env, slug, command),
         Command::Upgrade => commands::upgrade::run(env),
     }
 }

@@ -12,12 +12,12 @@ use crate::credentials;
 use crate::platform;
 use crate::random_name;
 use crate::rtdb;
-use crate::workspace;
+use crate::server::SessionServer;
 
 type Master = Arc<Mutex<Box<dyn MasterPty + Send>>>;
 type SharedWriter = Arc<Mutex<Box<dyn Write + Send>>>;
 
-pub fn run(env: Env, command: Vec<String>) -> Result<()> {
+pub fn run(env: Env, slug: Option<String>, command: Vec<String>) -> Result<()> {
     if command.is_empty() {
         bail!("Missing command. Usage: voquill session <command> [args...]");
     }
@@ -28,18 +28,28 @@ pub fn run(env: Env, command: Vec<String>) -> Result<()> {
 
     let creds = auth::ensure_fresh(env, &handle).context("Failed to refresh credentials")?;
 
-    let name = random_name::name();
+    let name = match slug {
+        Some(raw) => {
+            let k = random_name::kebab(&raw);
+            if k.is_empty() {
+                bail!("--slug must contain at least one alphanumeric character");
+            }
+            k
+        }
+        None => random_name::name(),
+    };
     let session_id = random_name::id();
 
     rtdb::create_session(env, &creds, &session_id, &name).context("Failed to create session")?;
 
-    workspace::prepare_workspace(&name).context("Failed to prepare workspace")?;
+    let server = SessionServer::start(env, handle.clone(), session_id.clone())
+        .context("Failed to start session server")?;
 
     eprintln!("\x1b[2mSession \"{name}\" started.\x1b[0m");
 
-    let cleanup = SessionCleanup::new(env, handle.clone(), session_id.clone(), name.clone());
+    let cleanup = SessionCleanup::new(env, handle.clone(), session_id.clone());
 
-    let exit_code = run_pty(&command, env, &handle, &session_id, &name)?;
+    let exit_code = run_pty(&command, env, &handle, &session_id, server)?;
 
     drop(cleanup);
     eprintln!("\x1b[2mSession \"{name}\" ended.\x1b[0m");
@@ -50,17 +60,15 @@ struct SessionCleanup {
     env: Env,
     creds: CredsHandle,
     session_id: String,
-    session_name: String,
     done: bool,
 }
 
 impl SessionCleanup {
-    fn new(env: Env, creds: CredsHandle, session_id: String, session_name: String) -> Self {
+    fn new(env: Env, creds: CredsHandle, session_id: String) -> Self {
         Self {
             env,
             creds,
             session_id,
-            session_name,
             done: false,
         }
     }
@@ -82,12 +90,6 @@ impl Drop for SessionCleanup {
                 eprintln!("Warning: failed to refresh credentials for cleanup: {err}");
             }
         }
-        let dir = workspace::workspace_dir(&self.session_name);
-        if dir.exists()
-            && let Err(err) = std::fs::remove_dir_all(&dir)
-        {
-            eprintln!("Warning: failed to remove {}: {err}", dir.display());
-        }
     }
 }
 
@@ -96,7 +98,7 @@ fn run_pty(
     env: Env,
     creds: &CredsHandle,
     session_id: &str,
-    session_name: &str,
+    server: Arc<SessionServer>,
 ) -> Result<i32> {
     let size = platform::terminal_size().unwrap_or(PtySize {
         rows: 24,
@@ -143,10 +145,10 @@ fn run_pty(
         let writer = writer.clone();
         let creds = creds.clone();
         let session_id = session_id.to_string();
-        let session_name = session_name.to_string();
+        let server = server.clone();
         let stop = stop.clone();
         thread::spawn(move || {
-            paste_listener(env, creds, session_id, session_name, writer, stop);
+            paste_listener(env, creds, session_id, server, writer, stop);
         });
     }
 
@@ -257,13 +259,12 @@ fn paste_listener(
     env: Env,
     creds: CredsHandle,
     session_id: String,
-    session_name: String,
+    server: Arc<SessionServer>,
     writer: SharedWriter,
     stop: Arc<AtomicBool>,
 ) {
     let mut last_ts: i64 = 0;
     let mut backoff_secs: u64 = 1;
-    let active_watcher: Mutex<Option<Arc<AtomicBool>>> = Mutex::new(None);
 
     while !stop.load(Ordering::Relaxed) {
         let fresh = match auth::ensure_fresh(env, &creds) {
@@ -283,11 +284,10 @@ fn paste_listener(
             &creds,
             &fresh,
             &session_id,
-            &session_name,
+            &server,
             &writer,
             &stop,
             &mut last_ts,
-            &active_watcher,
         ) {
             StreamOutcome::Stopped => return,
             StreamOutcome::AuthFailed => {
@@ -338,11 +338,10 @@ fn run_stream_once(
     creds: &CredsHandle,
     stream_creds: &crate::credentials::Credentials,
     session_id: &str,
-    session_name: &str,
+    server: &Arc<SessionServer>,
     writer: &SharedWriter,
     stop: &AtomicBool,
     last_ts: &mut i64,
-    active_watcher: &Mutex<Option<Arc<AtomicBool>>>,
 ) -> StreamOutcome {
     use std::io::BufRead;
 
@@ -416,15 +415,7 @@ fn run_stream_once(
             && ts > *last_ts
         {
             *last_ts = ts;
-            handle_paste(
-                env,
-                creds,
-                session_id,
-                session_name,
-                writer,
-                text,
-                active_watcher,
-            );
+            handle_paste(env, creds, session_id, server, writer, text);
             current_text = None;
             current_ts = None;
         }
@@ -441,24 +432,13 @@ fn handle_paste(
     env: Env,
     creds: &CredsHandle,
     session_id: &str,
-    session_name: &str,
+    server: &SessionServer,
     writer: &SharedWriter,
     text: &str,
-    active_watcher: &Mutex<Option<Arc<AtomicBool>>>,
 ) {
-    if let Some(prev) = active_watcher.lock().unwrap().take() {
-        prev.store(true, Ordering::Relaxed);
-    }
+    server.begin_turn();
 
-    let dir = workspace::workspace_dir(session_name);
-    if let Err(err) = workspace::prepare_workspace(session_name) {
-        eprintln!("\r\nFailed to prepare workspace: {err}\r");
-    }
-    if let Err(err) = workspace::clear_workspace(&dir) {
-        eprintln!("\r\nFailed to clear workspace: {err}\r");
-    }
-
-    let augmented = workspace::build_instructions(session_name, text);
+    let augmented = server.build_instructions(text);
     if let Err(err) = write_paste_sequence(writer, &augmented) {
         eprintln!("\r\nFailed to write paste to pty: {err}\r");
     }
@@ -473,9 +453,6 @@ fn handle_paste(
             eprintln!("\r\nFailed to refresh credentials: {err}\r");
         }
     }
-
-    let cancel = workspace::spawn_watcher(env, creds.clone(), session_id.to_string(), dir);
-    *active_watcher.lock().unwrap() = Some(cancel);
 }
 
 fn write_paste_sequence(writer: &SharedWriter, text: &str) -> std::io::Result<()> {
