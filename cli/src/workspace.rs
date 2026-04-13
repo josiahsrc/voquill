@@ -48,17 +48,19 @@ pub fn clear_workspace(dir: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn instruction_prefix(session_name: &str) -> String {
+pub fn build_instructions(session_name: &str, prompt: &str) -> String {
     format!(
-        "This session is relayed to a remote UI. Handle the user's prompt below however you normally would.\n\n\
-         To send content back to the UI, write plain text files into .voquill/{name}/ . Each file's contents become one message surfaced in the UI. Use whichever of the following file types fit what you want to communicate this turn — any combination, or none:\n\n\
-         - summary.txt — a recap of what you did, found, or are proposing.\n\
-         - review-0.txt, review-1.txt, ... — items for the user to approve or reject, one per file, numbered from 0 with no gaps.\n\
-         - question-0.txt, question-1.txt, ... — questions for the user, one per file, numbered from 0 with no gaps.\n\n\
-         Decide what (if anything) to write based on what's actually useful for this turn. When you're done writing files, create an empty file named `complete` in the same folder to signal the turn is over. Do not delete files in this folder — the CLI manages cleanup.\n\n\
+        "Here is the user's prompt:\n\n\
+         <prompt>\n{prompt}\n</prompt>\n\n\
          ---\n\n\
-         User prompt:\n\n",
+         This session is relayed to a remote UI. Handle the user's prompt however you normally would.\n\n\
+         To send content back to the UI, write plain text files into .voquill/{name}/ . Each file's contents become one message surfaced in the UI. Output renders on a mobile device — be extremely brief and direct, no padding or hedging. Use any combination of the following, or none:\n\n\
+         - summary.txt — recap of what you did or are proposing. One or two short sentences.\n\
+         - review-0.txt, review-1.txt, ... — items for the user to approve or reject, numbered from 0 with no gaps. One short sentence each.\n\
+         - question-0.txt, question-1.txt, ... — questions for the user, numbered from 0 with no gaps. One short sentence each.\n\n\
+         When you're done writing files, create an empty file named `complete` in the same folder to signal the turn is over. Do not delete files in this folder — the CLI manages cleanup.",
         name = session_name,
+        prompt = prompt,
     )
 }
 

@@ -616,8 +616,7 @@ fn handle_paste(
         eprintln!("\r\nFailed to clear workspace: {err}\r");
     }
 
-    let augmented = format!("{}{text}", workspace::instruction_prefix(session_name));
-
+    let augmented = workspace::build_instructions(session_name, text);
     if let Err(err) = write_paste_sequence(master_fd, &augmented) {
         eprintln!("\r\nFailed to write paste to pty: {err}\r");
     }
