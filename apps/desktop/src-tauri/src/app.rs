@@ -261,6 +261,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::hotkey_delete,
             crate::commands::set_tray_title,
             crate::commands::set_menu_icon,
+            crate::commands::set_tray_visible,
             crate::commands::api_key_create,
             crate::commands::api_key_list,
             crate::commands::api_key_delete,

@@ -114,6 +114,7 @@ export const createDefaultPreferences = (): UserPreferences => ({
   remoteReceiverAutoStart: false,
   dictationAudioDim: 1.0,
   pasteKeybind: null,
+  menuBarIconHidden: false,
 });
 
 export const updateUserPreferences = async (
@@ -704,6 +705,12 @@ export const setRemoteReceiverAutoStart = async (
   await updateUserPreferences((preferences) => {
     preferences.remoteReceiverAutoStart = enabled;
   }, "Failed to save receiver auto-start preference. Please try again.");
+};
+
+export const setMenuBarIconHidden = async (hidden: boolean): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.menuBarIconHidden = hidden;
+  }, "Failed to save menu bar icon preference. Please try again.");
 };
 
 export const setDictationAudioDim = async (value: number): Promise<void> => {

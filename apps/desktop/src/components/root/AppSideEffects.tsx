@@ -646,5 +646,12 @@ export const AppSideEffects = () => {
     installAvailableUpdate();
   });
 
+  const menuBarIconHidden = prefs?.menuBarIconHidden ?? false;
+  useEffect(() => {
+    invoke("set_tray_visible", { visible: !menuBarIconHidden }).catch(
+      console.error,
+    );
+  }, [menuBarIconHidden]);
+
   return null;
 };
