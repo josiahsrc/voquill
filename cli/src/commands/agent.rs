@@ -1,18 +1,21 @@
 use anyhow::{Context, Result, bail};
-use std::ffi::CString;
+use portable_pty::{MasterPty, PtySize, native_pty_system};
 use std::io::{Read, Write};
-use std::os::unix::io::{AsRawFd, RawFd};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 
 use crate::Env;
 use crate::auth::{self, CredsHandle};
 use crate::credentials;
+use crate::platform;
 use crate::random_name;
 use crate::rtdb;
 use crate::workspace;
-use std::sync::Mutex;
+
+type Master = Arc<Mutex<Box<dyn MasterPty + Send>>>;
+type SharedWriter = Arc<Mutex<Box<dyn Write + Send>>>;
 
 pub fn run(env: Env, command: Vec<String>) -> Result<()> {
     if command.is_empty() {
@@ -95,199 +98,93 @@ fn run_pty(
     session_id: &str,
     session_name: &str,
 ) -> Result<i32> {
-    let stdin_fd = std::io::stdin().as_raw_fd();
-    let stdout_fd = std::io::stdout().as_raw_fd();
+    let size = platform::terminal_size().unwrap_or(PtySize {
+        rows: 24,
+        cols: 80,
+        pixel_width: 0,
+        pixel_height: 0,
+    });
 
-    let termios = get_termios(stdin_fd);
-    let winsize = get_winsize(stdout_fd);
+    let pty_system = native_pty_system();
+    let pair = pty_system
+        .openpty(size)
+        .map_err(|e| anyhow::anyhow!("failed to open pty: {e}"))?;
 
-    let mut master_fd: libc::c_int = -1;
-    let pid = unsafe { fork_pty(&mut master_fd, termios.as_ref(), winsize.as_ref()) };
+    let cmd = platform::build_command(command);
+    let mut child = pair
+        .slave
+        .spawn_command(cmd)
+        .map_err(|e| anyhow::anyhow!("failed to spawn shell: {e}"))?;
+    drop(pair.slave);
 
-    if pid < 0 {
-        let err = std::io::Error::last_os_error();
-        bail!("forkpty failed: {err}");
-    }
+    let reader = pair
+        .master
+        .try_clone_reader()
+        .map_err(|e| anyhow::anyhow!("failed to clone pty reader: {e}"))?;
+    let writer = pair
+        .master
+        .take_writer()
+        .map_err(|e| anyhow::anyhow!("failed to take pty writer: {e}"))?;
 
-    if pid == 0 {
-        exec_child(command);
-    }
+    let master: Master = Arc::new(Mutex::new(pair.master));
+    let writer: SharedWriter = Arc::new(Mutex::new(writer));
 
-    parent_loop(
-        master_fd,
-        stdin_fd,
-        stdout_fd,
-        pid,
-        env,
-        creds,
-        session_id,
-        session_name,
-    )
-}
-
-unsafe fn fork_pty(
-    amaster: *mut libc::c_int,
-    termp: Option<&libc::termios>,
-    winp: Option<&libc::winsize>,
-) -> libc::pid_t {
-    let termp_ptr = termp
-        .map(|t| t as *const libc::termios)
-        .unwrap_or(std::ptr::null());
-    let winp_ptr = winp
-        .map(|w| w as *const libc::winsize)
-        .unwrap_or(std::ptr::null());
-
-    #[cfg(any(target_os = "macos", target_os = "ios"))]
-    unsafe {
-        libc::forkpty(
-            amaster,
-            std::ptr::null_mut(),
-            termp_ptr as *mut libc::termios,
-            winp_ptr as *mut libc::winsize,
-        )
-    }
-
-    #[cfg(not(any(target_os = "macos", target_os = "ios")))]
-    unsafe {
-        libc::forkpty(amaster, std::ptr::null_mut(), termp_ptr, winp_ptr)
-    }
-}
-
-fn get_winsize(fd: RawFd) -> Option<libc::winsize> {
-    unsafe {
-        let mut ws: libc::winsize = std::mem::zeroed();
-        if libc::ioctl(fd, libc::TIOCGWINSZ, &mut ws) == 0 {
-            Some(ws)
-        } else {
-            None
-        }
-    }
-}
-
-fn get_termios(fd: RawFd) -> Option<libc::termios> {
-    unsafe {
-        let mut t: libc::termios = std::mem::zeroed();
-        if libc::tcgetattr(fd, &mut t) == 0 {
-            Some(t)
-        } else {
-            None
-        }
-    }
-}
-
-fn exec_child(command: &[String]) -> ! {
-    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
-    let joined = command
-        .iter()
-        .map(|arg| shell_quote(arg))
-        .collect::<Vec<_>>()
-        .join(" ");
-
-    let program = CString::new(shell.clone()).expect("SHELL contains interior null byte");
-    let flag = CString::new("-ic").unwrap();
-    let cmd = CString::new(joined).expect("command contains interior null byte");
-    let argv: [*const libc::c_char; 4] = [
-        program.as_ptr(),
-        flag.as_ptr(),
-        cmd.as_ptr(),
-        std::ptr::null(),
-    ];
-
-    unsafe {
-        libc::execvp(program.as_ptr(), argv.as_ptr());
-    }
-
-    let err = std::io::Error::last_os_error();
-    eprintln!("Failed to exec {shell}: {err}");
-    std::process::exit(127);
-}
-
-fn shell_quote(arg: &str) -> String {
-    if !arg.is_empty()
-        && arg
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'-' | b'.' | b'/' | b':' | b'=' | b',' | b'@' | b'+'))
-    {
-        return arg.to_string();
-    }
-    let escaped = arg.replace('\'', "'\\''");
-    format!("'{escaped}'")
-}
-
-#[allow(clippy::too_many_arguments)]
-fn parent_loop(
-    master_fd: RawFd,
-    stdin_fd: RawFd,
-    stdout_fd: RawFd,
-    pid: libc::pid_t,
-    env: Env,
-    creds: &CredsHandle,
-    session_id: &str,
-    session_name: &str,
-) -> Result<i32> {
-    install_sigwinch_handler(stdout_fd, master_fd);
-
-    let orig_termios = enable_raw_mode(stdin_fd);
+    let _raw_mode = platform::RawModeGuard::enable();
 
     let stop = Arc::new(AtomicBool::new(false));
 
-    let listener_creds = creds.clone();
-    let listener_session_id = session_id.to_string();
-    let listener_session_name = session_name.to_string();
-    let listener_stop = stop.clone();
-    thread::spawn(move || {
-        paste_listener(
-            env,
-            listener_creds,
-            listener_session_id,
-            listener_session_name,
-            master_fd,
-            listener_stop,
-        );
-    });
+    {
+        let master = master.clone();
+        let stop = stop.clone();
+        thread::spawn(move || resize_watcher(master, stop, size));
+    }
 
-    let heartbeat_creds = creds.clone();
-    let heartbeat_session_id = session_id.to_string();
-    let heartbeat_stop = stop.clone();
-    thread::spawn(move || {
-        heartbeat(env, heartbeat_creds, heartbeat_session_id, heartbeat_stop);
-    });
+    {
+        let writer = writer.clone();
+        let creds = creds.clone();
+        let session_id = session_id.to_string();
+        let session_name = session_name.to_string();
+        let stop = stop.clone();
+        thread::spawn(move || {
+            paste_listener(env, creds, session_id, session_name, writer, stop);
+        });
+    }
+
+    {
+        let creds = creds.clone();
+        let session_id = session_id.to_string();
+        let stop = stop.clone();
+        thread::spawn(move || {
+            heartbeat(env, creds, session_id, stop);
+        });
+    }
 
     let stop_reader = stop.clone();
-    let reader = thread::spawn(move || {
+    let reader_handle = thread::spawn(move || {
+        let mut reader = reader;
         let mut buf = [0u8; 4096];
         let mut stdout = std::io::stdout();
         loop {
             if stop_reader.load(Ordering::Relaxed) {
                 break;
             }
-            let n = unsafe {
-                libc::read(
-                    master_fd,
-                    buf.as_mut_ptr() as *mut libc::c_void,
-                    buf.len(),
-                )
-            };
-            if n > 0 {
-                let slice = &buf[..n as usize];
-                if stdout.write_all(slice).is_err() {
-                    break;
+            match reader.read(&mut buf) {
+                Ok(0) => break,
+                Ok(n) => {
+                    if stdout.write_all(&buf[..n]).is_err() {
+                        break;
+                    }
+                    let _ = stdout.flush();
                 }
-                let _ = stdout.flush();
-            } else if n == 0 {
-                break;
-            } else {
-                let err = std::io::Error::last_os_error();
-                if err.kind() == std::io::ErrorKind::Interrupted {
-                    continue;
-                }
-                break;
+                Err(err) if err.kind() == std::io::ErrorKind::Interrupted => continue,
+                Err(_) => break,
             }
         }
     });
 
     let stop_writer = stop.clone();
-    let writer = thread::spawn(move || {
+    let writer_for_stdin = writer.clone();
+    thread::spawn(move || {
         let mut stdin = std::io::stdin();
         let mut buf = [0u8; 4096];
         loop {
@@ -297,20 +194,11 @@ fn parent_loop(
             match stdin.read(&mut buf) {
                 Ok(0) => break,
                 Ok(n) => {
-                    let mut written = 0;
-                    while written < n {
-                        let r = unsafe {
-                            libc::write(
-                                master_fd,
-                                buf[written..n].as_ptr() as *const libc::c_void,
-                                n - written,
-                            )
-                        };
-                        if r <= 0 {
-                            return;
-                        }
-                        written += r as usize;
+                    let mut w = writer_for_stdin.lock().unwrap();
+                    if w.write_all(&buf[..n]).is_err() {
+                        break;
                     }
+                    let _ = w.flush();
                 }
                 Err(err) if err.kind() == std::io::ErrorKind::Interrupted => continue,
                 Err(_) => break,
@@ -318,95 +206,31 @@ fn parent_loop(
         }
     });
 
-    let exit_code = wait_for_child(pid);
+    let exit_code = match child.wait() {
+        Ok(status) => status.exit_code() as i32,
+        Err(_) => 1,
+    };
 
     stop.store(true, Ordering::Relaxed);
-    unsafe {
-        libc::close(master_fd);
-    }
-
-    let _ = reader.join();
-    drop(writer);
-
-    if let Some(orig) = orig_termios {
-        restore_termios(stdin_fd, &orig);
-    }
+    drop(master);
+    let _ = reader_handle.join();
 
     Ok(exit_code)
 }
 
-fn wait_for_child(pid: libc::pid_t) -> i32 {
-    let mut status: libc::c_int = 0;
-    unsafe {
-        loop {
-            let r = libc::waitpid(pid, &mut status, 0);
-            if r == -1 {
-                let err = std::io::Error::last_os_error();
-                if err.kind() == std::io::ErrorKind::Interrupted {
-                    continue;
-                }
-                return 1;
-            }
-            break;
+fn resize_watcher(master: Master, stop: Arc<AtomicBool>, initial: PtySize) {
+    let mut last = initial;
+    loop {
+        if stop.load(Ordering::Relaxed) {
+            return;
         }
-    }
-
-    if libc::WIFEXITED(status) {
-        libc::WEXITSTATUS(status)
-    } else if libc::WIFSIGNALED(status) {
-        128 + libc::WTERMSIG(status)
-    } else {
-        1
-    }
-}
-
-fn enable_raw_mode(fd: RawFd) -> Option<libc::termios> {
-    unsafe {
-        let mut orig: libc::termios = std::mem::zeroed();
-        if libc::tcgetattr(fd, &mut orig) != 0 {
-            return None;
+        thread::sleep(std::time::Duration::from_millis(250));
+        if let Some(size) = platform::terminal_size()
+            && (size.rows != last.rows || size.cols != last.cols)
+        {
+            let _ = master.lock().unwrap().resize(size);
+            last = size;
         }
-        let mut raw = orig;
-        libc::cfmakeraw(&mut raw);
-        if libc::tcsetattr(fd, libc::TCSANOW, &raw) != 0 {
-            return None;
-        }
-        Some(orig)
-    }
-}
-
-fn restore_termios(fd: RawFd, orig: &libc::termios) {
-    unsafe {
-        libc::tcsetattr(fd, libc::TCSANOW, orig);
-    }
-}
-
-static WINCH_SRC_FD: AtomicI32 = AtomicI32::new(-1);
-static WINCH_DST_FD: AtomicI32 = AtomicI32::new(-1);
-
-extern "C" fn handle_sigwinch(_: libc::c_int) {
-    let src = WINCH_SRC_FD.load(Ordering::Relaxed);
-    let dst = WINCH_DST_FD.load(Ordering::Relaxed);
-    if src < 0 || dst < 0 {
-        return;
-    }
-    unsafe {
-        let mut ws: libc::winsize = std::mem::zeroed();
-        if libc::ioctl(src, libc::TIOCGWINSZ, &mut ws) == 0 {
-            libc::ioctl(dst, libc::TIOCSWINSZ, &ws);
-        }
-    }
-}
-
-fn install_sigwinch_handler(src_fd: RawFd, dst_fd: RawFd) {
-    WINCH_SRC_FD.store(src_fd, Ordering::Relaxed);
-    WINCH_DST_FD.store(dst_fd, Ordering::Relaxed);
-    unsafe {
-        let mut sa: libc::sigaction = std::mem::zeroed();
-        sa.sa_sigaction = handle_sigwinch as usize;
-        libc::sigemptyset(&mut sa.sa_mask);
-        sa.sa_flags = libc::SA_RESTART;
-        libc::sigaction(libc::SIGWINCH, &sa, std::ptr::null_mut());
     }
 }
 
@@ -434,7 +258,7 @@ fn paste_listener(
     creds: CredsHandle,
     session_id: String,
     session_name: String,
-    master_fd: RawFd,
+    writer: SharedWriter,
     stop: Arc<AtomicBool>,
 ) {
     let mut last_ts: i64 = 0;
@@ -460,7 +284,7 @@ fn paste_listener(
             &fresh,
             &session_id,
             &session_name,
-            master_fd,
+            &writer,
             &stop,
             &mut last_ts,
             &active_watcher,
@@ -515,7 +339,7 @@ fn run_stream_once(
     stream_creds: &crate::credentials::Credentials,
     session_id: &str,
     session_name: &str,
-    master_fd: RawFd,
+    writer: &SharedWriter,
     stop: &AtomicBool,
     last_ts: &mut i64,
     active_watcher: &Mutex<Option<Arc<AtomicBool>>>,
@@ -597,7 +421,7 @@ fn run_stream_once(
                 creds,
                 session_id,
                 session_name,
-                master_fd,
+                writer,
                 text,
                 active_watcher,
             );
@@ -618,7 +442,7 @@ fn handle_paste(
     creds: &CredsHandle,
     session_id: &str,
     session_name: &str,
-    master_fd: RawFd,
+    writer: &SharedWriter,
     text: &str,
     active_watcher: &Mutex<Option<Arc<AtomicBool>>>,
 ) {
@@ -635,7 +459,7 @@ fn handle_paste(
     }
 
     let augmented = workspace::build_instructions(session_name, text);
-    if let Err(err) = write_paste_sequence(master_fd, &augmented) {
+    if let Err(err) = write_paste_sequence(writer, &augmented) {
         eprintln!("\r\nFailed to write paste to pty: {err}\r");
     }
 
@@ -654,12 +478,18 @@ fn handle_paste(
     *active_watcher.lock().unwrap() = Some(cancel);
 }
 
-fn write_paste_sequence(master_fd: RawFd, text: &str) -> std::io::Result<()> {
-    write_all_fd(master_fd, b"\x1b[200~")?;
-    write_all_fd(master_fd, text.as_bytes())?;
-    write_all_fd(master_fd, b"\x1b[201~")?;
+fn write_paste_sequence(writer: &SharedWriter, text: &str) -> std::io::Result<()> {
+    {
+        let mut w = writer.lock().unwrap();
+        w.write_all(b"\x1b[200~")?;
+        w.write_all(text.as_bytes())?;
+        w.write_all(b"\x1b[201~")?;
+        w.flush()?;
+    }
     thread::sleep(std::time::Duration::from_millis(150));
-    write_all_fd(master_fd, b"\r")?;
+    let mut w = writer.lock().unwrap();
+    w.write_all(b"\r")?;
+    w.flush()?;
     Ok(())
 }
 
@@ -690,25 +520,4 @@ fn apply_update(
         }
         _ => {}
     }
-}
-
-fn write_all_fd(fd: RawFd, mut buf: &[u8]) -> std::io::Result<()> {
-    while !buf.is_empty() {
-        let n = unsafe { libc::write(fd, buf.as_ptr() as *const libc::c_void, buf.len()) };
-        if n < 0 {
-            let err = std::io::Error::last_os_error();
-            if err.kind() == std::io::ErrorKind::Interrupted {
-                continue;
-            }
-            return Err(err);
-        }
-        if n == 0 {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::WriteZero,
-                "pty write returned 0",
-            ));
-        }
-        buf = &buf[n as usize..];
-    }
-    Ok(())
 }
