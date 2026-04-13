@@ -110,9 +110,11 @@ pub fn append_history_entry(
     session_id: &str,
     entry: &serde_json::Value,
 ) -> Result<()> {
+    let entry_str = serde_json::to_string(entry)?;
+
     let response = client()?
         .post(history_url(env, creds, session_id))
-        .json(entry)
+        .json(&entry_str)
         .send()
         .context("Failed to append history entry")?;
 

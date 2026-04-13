@@ -45,8 +45,11 @@ pub fn load(env: Env) -> Result<Option<Credentials>> {
     let path = credentials_path(env)?;
     match std::fs::read(&path) {
         Ok(bytes) => {
-            let credentials: Credentials = serde_json::from_slice(&bytes)
+            let mut credentials: Credentials = serde_json::from_slice(&bytes)
                 .with_context(|| format!("Failed to parse {}", path.display()))?;
+            if credentials.expires_at > 10_000_000_000 {
+                credentials.expires_at /= 1000;
+            }
             Ok(Some(credentials))
         }
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(None),

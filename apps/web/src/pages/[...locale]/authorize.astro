@@ -526,7 +526,7 @@ const clientMessages = {
     callback.searchParams.set("refreshToken", user.refreshToken);
     callback.searchParams.set(
       "expiresAt",
-      String(Date.parse(idTokenResult.expirationTime)),
+      String(Math.floor(Date.parse(idTokenResult.expirationTime) / 1000)),
     );
     if (user.email) callback.searchParams.set("email", user.email);
     callback.searchParams.set("uid", user.uid);
