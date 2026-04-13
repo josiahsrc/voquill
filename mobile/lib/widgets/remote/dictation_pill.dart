@@ -1,6 +1,7 @@
 import 'package:app/state/remote_state.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/widgets/common/audio_waveform.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 class DictationPill extends StatelessWidget {
@@ -32,11 +33,19 @@ class DictationPill extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = context.colors;
 
-    return GestureDetector(
-      onTapDown: onTapDown,
-      onTapUp: onTapUp,
-      onTapCancel: onTapCancel,
-      child: Container(
+    return Semantics(
+      button: true,
+      label: _isRecording ? 'Stop dictation' : 'Start dictation',
+      onTap: () {
+        onTapDown(TapDownDetails());
+        onTapUp(TapUpDetails(kind: PointerDeviceKind.touch));
+      },
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTapDown: onTapDown,
+        onTapUp: onTapUp,
+        onTapCancel: onTapCancel,
+        child: Container(
         width: width,
         height: height,
         decoration: BoxDecoration(
@@ -99,6 +108,7 @@ class DictationPill extends StatelessWidget {
                 ),
               ),
           ],
+        ),
         ),
       ),
     );

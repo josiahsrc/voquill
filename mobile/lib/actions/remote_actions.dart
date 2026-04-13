@@ -115,8 +115,6 @@ void subscribeToRemoteSession(String sessionId) {
     final loading = value is String && value == 'loading';
     _mutateSession(sessionId, (s) => s.isLoading = loading);
   });
-
-  unawaited(_ensureMicrophone(sessionId));
 }
 
 Future<void> _ensureMicrophone(String sessionId) {

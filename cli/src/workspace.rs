@@ -43,7 +43,8 @@ pub fn clear_workspace(dir: &Path) -> Result<()> {
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         if entry.file_type()?.is_file() {
-            let _ = fs::remove_file(entry.path());
+            let path = entry.path();
+            fs::remove_file(&path).with_context(|| format!("remove {}", path.display()))?;
         }
     }
     Ok(())
@@ -119,6 +120,11 @@ fn watch_and_upload(
             return Ok(());
         }
         thread::sleep(POLL_INTERVAL);
+    }
+
+    if cancel.load(Ordering::Relaxed) {
+        clear_status();
+        return Ok(());
     }
 
     let read_nonempty = |path: &Path| -> Option<String> {
