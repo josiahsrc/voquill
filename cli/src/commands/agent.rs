@@ -455,6 +455,11 @@ fn handle_paste(
     }
 }
 
+#[cfg(windows)]
+const PASTE_SUBMIT_DELAY_MS: u64 = 800;
+#[cfg(not(windows))]
+const PASTE_SUBMIT_DELAY_MS: u64 = 150;
+
 fn write_paste_sequence(writer: &SharedWriter, text: &str) -> std::io::Result<()> {
     {
         let mut w = writer.lock().unwrap();
@@ -463,7 +468,7 @@ fn write_paste_sequence(writer: &SharedWriter, text: &str) -> std::io::Result<()
         w.write_all(b"\x1b[201~")?;
         w.flush()?;
     }
-    thread::sleep(std::time::Duration::from_millis(150));
+    thread::sleep(std::time::Duration::from_millis(PASTE_SUBMIT_DELAY_MS));
     let mut w = writer.lock().unwrap();
     w.write_all(b"\r")?;
     w.flush()?;

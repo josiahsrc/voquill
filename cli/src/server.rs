@@ -6,6 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::Env;
 use crate::auth::{self, CredsHandle};
+use crate::platform;
 use crate::rtdb;
 
 struct Shared {
@@ -50,6 +51,7 @@ impl SessionServer {
 
     pub fn build_instructions(&self, prompt: &str) -> String {
         let url = &self.base_url;
+        let host = platform::host_description();
         format!(
             "Here is my request:\n\n\
              <request>\n{prompt}\n</request>\n\n\
@@ -60,7 +62,8 @@ impl SessionServer {
              - summary (string): a recap of what you did or propose. One or two short sentences.\n\
              - reviews (array of strings): items for me to approve or reject, in order.\n\
              - questions (array of strings): questions for me, in order.\n\n\
-             Example:\n\
+             Host shell: {host}\n\n\
+             Example (be sure to adapt your network invocation to your host shell):\n\
              curl -X POST -H 'Content-Type: application/json' {url}/reply -d '{{\"summary\":\"Renamed the handler.\",\"reviews\":[\"Remove the deprecated alias?\"],\"questions\":[\"Should I update the changelog?\"]}}'\n\n\
              The UI walks me through the reviews then the questions in order, then compiles my reply. Posting /reply ends the turn — do not call it more than once.",
         )

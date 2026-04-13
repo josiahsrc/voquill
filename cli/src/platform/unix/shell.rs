@@ -1,5 +1,16 @@
 use portable_pty::CommandBuilder;
 
+pub fn host_description() -> String {
+    let os = if cfg!(target_os = "macos") {
+        "macOS"
+    } else {
+        "Linux"
+    };
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
+    let shell_name = shell.rsplit('/').next().unwrap_or(&shell);
+    format!("{os} (shell: {shell_name})")
+}
+
 pub fn build_command(command: &[String]) -> CommandBuilder {
     let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
     let joined = command
