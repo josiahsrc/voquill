@@ -58,22 +58,34 @@ class _DictationHistoryState extends State<DictationHistory> {
       }
     }
 
-    if (widget.partialText.isNotEmpty) {
-      items.add(DictationMessage(text: widget.partialText));
-    }
-    if (widget.isLoading) items.add(const _LoadingIndicator());
-
-    return Scrollbar(
-      controller: _scrollController,
-      thumbVisibility: true,
-      child: ListView.separated(
-        controller: _scrollController,
-        padding: Theming.padding.copyWith(top: 16, bottom: 16),
-        reverse: true,
-        itemCount: items.length,
-        separatorBuilder: (_, _) => const Divider(height: 1),
-        itemBuilder: (context, index) => items[items.length - 1 - index],
-      ),
+    return Column(
+      children: [
+        Expanded(
+          child: Scrollbar(
+            controller: _scrollController,
+            thumbVisibility: true,
+            child: ListView.separated(
+              controller: _scrollController,
+              padding: Theming.padding.copyWith(top: 16, bottom: 8),
+              reverse: true,
+              itemCount: items.length,
+              cacheExtent: 99999,
+              separatorBuilder: (_, _) => const Divider(height: 1),
+              itemBuilder: (context, index) => items[items.length - 1 - index],
+            ),
+          ),
+        ),
+        if (widget.partialText.isNotEmpty)
+          Padding(
+            padding: Theming.padding.copyWith(top: 0, bottom: 0),
+            child: DictationMessage(text: widget.partialText),
+          ),
+        if (widget.isLoading)
+          Padding(
+            padding: Theming.padding.copyWith(top: 0, bottom: 0),
+            child: const _LoadingIndicator(),
+          ),
+      ],
     );
   }
 }

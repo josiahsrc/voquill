@@ -1,7 +1,6 @@
 import 'package:app/theme/app_colors.dart';
 import 'package:app/widgets/remote/dictation_pill.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class DictationCancelButton extends StatelessWidget {
   const DictationCancelButton({super.key, required this.onTap});
@@ -14,10 +13,7 @@ class DictationCancelButton extends StatelessWidget {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
+      onTap: onTap,
       child: Container(
         width: DictationPill.height,
         height: DictationPill.height,

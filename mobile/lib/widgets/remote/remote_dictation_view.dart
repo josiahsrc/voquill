@@ -8,7 +8,6 @@ import 'package:app/widgets/remote/dictation_empty_state.dart';
 import 'package:app/widgets/remote/dictation_history.dart';
 import 'package:app/widgets/remote/dictation_pill_area.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 const _holdThreshold = Duration(milliseconds: 250);
 
@@ -48,14 +47,12 @@ class _RemoteDictationViewState extends State<RemoteDictationView>
       getAppState().remote.session(widget.sessionId);
 
   void _onTapDown(TapDownDetails _) {
-    HapticFeedback.mediumImpact();
     final session = _session();
     if (session.isIdle) {
       _mode = _DictationMode.waitingForMode;
       startRemoteRecording(widget.sessionId, context: DictationContext.main);
       _holdTimer = Timer(_holdThreshold, () {
         if (_mode == _DictationMode.waitingForMode && mounted) {
-          HapticFeedback.mediumImpact();
           setState(() => _mode = _DictationMode.hold);
         }
       });
@@ -70,7 +67,6 @@ class _RemoteDictationViewState extends State<RemoteDictationView>
       _holdTimer?.cancel();
       setState(() => _mode = _DictationMode.toggle);
     } else if (_mode == _DictationMode.hold) {
-      HapticFeedback.lightImpact();
       stopRemoteRecording(widget.sessionId, target: DictationTarget.freeForm);
       _mode = null;
     }
@@ -80,7 +76,7 @@ class _RemoteDictationViewState extends State<RemoteDictationView>
     _holdTimer?.cancel();
     if (_mode == _DictationMode.waitingForMode ||
         _mode == _DictationMode.hold) {
-      stopRemoteRecording(widget.sessionId, target: DictationTarget.freeForm);
+      cancelRemoteRecording(widget.sessionId);
       _mode = null;
     }
   }

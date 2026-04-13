@@ -18,24 +18,31 @@ enum DictationTarget { freeForm, activeTurn }
 
 class _RemoteSessionRuntime {
   AudioRecorder? recorder;
-  DictationSession? dictation;
+  Future<void>? microphoneReady;
   StreamSubscription? audioSub;
+  DictationSession? dictation;
   StreamSubscription? partialSub;
   StreamSubscription<DatabaseEvent>? historySub;
   StreamSubscription<DatabaseEvent>? statusSub;
 
-  Future<void> disposeRecording() async {
+  Future<void> disposeDictation() async {
     try {
-      await recorder?.stop();
-      await audioSub?.cancel();
       await partialSub?.cancel();
     } catch (_) {}
     dictation?.dispose();
+    dictation = null;
+    partialSub = null;
+  }
+
+  Future<void> disposeMicrophone() async {
+    try {
+      await audioSub?.cancel();
+      await recorder?.stop();
+    } catch (_) {}
     recorder?.dispose();
     recorder = null;
-    dictation = null;
     audioSub = null;
-    partialSub = null;
+    microphoneReady = null;
   }
 
   Future<void> disposeAll() async {
@@ -43,7 +50,8 @@ class _RemoteSessionRuntime {
     await statusSub?.cancel();
     historySub = null;
     statusSub = null;
-    await disposeRecording();
+    await disposeDictation();
+    await disposeMicrophone();
   }
 }
 
@@ -107,6 +115,41 @@ void subscribeToRemoteSession(String sessionId) {
     final loading = value is String && value == 'loading';
     _mutateSession(sessionId, (s) => s.isLoading = loading);
   });
+
+  unawaited(_ensureMicrophone(sessionId));
+}
+
+Future<void> _ensureMicrophone(String sessionId) {
+  final runtime = _runtime(sessionId);
+  return runtime.microphoneReady ??= _startMicrophone(sessionId);
+}
+
+Future<void> _startMicrophone(String sessionId) async {
+  final runtime = _runtime(sessionId);
+  try {
+    final recorder = AudioRecorder();
+    runtime.recorder = recorder;
+
+    final stream = await recorder.startStream(
+      const RecordConfig(
+        encoder: AudioEncoder.pcm16bits,
+        sampleRate: 16000,
+        numChannels: 1,
+      ),
+    );
+
+    runtime.audioSub = stream.listen((chunk) {
+      final dictation = runtime.dictation;
+      if (dictation == null) return;
+      dictation.sendAudio(chunk);
+      final level = computeAudioLevel(chunk);
+      _mutateSession(sessionId, (s) => s.audioLevel = level);
+    });
+  } catch (e) {
+    _logger.e('Failed to start microphone: $e');
+    runtime.microphoneReady = null;
+    await runtime.disposeMicrophone();
+  }
 }
 
 Future<void> unsubscribeFromRemoteSession(String sessionId) async {
@@ -154,9 +197,9 @@ Future<void> startRemoteRecording(
 
   final runtime = _runtime(sessionId);
   try {
-    final recorder = AudioRecorder();
+    await _ensureMicrophone(sessionId);
+
     final dictation = await createDictationSession();
-    runtime.recorder = recorder;
     runtime.dictation = dictation;
 
     final currentState = getAppState();
@@ -170,20 +213,6 @@ Future<void> startRemoteRecording(
       glossary: glossary,
       language: language,
     );
-
-    final stream = await recorder.startStream(
-      const RecordConfig(
-        encoder: AudioEncoder.pcm16bits,
-        sampleRate: 16000,
-        numChannels: 1,
-      ),
-    );
-
-    runtime.audioSub = stream.listen((chunk) {
-      dictation.sendAudio(chunk);
-      final level = computeAudioLevel(chunk);
-      _mutateSession(sessionId, (s) => s.audioLevel = level);
-    });
 
     runtime.partialSub = dictation.partialTranscripts.listen((text) {
       _mutateSession(sessionId, (s) => s.partialText = text);
@@ -202,13 +231,9 @@ Future<void> stopRemoteRecording(
   if (!session.isRecording) return;
 
   final runtime = _runtime(sessionId);
-  final recorder = runtime.recorder;
   final dictation = runtime.dictation;
-  final audioSub = runtime.audioSub;
   final partialSub = runtime.partialSub;
-  runtime.recorder = null;
   runtime.dictation = null;
-  runtime.audioSub = null;
   runtime.partialSub = null;
 
   final wasDenying = session.isDenying;
@@ -218,15 +243,13 @@ Future<void> stopRemoteRecording(
     s.dictationContext = DictationContext.none;
     s.audioLevel = 0;
     s.partialText = '';
-    s.isDenying = false;
+    if (!wasDenying) s.isDenying = false;
   });
 
   unawaited(
     _finalizeInBackground(
       sessionId: sessionId,
-      recorder: recorder,
       dictation: dictation,
-      audioSub: audioSub,
       partialSub: partialSub,
       target: target,
       wasDenying: wasDenying,
@@ -236,16 +259,12 @@ Future<void> stopRemoteRecording(
 
 Future<void> _finalizeInBackground({
   required String sessionId,
-  AudioRecorder? recorder,
   DictationSession? dictation,
-  StreamSubscription? audioSub,
   StreamSubscription? partialSub,
   required DictationTarget target,
   required bool wasDenying,
 }) async {
   try {
-    await recorder?.stop();
-    await audioSub?.cancel();
     await partialSub?.cancel();
 
     if (dictation == null) return;
@@ -263,7 +282,9 @@ Future<void> _finalizeInBackground({
     _logger.e('Failed to finalize: $e');
   } finally {
     dictation?.dispose();
-    recorder?.dispose();
+    if (wasDenying) {
+      _mutateSession(sessionId, (s) => s.isDenying = false);
+    }
   }
 }
 
@@ -339,6 +360,12 @@ Future<void> _persistAndMaybeReply(
   String sessionId,
   SessionHistoryEntry entry,
 ) async {
+  final id = entry.id;
+  if (id != null) {
+    produceAppState((draft) {
+      draft.sessionHistoryEntryById[id] = entry.draft();
+    });
+  }
   await updateHistoryEntry(sessionId: sessionId, entry: entry);
   if (!entry.hasPendingItems) {
     final reply = _compileReply(entry);
@@ -387,7 +414,7 @@ void cancelRemoteRecording(String sessionId) {
     s.isDenying = false;
   });
   if (runtime != null) {
-    unawaited(runtime.disposeRecording());
+    unawaited(runtime.disposeDictation());
   }
 }
 

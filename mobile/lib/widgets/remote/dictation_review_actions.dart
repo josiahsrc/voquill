@@ -2,7 +2,6 @@ import 'package:app/theme/app_colors.dart';
 import 'package:app/widgets/common/compression.dart';
 import 'package:app/widgets/remote/dictation_pill.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 
 class DictationReviewActions extends StatelessWidget {
@@ -51,7 +50,6 @@ class _ReviewActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return PressableCompression(
       child: GestureDetector(
-        onTapDown: (_) => HapticFeedback.mediumImpact(),
         onTap: onTap,
         child: Container(
           width: DictationPill.height,

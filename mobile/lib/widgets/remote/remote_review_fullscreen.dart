@@ -11,7 +11,6 @@ import 'package:app/widgets/remote/dictation_review_actions.dart';
 import 'package:app/widgets/remote/dictation_review_card.dart';
 import 'package:app/widgets/remote/focus_prompt_view.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 
 const _holdThreshold = Duration(milliseconds: 250);
@@ -49,14 +48,12 @@ class _RemoteReviewFullscreenState extends State<RemoteReviewFullscreen> {
       getAppState().remote.session(widget.sessionId);
 
   void _onTapDown(TapDownDetails _) {
-    HapticFeedback.mediumImpact();
     final session = _session();
     if (session.isIdle) {
       _mode = _DictationMode.waitingForMode;
       startRemoteRecording(widget.sessionId, context: DictationContext.review);
       _holdTimer = Timer(_holdThreshold, () {
         if (_mode == _DictationMode.waitingForMode && mounted) {
-          HapticFeedback.mediumImpact();
           setState(() => _mode = _DictationMode.hold);
         }
       });
@@ -71,7 +68,6 @@ class _RemoteReviewFullscreenState extends State<RemoteReviewFullscreen> {
       _holdTimer?.cancel();
       setState(() => _mode = _DictationMode.toggle);
     } else if (_mode == _DictationMode.hold) {
-      HapticFeedback.lightImpact();
       stopRemoteRecording(widget.sessionId, target: DictationTarget.activeTurn);
       _mode = null;
     }
@@ -81,7 +77,7 @@ class _RemoteReviewFullscreenState extends State<RemoteReviewFullscreen> {
     _holdTimer?.cancel();
     if (_mode == _DictationMode.waitingForMode ||
         _mode == _DictationMode.hold) {
-      stopRemoteRecording(widget.sessionId, target: DictationTarget.activeTurn);
+      cancelRemoteRecording(widget.sessionId);
       _mode = null;
     }
   }
@@ -158,12 +154,12 @@ class _RemoteReviewFullscreenState extends State<RemoteReviewFullscreen> {
                 duration: const Duration(milliseconds: 320),
                 transitionBuilder: (child, primary, secondary) =>
                     SharedAxisTransition(
-                  animation: primary,
-                  secondaryAnimation: secondary,
-                  transitionType: SharedAxisTransitionType.horizontal,
-                  fillColor: Colors.transparent,
-                  child: child,
-                ),
+                      animation: primary,
+                      secondaryAnimation: secondary,
+                      transitionType: SharedAxisTransitionType.horizontal,
+                      fillColor: Colors.transparent,
+                      child: child,
+                    ),
                 child: _buildBody(phase, session, activeTurn),
               ),
             ),
@@ -172,11 +168,11 @@ class _RemoteReviewFullscreenState extends State<RemoteReviewFullscreen> {
                 duration: const Duration(milliseconds: 180),
                 transitionBuilder: (child, primary, secondary) =>
                     FadeThroughTransition(
-                  animation: primary,
-                  secondaryAnimation: secondary,
-                  fillColor: Colors.transparent,
-                  child: child,
-                ),
+                      animation: primary,
+                      secondaryAnimation: secondary,
+                      fillColor: Colors.transparent,
+                      child: child,
+                    ),
                 child: showReviewButtons
                     ? DictationReviewActions(
                         key: const ValueKey('review-buttons'),
@@ -185,7 +181,9 @@ class _RemoteReviewFullscreenState extends State<RemoteReviewFullscreen> {
                     : DictationPillArea(
                         key: const ValueKey('pill-area'),
                         status: session.statusFor(DictationContext.review),
-                        audioLevel: session.audioLevelFor(DictationContext.review),
+                        audioLevel: session.audioLevelFor(
+                          DictationContext.review,
+                        ),
                         isRecording: reviewRecording,
                         onTapDown: _onTapDown,
                         onTapUp: _onTapUp,
@@ -213,7 +211,7 @@ class _RemoteReviewFullscreenState extends State<RemoteReviewFullscreen> {
       case _Phase.review:
         final startIndex = activeTurn.nextPendingReviewIndex ?? 0;
         return _ReviewSwiperArea(
-          key: ValueKey('review-${activeTurn.id}-$startIndex'),
+          key: ValueKey('review-${activeTurn.id}'),
           reviews: activeTurn.reviewList,
           startIndex: startIndex,
           controller: _swiperController,
@@ -241,7 +239,7 @@ class _RemoteReviewFullscreenState extends State<RemoteReviewFullscreen> {
   }
 }
 
-class _ReviewSwiperArea extends StatelessWidget {
+class _ReviewSwiperArea extends StatefulWidget {
   const _ReviewSwiperArea({
     super.key,
     required this.reviews,
@@ -256,36 +254,54 @@ class _ReviewSwiperArea extends StatelessWidget {
   final void Function(int reviewIndex, CardSwiperDirection direction) onSwipe;
 
   @override
+  State<_ReviewSwiperArea> createState() => _ReviewSwiperAreaState();
+}
+
+class _ReviewSwiperAreaState extends State<_ReviewSwiperArea> {
+  late final List<_Pending> _pending;
+
+  @override
+  void initState() {
+    super.initState();
+    _pending = [
+      for (var i = widget.startIndex; i < widget.reviews.length; i++)
+        if (widget.reviews[i].isPending) _Pending(i, widget.reviews[i]),
+    ];
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final pending = <_Pending>[];
-    for (var i = startIndex; i < reviews.length; i++) {
-      if (reviews[i].isPending) pending.add(_Pending(i, reviews[i]));
-    }
-    if (pending.isEmpty) return const SizedBox.shrink();
+    if (_pending.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-      child: CardSwiper(
-        duration: const Duration(milliseconds: 150),
-        controller: controller,
-        cardsCount: pending.length,
-        numberOfCardsDisplayed: pending.length.clamp(1, 3),
-        backCardOffset: const Offset(0, 20),
-        padding: EdgeInsets.zero,
-        isLoop: false,
-        allowedSwipeDirection: const AllowedSwipeDirection.only(
-          left: true,
-          right: true,
-        ),
-        onSwipe: (prev, _, direction) {
-          onSwipe(pending[prev].index, direction);
-          return true;
-        },
-        cardBuilder: (context, i, percentX, _) => DictationReviewCard(
-          message: pending[i].review.message,
-          approveProgress: (percentX / 100).clamp(0.0, 1.0),
-          denyProgress: (-percentX / 100).clamp(0.0, 1.0),
-        ),
+      child: Column(
+        children: [
+          Expanded(
+            child: CardSwiper(
+              duration: const Duration(milliseconds: 150),
+              controller: widget.controller,
+              cardsCount: _pending.length,
+              numberOfCardsDisplayed: _pending.length.clamp(1, 3),
+              backCardOffset: const Offset(0, 20),
+              padding: EdgeInsets.zero,
+              isLoop: false,
+              allowedSwipeDirection: const AllowedSwipeDirection.only(
+                left: true,
+                right: true,
+              ),
+              onSwipe: (prev, _, direction) {
+                widget.onSwipe(_pending[prev].index, direction);
+                return true;
+              },
+              cardBuilder: (context, i, percentX, _) => DictationReviewCard(
+                message: _pending[i].review.message,
+                approveProgress: (percentX / 100).clamp(0.0, 1.0),
+                denyProgress: (-percentX / 100).clamp(0.0, 1.0),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
