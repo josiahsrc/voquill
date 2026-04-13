@@ -1,6 +1,6 @@
 # Voquill Desktop
 
-Cross-platform voice-to-text desktop application built with Tauri 2 (Rust + TypeScript/React).
+Cross-platform voice-to-text desktop application built with Tauri 2 (Rust + TypeScript/React)
 
 ## Development
 
