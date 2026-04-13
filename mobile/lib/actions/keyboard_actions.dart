@@ -1,4 +1,5 @@
 import 'package:app/actions/ai_settings_actions.dart';
+import 'package:app/actions/idle_timeout_actions.dart';
 import 'package:app/actions/app_actions.dart';
 import 'package:app/api/counter_api.dart';
 import 'package:app/model/tone_model.dart';
@@ -87,4 +88,11 @@ Future<void> syncKeyboardOnInit() async {
   await syncUserToKeyboard();
   await syncDictionaryToKeyboard();
   await syncKeyboardAiSettings();
+  await syncIdleTimeoutOnInit();
+}
+
+Future<void> syncIdleTimeoutOnInit() async {
+  final keepRunning = await getIdleTimeoutKeepRunning();
+  final seconds = await getIdleTimeoutSeconds();
+  await syncIdleTimeoutToNative(keepRunning ? 0 : seconds);
 }
