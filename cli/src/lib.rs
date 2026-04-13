@@ -75,6 +75,8 @@ enum Command {
         #[arg(trailing_var_arg = true, required = true, allow_hyphen_values = true)]
         command: Vec<String>,
     },
+    /// Upgrade to the latest release by re-running the install script.
+    Upgrade,
 }
 
 pub fn run(env: Env) -> Result<()> {
@@ -83,5 +85,6 @@ pub fn run(env: Env) -> Result<()> {
         Command::Login { site } => commands::login::run(env, site),
         Command::Logout => commands::logout::run(env),
         Command::Agent { command } => commands::agent::run(env, command),
+        Command::Upgrade => commands::upgrade::run(env),
     }
 }

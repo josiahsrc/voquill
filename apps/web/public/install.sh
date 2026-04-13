@@ -174,7 +174,19 @@ fi
 
 if [ "$already_on_path" = "0" ]; then
 	echo
-	echo "To use $BIN_NAME in this shell, run:"
-	echo "  $export_line"
-	echo "Or open a new terminal."
+	echo "$bin_dir is not on your PATH in this shell."
+	if [ -n "$profile" ]; then
+		echo "Start a new terminal, or run this now to use $BIN_NAME immediately:"
+		case "$shell_name" in
+			fish)
+				echo "  source $profile"
+				;;
+			*)
+				echo "  . $profile"
+				;;
+		esac
+	else
+		echo "Add this line to your shell profile (and run it now to use $BIN_NAME immediately):"
+		echo "  $export_line"
+	fi
 fi

@@ -97,9 +97,12 @@ try {
 	if ($PathEntries -notcontains $BinDir) {
 		$NewPath = (($PathEntries + $BinDir) -join ';')
 		[Environment]::SetEnvironmentVariable('Path', $NewPath, 'User')
-		Write-Host "Added $BinDir to your User PATH. Restart your terminal to use $BinName."
-	} else {
-		# Make sure this session can run it too.
+		Write-Host "Added $BinDir to your User PATH."
+		Write-Host "Open a new terminal, or run this now to use $BinName in the current session:"
+		Write-Host "  `$env:Path = `"`$env:Path;$BinDir`""
+	}
+	# Make sure this session can run it too.
+	if (($env:Path -split ';') -notcontains $BinDir) {
 		$env:Path = "$env:Path;$BinDir"
 	}
 } finally {
