@@ -20,6 +20,7 @@ import {
   setIgnoreUpdateDialog,
   setIncognitoModeEnabled,
   setIncognitoModeIncludeInStats,
+  setMenuBarIconHidden,
   setRealtimeOutputEnabled,
   setStylingMode,
 } from "../../actions/user.actions";
@@ -60,6 +61,7 @@ export const MoreSettingsDialog = () => {
     accurateDictationEnabled,
     disableAutoStyleLoading,
     isCloudUser,
+    menuBarIconHidden,
   ] = useAppStore((state) => {
     const prefs = getMyUserPreferences(state);
     const transcriptionPrefs = getTranscriptionPrefs(state);
@@ -78,6 +80,7 @@ export const MoreSettingsDialog = () => {
       state.local.accurateDictationEnabled,
       state.local.disableAutoStyleLoading ?? false,
       getIsVoquillCloudUser(state),
+      prefs?.menuBarIconHidden ?? false,
     ] as const;
   });
   const [dictationLimitInput, setDictationLimitInput] = useState(
@@ -169,6 +172,10 @@ export const MoreSettingsDialog = () => {
     });
   };
 
+  const handleToggleMenuBarIcon = (event: ChangeEvent<HTMLInputElement>) => {
+    void setMenuBarIconHidden(!event.target.checked);
+  };
+
   const handleToggleAutoStyleLoading = (
     event: ChangeEvent<HTMLInputElement>,
   ) => {
@@ -251,6 +258,20 @@ export const MoreSettingsDialog = () => {
                 edge="end"
                 checked={!ignoreUpdateDialog}
                 onChange={handleToggleShowUpdates}
+              />
+            }
+          />
+
+          <SettingSection
+            title={<FormattedMessage defaultMessage="Show menu bar icon" />}
+            description={
+              <FormattedMessage defaultMessage="Show the Voquill icon in the menu bar." />
+            }
+            action={
+              <Switch
+                edge="end"
+                checked={!menuBarIconHidden}
+                onChange={handleToggleMenuBarIcon}
               />
             }
           />
