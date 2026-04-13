@@ -3,10 +3,8 @@ use std::ffi::CString;
 use std::io::{Read, Write};
 use std::os::unix::io::{AsRawFd, RawFd};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::thread;
-
-use pty::fork::Fork;
 
 use crate::Env;
 use crate::auth;
@@ -87,11 +85,83 @@ fn run_pty(
     session_id: &str,
     session_name: &str,
 ) -> Result<i32> {
-    let fork = Fork::from_ptmx().map_err(|err| anyhow::anyhow!("Failed to open pty: {err:?}"))?;
+    let stdin_fd = std::io::stdin().as_raw_fd();
+    let stdout_fd = std::io::stdout().as_raw_fd();
 
-    match fork {
-        Fork::Child(_) => exec_child(command),
-        Fork::Parent(pid, master) => parent_loop(master, pid, env, creds, session_id, session_name),
+    let termios = get_termios(stdin_fd);
+    let winsize = get_winsize(stdout_fd);
+
+    let mut master_fd: libc::c_int = -1;
+    let pid = unsafe { fork_pty(&mut master_fd, termios.as_ref(), winsize.as_ref()) };
+
+    if pid < 0 {
+        let err = std::io::Error::last_os_error();
+        bail!("forkpty failed: {err}");
+    }
+
+    if pid == 0 {
+        exec_child(command);
+    }
+
+    parent_loop(
+        master_fd,
+        stdin_fd,
+        stdout_fd,
+        pid,
+        env,
+        creds,
+        session_id,
+        session_name,
+    )
+}
+
+unsafe fn fork_pty(
+    amaster: *mut libc::c_int,
+    termp: Option<&libc::termios>,
+    winp: Option<&libc::winsize>,
+) -> libc::pid_t {
+    let termp_ptr = termp
+        .map(|t| t as *const libc::termios)
+        .unwrap_or(std::ptr::null());
+    let winp_ptr = winp
+        .map(|w| w as *const libc::winsize)
+        .unwrap_or(std::ptr::null());
+
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    unsafe {
+        libc::forkpty(
+            amaster,
+            std::ptr::null_mut(),
+            termp_ptr as *mut libc::termios,
+            winp_ptr as *mut libc::winsize,
+        )
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "ios")))]
+    unsafe {
+        libc::forkpty(amaster, std::ptr::null_mut(), termp_ptr, winp_ptr)
+    }
+}
+
+fn get_winsize(fd: RawFd) -> Option<libc::winsize> {
+    unsafe {
+        let mut ws: libc::winsize = std::mem::zeroed();
+        if libc::ioctl(fd, libc::TIOCGWINSZ, &mut ws) == 0 {
+            Some(ws)
+        } else {
+            None
+        }
+    }
+}
+
+fn get_termios(fd: RawFd) -> Option<libc::termios> {
+    unsafe {
+        let mut t: libc::termios = std::mem::zeroed();
+        if libc::tcgetattr(fd, &mut t) == 0 {
+            Some(t)
+        } else {
+            None
+        }
     }
 }
 
@@ -134,23 +204,22 @@ fn shell_quote(arg: &str) -> String {
     format!("'{escaped}'")
 }
 
+#[allow(clippy::too_many_arguments)]
 fn parent_loop(
-    master: pty::fork::Master,
+    master_fd: RawFd,
+    stdin_fd: RawFd,
+    stdout_fd: RawFd,
     pid: libc::pid_t,
     env: Env,
     creds: &Credentials,
     session_id: &str,
     session_name: &str,
 ) -> Result<i32> {
-    let stdin_fd = std::io::stdin().as_raw_fd();
-    let stdout_fd = std::io::stdout().as_raw_fd();
-
-    propagate_winsize(stdout_fd, master.as_raw_fd());
+    install_sigwinch_handler(stdout_fd, master_fd);
 
     let orig_termios = enable_raw_mode(stdin_fd);
 
     let stop = Arc::new(AtomicBool::new(false));
-    let master_fd = master.as_raw_fd();
 
     let listener_creds = creds.clone();
     let listener_session_id = session_id.to_string();
@@ -175,23 +244,33 @@ fn parent_loop(
 
     let stop_reader = stop.clone();
     let reader = thread::spawn(move || {
-        let mut m = master;
         let mut buf = [0u8; 4096];
         let mut stdout = std::io::stdout();
         loop {
             if stop_reader.load(Ordering::Relaxed) {
                 break;
             }
-            match m.read(&mut buf) {
-                Ok(0) => break,
-                Ok(n) => {
-                    if stdout.write_all(&buf[..n]).is_err() {
-                        break;
-                    }
-                    let _ = stdout.flush();
+            let n = unsafe {
+                libc::read(
+                    master_fd,
+                    buf.as_mut_ptr() as *mut libc::c_void,
+                    buf.len(),
+                )
+            };
+            if n > 0 {
+                let slice = &buf[..n as usize];
+                if stdout.write_all(slice).is_err() {
+                    break;
                 }
-                Err(err) if err.kind() == std::io::ErrorKind::Interrupted => continue,
-                Err(_) => break,
+                let _ = stdout.flush();
+            } else if n == 0 {
+                break;
+            } else {
+                let err = std::io::Error::last_os_error();
+                if err.kind() == std::io::ErrorKind::Interrupted {
+                    continue;
+                }
+                break;
             }
         }
     });
@@ -291,12 +370,32 @@ fn restore_termios(fd: RawFd, orig: &libc::termios) {
     }
 }
 
-fn propagate_winsize(src_fd: RawFd, dst_fd: RawFd) {
+static WINCH_SRC_FD: AtomicI32 = AtomicI32::new(-1);
+static WINCH_DST_FD: AtomicI32 = AtomicI32::new(-1);
+
+extern "C" fn handle_sigwinch(_: libc::c_int) {
+    let src = WINCH_SRC_FD.load(Ordering::Relaxed);
+    let dst = WINCH_DST_FD.load(Ordering::Relaxed);
+    if src < 0 || dst < 0 {
+        return;
+    }
     unsafe {
         let mut ws: libc::winsize = std::mem::zeroed();
-        if libc::ioctl(src_fd, libc::TIOCGWINSZ, &mut ws) == 0 {
-            libc::ioctl(dst_fd, libc::TIOCSWINSZ, &ws);
+        if libc::ioctl(src, libc::TIOCGWINSZ, &mut ws) == 0 {
+            libc::ioctl(dst, libc::TIOCSWINSZ, &ws);
         }
+    }
+}
+
+fn install_sigwinch_handler(src_fd: RawFd, dst_fd: RawFd) {
+    WINCH_SRC_FD.store(src_fd, Ordering::Relaxed);
+    WINCH_DST_FD.store(dst_fd, Ordering::Relaxed);
+    unsafe {
+        let mut sa: libc::sigaction = std::mem::zeroed();
+        sa.sa_sigaction = handle_sigwinch as usize;
+        libc::sigemptyset(&mut sa.sa_mask);
+        sa.sa_flags = libc::SA_RESTART;
+        libc::sigaction(libc::SIGWINCH, &sa, std::ptr::null_mut());
     }
 }
 

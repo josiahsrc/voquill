@@ -12,7 +12,6 @@ base64 = "0.22"
 clap = { version = "4", features = ["derive"] }
 dirs = "5"
 libc = "0.2"
-pty = "0.2.2"
 rand = "0.8"
 reqwest = { version = "0.12", default-features = false, features = [
     "rustls-tls",
