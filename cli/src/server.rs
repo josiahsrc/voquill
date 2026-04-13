@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use serde_json::json;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -8,15 +8,7 @@ use crate::Env;
 use crate::auth::{self, CredsHandle};
 use crate::rtdb;
 
-#[derive(Default)]
-struct TurnState {
-    summary: Option<String>,
-    reviews: Vec<String>,
-    questions: Vec<String>,
-}
-
 struct Shared {
-    turn: Mutex<TurnState>,
     env: Env,
     creds: CredsHandle,
     session_id: String,
@@ -38,7 +30,6 @@ impl SessionServer {
             .port();
         let base_url = format!("http://127.0.0.1:{port}");
         let shared = Arc::new(Shared {
-            turn: Mutex::new(TurnState::default()),
             env,
             creds,
             session_id,
@@ -54,7 +45,6 @@ impl SessionServer {
     }
 
     pub fn begin_turn(&self) {
-        *self.shared.turn.lock().unwrap() = TurnState::default();
         set_status(&self.shared, Some("loading"));
     }
 
@@ -65,12 +55,14 @@ impl SessionServer {
              <request>\n{prompt}\n</request>\n\n\
              ---\n\n\
              This session is relayed to a remote UI. Handle my request as you normally would.\n\n\
-             To communicate with me, POST JSON to the local session API. The responses are rendered as a single agent turn on a mobile device — be extremely brief and direct, no padding or hedging. Use any combination of the following, or none:\n\n\
-             - curl -X POST -H 'Content-Type: application/json' {url}/summary  -d '{{\"text\":\"...\"}}'  — a recap of what you did or propose. One or two short sentences.\n\
-             - curl -X POST -H 'Content-Type: application/json' {url}/review   -d '{{\"text\":\"...\"}}'  — an item for me to approve or reject. Call once per item.\n\
-             - curl -X POST -H 'Content-Type: application/json' {url}/question -d '{{\"text\":\"...\"}}'  — a question for me. Call once per question.\n\
-             - curl -X POST {url}/complete — signals the turn is over. Always call this exactly once at the end of your turn.\n\n\
-             The UI walks me through the reviews then the questions in order, then compiles my reply.",
+             When your turn is done, make exactly ONE POST to {url}/reply with a JSON body containing any combination of these optional fields (or none). The response is rendered as a single agent turn on a mobile device — be extremely brief and direct, no padding or hedging.\n\n\
+             Fields:\n\
+             - summary (string): a recap of what you did or propose. One or two short sentences.\n\
+             - reviews (array of strings): items for me to approve or reject, in order.\n\
+             - questions (array of strings): questions for me, in order.\n\n\
+             Example:\n\
+             curl -X POST -H 'Content-Type: application/json' {url}/reply -d '{{\"summary\":\"Renamed the handler.\",\"reviews\":[\"Remove the deprecated alias?\"],\"questions\":[\"Should I update the changelog?\"]}}'\n\n\
+             The UI walks me through the reviews then the questions in order, then compiles my reply. Posting /reply ends the turn — do not call it more than once.",
         )
     }
 }
@@ -85,97 +77,109 @@ fn handle_request(shared: &Shared, mut req: tiny_http::Request) {
 
     let path = req.url().split('?').next().unwrap_or("/").to_string();
 
-    match path.as_str() {
-        "/summary" => match read_text(&mut req) {
-            Ok(text) => {
-                shared.turn.lock().unwrap().summary = Some(text);
-                let _ = req.respond(tiny_http::Response::from_string("ok"));
-            }
-            Err(err) => {
-                let _ = req.respond(
-                    tiny_http::Response::from_string(err.to_string()).with_status_code(400),
-                );
-            }
-        },
-        "/review" => match read_text(&mut req) {
-            Ok(text) => {
-                shared.turn.lock().unwrap().reviews.push(text);
-                let _ = req.respond(tiny_http::Response::from_string("ok"));
-            }
-            Err(err) => {
-                let _ = req.respond(
-                    tiny_http::Response::from_string(err.to_string()).with_status_code(400),
-                );
-            }
-        },
-        "/question" => match read_text(&mut req) {
-            Ok(text) => {
-                shared.turn.lock().unwrap().questions.push(text);
-                let _ = req.respond(tiny_http::Response::from_string("ok"));
-            }
-            Err(err) => {
-                let _ = req.respond(
-                    tiny_http::Response::from_string(err.to_string()).with_status_code(400),
-                );
-            }
-        },
-        "/complete" => {
+    if path != "/reply" {
+        let _ = req.respond(tiny_http::Response::from_string("not found").with_status_code(404));
+        return;
+    }
+
+    match read_reply(&mut req) {
+        Ok(reply) => {
             let _ = req.respond(tiny_http::Response::from_string("ok"));
-            complete_turn(shared);
+            complete_turn(shared, reply);
         }
-        _ => {
-            let _ =
-                req.respond(tiny_http::Response::from_string("not found").with_status_code(404));
+        Err(err) => {
+            let _ = req.respond(
+                tiny_http::Response::from_string(err.to_string()).with_status_code(400),
+            );
         }
     }
 }
 
-fn read_text(req: &mut tiny_http::Request) -> Result<String> {
+struct Reply {
+    summary: Option<String>,
+    reviews: Vec<String>,
+    questions: Vec<String>,
+}
+
+fn read_reply(req: &mut tiny_http::Request) -> Result<Reply> {
     let mut body = String::new();
     req.as_reader()
         .read_to_string(&mut body)
         .context("read body")?;
     let trimmed = body.trim();
     if trimmed.is_empty() {
-        anyhow::bail!("empty body");
+        return Ok(Reply {
+            summary: None,
+            reviews: Vec::new(),
+            questions: Vec::new(),
+        });
     }
-    if let Ok(v) = serde_json::from_str::<serde_json::Value>(trimmed)
-        && let Some(t) = v.get("text").and_then(|x| x.as_str())
-    {
-        let t = t.trim();
-        if t.is_empty() {
-            anyhow::bail!("empty text");
-        }
-        return Ok(t.to_string());
-    }
-    Ok(trimmed.to_string())
+    let value: serde_json::Value =
+        serde_json::from_str(trimmed).context("body must be valid JSON")?;
+
+    let summary = value
+        .get("summary")
+        .and_then(|v| v.as_str())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+
+    let reviews = string_array(&value, "reviews")?;
+    let questions = string_array(&value, "questions")?;
+
+    Ok(Reply {
+        summary,
+        reviews,
+        questions,
+    })
 }
 
-fn complete_turn(shared: &Shared) {
-    let state = std::mem::take(&mut *shared.turn.lock().unwrap());
+fn string_array(value: &serde_json::Value, key: &str) -> Result<Vec<String>> {
+    let Some(raw) = value.get(key) else {
+        return Ok(Vec::new());
+    };
+    if raw.is_null() {
+        return Ok(Vec::new());
+    }
+    let arr = raw
+        .as_array()
+        .ok_or_else(|| anyhow::anyhow!("`{key}` must be an array of strings"))?;
+    let mut out = Vec::with_capacity(arr.len());
+    for item in arr {
+        let s = item
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("`{key}` must contain only strings"))?
+            .trim();
+        if !s.is_empty() {
+            out.push(s.to_string());
+        }
+    }
+    Ok(out)
+}
+
+fn complete_turn(shared: &Shared, reply: Reply) {
     let has_content =
-        state.summary.is_some() || !state.reviews.is_empty() || !state.questions.is_empty();
+        reply.summary.is_some() || !reply.reviews.is_empty() || !reply.questions.is_empty();
 
     if has_content {
         let mut entry = json!({
             "type": "assistant",
             "time": now_millis(),
         });
-        if let Some(s) = state.summary {
+        if let Some(s) = reply.summary {
             entry["summary"] = json!(s);
         }
-        if !state.reviews.is_empty() {
+        if !reply.reviews.is_empty() {
             entry["reviews"] = serde_json::Value::Array(
-                state
+                reply
                     .reviews
                     .into_iter()
                     .map(|m| json!({"message": m}))
                     .collect(),
             );
         }
-        if !state.questions.is_empty() {
+        if !reply.questions.is_empty() {
             entry["questions"] = serde_json::Value::Array(
-                state
+                reply
                     .questions
                     .into_iter()
                     .map(|m| json!({"message": m}))
