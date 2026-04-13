@@ -4,7 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class IdleTimeoutSheet extends StatefulWidget {
-  const IdleTimeoutSheet({super.key});
+  final Future<int> Function() loadIdleTimeoutSeconds;
+  final Future<bool> Function() loadIdleTimeoutKeepRunning;
+  final Future<void> Function({
+    required int seconds,
+    required bool keepRunning,
+  })
+  saveIdleTimeout;
+
+  const IdleTimeoutSheet({
+    super.key,
+    this.loadIdleTimeoutSeconds = getIdleTimeoutSeconds,
+    this.loadIdleTimeoutKeepRunning = getIdleTimeoutKeepRunning,
+    this.saveIdleTimeout = setIdleTimeout,
+  });
 
   static Future<void> show(BuildContext context) {
     return showModalBottomSheet(
@@ -43,8 +56,8 @@ class _IdleTimeoutSheetState extends State<IdleTimeoutSheet> {
   }
 
   Future<void> _load() async {
-    final seconds = await getIdleTimeoutSeconds();
-    final keepRunning = await getIdleTimeoutKeepRunning();
+    final seconds = await widget.loadIdleTimeoutSeconds();
+    final keepRunning = await widget.loadIdleTimeoutKeepRunning();
     if (mounted) {
       setState(() {
         _selectedSeconds = seconds;
@@ -60,8 +73,21 @@ class _IdleTimeoutSheetState extends State<IdleTimeoutSheet> {
   Future<void> _save() async {
     if (_saving) return;
     setState(() => _saving = true);
-    await setIdleTimeout(seconds: _selectedSeconds, keepRunning: _keepRunning);
-    if (mounted) Navigator.pop(context);
+    try {
+      await widget.saveIdleTimeout(
+        seconds: _selectedSeconds,
+        keepRunning: _keepRunning,
+      );
+      if (mounted) Navigator.pop(context);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to save idle timeout. Please try again.'),
+        ),
+      );
+    }
   }
 
   void _selectPreset(int seconds) {
@@ -74,8 +100,16 @@ class _IdleTimeoutSheetState extends State<IdleTimeoutSheet> {
   void _onCustomChanged(String value) {
     final minutes = int.tryParse(value);
     if (minutes != null && minutes > 0) {
+      final clampedMinutes = minutes.clamp(1, _maxMinutes);
+      final normalized = clampedMinutes.toString();
       setState(() {
-        _selectedSeconds = minutes.clamp(1, _maxMinutes) * 60;
+        _selectedSeconds = clampedMinutes * 60;
+        if (value != normalized) {
+          _customController.value = TextEditingValue(
+            text: normalized,
+            selection: TextSelection.collapsed(offset: normalized.length),
+          );
+        }
       });
     } else if (value.isEmpty) {
       setState(() {
