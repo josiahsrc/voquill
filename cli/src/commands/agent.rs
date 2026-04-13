@@ -47,17 +47,17 @@ struct SessionCleanup {
     env: Env,
     creds: CredsHandle,
     session_id: String,
-    session_name: String,
+    slug: String,
     done: bool,
 }
 
 impl SessionCleanup {
-    fn new(env: Env, creds: CredsHandle, session_id: String, session_name: String) -> Self {
+    fn new(env: Env, creds: CredsHandle, session_id: String, slug: String) -> Self {
         Self {
             env,
             creds,
             session_id,
-            session_name,
+            slug,
             done: false,
         }
     }
@@ -79,7 +79,7 @@ impl Drop for SessionCleanup {
                 eprintln!("Warning: failed to refresh credentials for cleanup: {err}");
             }
         }
-        let dir = workspace::workspace_dir(&self.session_name);
+        let dir = workspace::workspace_dir(&self.slug);
         if dir.exists()
             && let Err(err) = std::fs::remove_dir_all(&dir)
         {
@@ -93,7 +93,7 @@ fn run_pty(
     env: Env,
     creds: &CredsHandle,
     session_id: &str,
-    session_name: &str,
+    slug: &str,
 ) -> Result<i32> {
     let stdin_fd = std::io::stdin().as_raw_fd();
     let stdout_fd = std::io::stdout().as_raw_fd();
@@ -121,7 +121,7 @@ fn run_pty(
         env,
         creds,
         session_id,
-        session_name,
+        slug,
     )
 }
 
@@ -223,7 +223,7 @@ fn parent_loop(
     env: Env,
     creds: &CredsHandle,
     session_id: &str,
-    session_name: &str,
+    slug: &str,
 ) -> Result<i32> {
     install_sigwinch_handler(stdout_fd, master_fd);
 
@@ -233,14 +233,14 @@ fn parent_loop(
 
     let listener_creds = creds.clone();
     let listener_session_id = session_id.to_string();
-    let listener_session_name = session_name.to_string();
+    let listener_slug = slug.to_string();
     let listener_stop = stop.clone();
     thread::spawn(move || {
         paste_listener(
             env,
             listener_creds,
             listener_session_id,
-            listener_session_name,
+            listener_slug,
             master_fd,
             listener_stop,
         );
@@ -433,7 +433,7 @@ fn paste_listener(
     env: Env,
     creds: CredsHandle,
     session_id: String,
-    session_name: String,
+    slug: String,
     master_fd: RawFd,
     stop: Arc<AtomicBool>,
 ) {
@@ -459,7 +459,7 @@ fn paste_listener(
             &creds,
             &fresh,
             &session_id,
-            &session_name,
+            &slug,
             master_fd,
             &stop,
             &mut last_ts,
@@ -514,7 +514,7 @@ fn run_stream_once(
     creds: &CredsHandle,
     stream_creds: &crate::credentials::Credentials,
     session_id: &str,
-    session_name: &str,
+    slug: &str,
     master_fd: RawFd,
     stop: &AtomicBool,
     last_ts: &mut i64,
@@ -596,7 +596,7 @@ fn run_stream_once(
                 env,
                 creds,
                 session_id,
-                session_name,
+                slug,
                 master_fd,
                 text,
                 active_watcher,
@@ -617,7 +617,7 @@ fn handle_paste(
     env: Env,
     creds: &CredsHandle,
     session_id: &str,
-    session_name: &str,
+    slug: &str,
     master_fd: RawFd,
     text: &str,
     active_watcher: &Mutex<Option<Arc<AtomicBool>>>,
@@ -626,15 +626,15 @@ fn handle_paste(
         prev.store(true, Ordering::Relaxed);
     }
 
-    let dir = workspace::workspace_dir(session_name);
-    if let Err(err) = workspace::prepare_workspace(session_name) {
+    let dir = workspace::workspace_dir(slug);
+    if let Err(err) = workspace::prepare_workspace(slug) {
         eprintln!("\r\nFailed to prepare workspace: {err}\r");
     }
     if let Err(err) = workspace::clear_workspace(&dir) {
         eprintln!("\r\nFailed to clear workspace: {err}\r");
     }
 
-    let augmented = workspace::build_instructions(session_name, text);
+    let augmented = workspace::build_instructions(slug, text);
     if let Err(err) = write_paste_sequence(master_fd, &augmented) {
         eprintln!("\r\nFailed to write paste to pty: {err}\r");
     }

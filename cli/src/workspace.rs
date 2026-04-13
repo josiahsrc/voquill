@@ -15,7 +15,9 @@ const WATCH_DEADLINE: Duration = Duration::from_secs(60 * 60);
 const POLL_INTERVAL: Duration = Duration::from_millis(500);
 
 pub fn voquill_root() -> PathBuf {
-    PathBuf::from(".voquill")
+    std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(".voquill")
 }
 
 pub fn workspace_dir(session_name: &str) -> PathBuf {
@@ -51,17 +53,18 @@ pub fn clear_workspace(dir: &Path) -> Result<()> {
 }
 
 pub fn build_instructions(session_name: &str, prompt: &str) -> String {
+    let dir = workspace_dir(session_name);
     format!(
-        "Here is the user's prompt:\n\n\
-         <prompt>\n{prompt}\n</prompt>\n\n\
+        "Here is my request:\n\n\
+         <request>\n{prompt}\n</request>\n\n\
          ---\n\n\
-         This session is relayed to a remote UI. Handle the user's prompt however you normally would.\n\n\
-         To send content back to the UI, write plain text files into .voquill/{name}/ . The contents become a single agent turn rendered on a mobile device — be extremely brief and direct, no padding or hedging. Use any combination of the following, or none:\n\n\
+         This session is relayed to a remote UI. Handle my request as you normally would.\n\n\
+         To communicate with me, write plain text files into {dir}/\n\nThe contents become a single agent turn rendered on a mobile device — be extremely brief and direct, no padding or hedging. Use any combination of the following, or none:\n\n\
          - summary.txt — recap of what you did or are proposing. One or two short sentences.\n\
          - review-0.txt, review-1.txt, ... — items for the user to approve or reject, numbered from 0 with no gaps. One short sentence each.\n\
          - question-0.txt, question-1.txt, ... — questions for the user, numbered from 0 with no gaps. One short sentence each.\n\n\
          The UI walks the user through the reviews then the questions in order, then compiles their reply. When you're done writing files, create an empty file named `complete` in the same folder to signal the turn is over. Do not delete files in this folder — the CLI manages cleanup.",
-        name = session_name,
+        dir = dir.display(),
         prompt = prompt,
     )
 }
