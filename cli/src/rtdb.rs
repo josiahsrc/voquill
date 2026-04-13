@@ -134,6 +134,28 @@ pub fn append_history_entry(
     Ok(())
 }
 
+pub fn set_status(
+    env: Env,
+    creds: &Credentials,
+    session_id: &str,
+    status: Option<&str>,
+) -> Result<()> {
+    let body = json!({ "status": status });
+    let response = client()?
+        .patch(session_url(env, creds, session_id))
+        .json(&body)
+        .send()
+        .context("Failed to set status")?;
+
+    if !response.status().is_success() {
+        let status_code = response.status();
+        let text = response.text().unwrap_or_default();
+        bail!("RTDB status patch failed ({status_code}): {text}");
+    }
+
+    Ok(())
+}
+
 pub fn clear_paste(env: Env, creds: &Credentials, session_id: &str) -> Result<()> {
     let body = json!({ "pasteText": null, "pasteTimestamp": null });
     let response = client()?

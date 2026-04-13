@@ -88,14 +88,26 @@ fn watch_and_upload(
     let complete = dir.join("complete");
     let deadline = Instant::now() + WATCH_DEADLINE;
 
+    if let Err(err) = rtdb::set_status(env, &creds, &session_id, Some("loading")) {
+        eprintln!("\r\nFailed to set status: {err}\r");
+    }
+
+    let clear_status = || {
+        if let Err(err) = rtdb::set_status(env, &creds, &session_id, None) {
+            eprintln!("\r\nFailed to clear status: {err}\r");
+        }
+    };
+
     loop {
         if cancel.load(Ordering::Relaxed) {
+            clear_status();
             return Ok(());
         }
         if complete.exists() {
             break;
         }
         if Instant::now() >= deadline {
+            clear_status();
             return Ok(());
         }
         thread::sleep(POLL_INTERVAL);
@@ -129,6 +141,8 @@ fn watch_and_upload(
     for path in indexed_files(&dir, "question-")? {
         upload("question", &path);
     }
+
+    clear_status();
 
     Ok(())
 }
