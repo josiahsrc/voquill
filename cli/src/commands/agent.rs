@@ -7,8 +7,8 @@ use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::thread;
 
 use crate::Env;
-use crate::auth;
-use crate::credentials::{self, Credentials};
+use crate::auth::{self, CredsHandle};
+use crate::credentials;
 use crate::random_name;
 use crate::rtdb;
 use crate::workspace;
@@ -19,12 +19,11 @@ pub fn run(env: Env, command: Vec<String>) -> Result<()> {
         bail!("Missing command. Usage: voquill session <command> [args...]");
     }
 
-    let mut creds = credentials::load(env)?
+    let loaded = credentials::load(env)?
         .ok_or_else(|| anyhow::anyhow!("Not signed in. Run `login` first."))?;
+    let handle = auth::handle(loaded);
 
-    if auth::needs_refresh(&creds) {
-        auth::refresh(env, &mut creds).context("Failed to refresh credentials")?;
-    }
+    let creds = auth::ensure_fresh(env, &handle).context("Failed to refresh credentials")?;
 
     let name = random_name::name();
     let session_id = random_name::id();
@@ -35,9 +34,9 @@ pub fn run(env: Env, command: Vec<String>) -> Result<()> {
 
     eprintln!("\x1b[2mSession \"{name}\" started.\x1b[0m");
 
-    let cleanup = SessionCleanup::new(env, creds.clone(), session_id.clone(), name.clone());
+    let cleanup = SessionCleanup::new(env, handle.clone(), session_id.clone(), name.clone());
 
-    let exit_code = run_pty(&command, env, &creds, &session_id, &name)?;
+    let exit_code = run_pty(&command, env, &handle, &session_id, &name)?;
 
     drop(cleanup);
     eprintln!("\x1b[2mSession \"{name}\" ended.\x1b[0m");
@@ -46,14 +45,14 @@ pub fn run(env: Env, command: Vec<String>) -> Result<()> {
 
 struct SessionCleanup {
     env: Env,
-    creds: Credentials,
+    creds: CredsHandle,
     session_id: String,
     session_name: String,
     done: bool,
 }
 
 impl SessionCleanup {
-    fn new(env: Env, creds: Credentials, session_id: String, session_name: String) -> Self {
+    fn new(env: Env, creds: CredsHandle, session_id: String, session_name: String) -> Self {
         Self {
             env,
             creds,
@@ -70,8 +69,15 @@ impl Drop for SessionCleanup {
             return;
         }
         self.done = true;
-        if let Err(err) = rtdb::delete_session(self.env, &self.creds, &self.session_id) {
-            eprintln!("Warning: failed to clean up session: {err}");
+        match auth::ensure_fresh(self.env, &self.creds) {
+            Ok(creds) => {
+                if let Err(err) = rtdb::delete_session(self.env, &creds, &self.session_id) {
+                    eprintln!("Warning: failed to clean up session: {err}");
+                }
+            }
+            Err(err) => {
+                eprintln!("Warning: failed to refresh credentials for cleanup: {err}");
+            }
         }
         let dir = workspace::workspace_dir(&self.session_name);
         if dir.exists()
@@ -85,7 +91,7 @@ impl Drop for SessionCleanup {
 fn run_pty(
     command: &[String],
     env: Env,
-    creds: &Credentials,
+    creds: &CredsHandle,
     session_id: &str,
     session_name: &str,
 ) -> Result<i32> {
@@ -215,7 +221,7 @@ fn parent_loop(
     stdout_fd: RawFd,
     pid: libc::pid_t,
     env: Env,
-    creds: &Credentials,
+    creds: &CredsHandle,
     session_id: &str,
     session_name: &str,
 ) -> Result<i32> {
@@ -240,10 +246,11 @@ fn parent_loop(
         );
     });
 
+    let heartbeat_creds = creds.clone();
     let heartbeat_session_id = session_id.to_string();
     let heartbeat_stop = stop.clone();
     thread::spawn(move || {
-        heartbeat(env, heartbeat_session_id, heartbeat_stop);
+        heartbeat(env, heartbeat_creds, heartbeat_session_id, heartbeat_stop);
     });
 
     let stop_reader = stop.clone();
@@ -403,16 +410,20 @@ fn install_sigwinch_handler(src_fd: RawFd, dst_fd: RawFd) {
     }
 }
 
-fn heartbeat(env: Env, session_id: String, stop: Arc<AtomicBool>) {
+fn heartbeat(env: Env, creds: CredsHandle, session_id: String, stop: Arc<AtomicBool>) {
     const INTERVAL: std::time::Duration = std::time::Duration::from_secs(60);
     loop {
         if sleep_with_stop(&stop, INTERVAL) {
             return;
         }
-        let Ok(Some(creds)) = credentials::load(env) else {
-            continue;
+        let fresh = match auth::ensure_fresh(env, &creds) {
+            Ok(c) => c,
+            Err(err) => {
+                eprintln!("\r\nHeartbeat: token refresh failed: {err}\r");
+                continue;
+            }
         };
-        if let Err(err) = rtdb::touch_session(env, &creds, &session_id) {
+        if let Err(err) = rtdb::touch_session(env, &fresh, &session_id) {
             eprintln!("\r\nHeartbeat failed: {err}\r");
         }
     }
@@ -420,7 +431,7 @@ fn heartbeat(env: Env, session_id: String, stop: Arc<AtomicBool>) {
 
 fn paste_listener(
     env: Env,
-    mut creds: Credentials,
+    creds: CredsHandle,
     session_id: String,
     session_name: String,
     master_fd: RawFd,
@@ -431,20 +442,22 @@ fn paste_listener(
     let active_watcher: Mutex<Option<Arc<AtomicBool>>> = Mutex::new(None);
 
     while !stop.load(Ordering::Relaxed) {
-        if auth::needs_refresh(&creds)
-            && let Err(err) = auth::refresh(env, &mut creds)
-        {
-            eprintln!("\r\nPaste listener: token refresh failed: {err}\r");
-            if sleep_with_stop(&stop, std::time::Duration::from_secs(backoff_secs)) {
-                return;
+        let fresh = match auth::ensure_fresh(env, &creds) {
+            Ok(c) => c,
+            Err(err) => {
+                eprintln!("\r\nPaste listener: token refresh failed: {err}\r");
+                if sleep_with_stop(&stop, std::time::Duration::from_secs(backoff_secs)) {
+                    return;
+                }
+                backoff_secs = (backoff_secs * 2).min(30);
+                continue;
             }
-            backoff_secs = (backoff_secs * 2).min(30);
-            continue;
-        }
+        };
 
         match run_stream_once(
             env,
             &creds,
+            &fresh,
             &session_id,
             &session_name,
             master_fd,
@@ -454,7 +467,7 @@ fn paste_listener(
         ) {
             StreamOutcome::Stopped => return,
             StreamOutcome::AuthFailed => {
-                if let Err(err) = auth::refresh(env, &mut creds) {
+                if let Err(err) = auth::force_refresh(env, &creds) {
                     eprintln!("\r\nPaste listener: token refresh failed: {err}\r");
                     if sleep_with_stop(&stop, std::time::Duration::from_secs(backoff_secs)) {
                         return;
@@ -498,7 +511,8 @@ fn sleep_with_stop(stop: &AtomicBool, total: std::time::Duration) -> bool {
 #[allow(clippy::too_many_arguments)]
 fn run_stream_once(
     env: Env,
-    creds: &Credentials,
+    creds: &CredsHandle,
+    stream_creds: &crate::credentials::Credentials,
     session_id: &str,
     session_name: &str,
     master_fd: RawFd,
@@ -508,7 +522,7 @@ fn run_stream_once(
 ) -> StreamOutcome {
     use std::io::BufRead;
 
-    let response = match rtdb::stream_session(env, creds, session_id) {
+    let response = match rtdb::stream_session(env, stream_creds, session_id) {
         Ok(r) => r,
         Err(err) => {
             let msg = format!("{err:?}");
@@ -601,7 +615,7 @@ fn run_stream_once(
 
 fn handle_paste(
     env: Env,
-    creds: &Credentials,
+    creds: &CredsHandle,
     session_id: &str,
     session_name: &str,
     master_fd: RawFd,
@@ -625,8 +639,15 @@ fn handle_paste(
         eprintln!("\r\nFailed to write paste to pty: {err}\r");
     }
 
-    if let Err(err) = rtdb::clear_paste(env, creds, session_id) {
-        eprintln!("\r\nFailed to clear paste in RTDB: {err}\r");
+    match auth::ensure_fresh(env, creds) {
+        Ok(fresh) => {
+            if let Err(err) = rtdb::clear_paste(env, &fresh, session_id) {
+                eprintln!("\r\nFailed to clear paste in RTDB: {err}\r");
+            }
+        }
+        Err(err) => {
+            eprintln!("\r\nFailed to refresh credentials: {err}\r");
+        }
     }
 
     let cancel = workspace::spawn_watcher(env, creds.clone(), session_id.to_string(), dir);

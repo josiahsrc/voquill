@@ -1,5 +1,6 @@
 use anyhow::{Context, Result, bail};
 use serde::Deserialize;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::Env;
@@ -7,6 +8,26 @@ use crate::credentials::{self, Credentials};
 
 const REFRESH_LEEWAY_SECS: i64 = 5 * 60;
 const HTTP_TIMEOUT: Duration = Duration::from_secs(15);
+
+pub type CredsHandle = Arc<Mutex<Credentials>>;
+
+pub fn handle(creds: Credentials) -> CredsHandle {
+    Arc::new(Mutex::new(creds))
+}
+
+pub fn ensure_fresh(env: Env, handle: &CredsHandle) -> Result<Credentials> {
+    let mut guard = handle.lock().unwrap();
+    if needs_refresh(&guard) {
+        refresh(env, &mut guard)?;
+    }
+    Ok(guard.clone())
+}
+
+pub fn force_refresh(env: Env, handle: &CredsHandle) -> Result<Credentials> {
+    let mut guard = handle.lock().unwrap();
+    refresh(env, &mut guard)?;
+    Ok(guard.clone())
+}
 
 #[derive(Debug, Deserialize)]
 struct RefreshResponse {

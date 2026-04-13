@@ -8,7 +8,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use crate::Env;
-use crate::credentials::Credentials;
+use crate::auth::{self, CredsHandle};
 use crate::rtdb;
 
 const WATCH_DEADLINE: Duration = Duration::from_secs(60 * 60);
@@ -67,7 +67,7 @@ pub fn build_instructions(session_name: &str, prompt: &str) -> String {
 
 pub fn spawn_watcher(
     env: Env,
-    creds: Credentials,
+    creds: CredsHandle,
     session_id: String,
     dir: PathBuf,
 ) -> Arc<AtomicBool> {
@@ -83,7 +83,7 @@ pub fn spawn_watcher(
 
 fn watch_and_upload(
     env: Env,
-    creds: Credentials,
+    creds: CredsHandle,
     session_id: String,
     dir: PathBuf,
     cancel: Arc<AtomicBool>,
@@ -91,15 +91,20 @@ fn watch_and_upload(
     let complete = dir.join("complete");
     let deadline = Instant::now() + WATCH_DEADLINE;
 
-    if let Err(err) = rtdb::set_status(env, &creds, &session_id, Some("loading")) {
-        eprintln!("\r\nFailed to set status: {err}\r");
-    }
-
-    let clear_status = || {
-        if let Err(err) = rtdb::set_status(env, &creds, &session_id, None) {
-            eprintln!("\r\nFailed to clear status: {err}\r");
+    let set_status = |status: Option<&str>| match auth::ensure_fresh(env, &creds) {
+        Ok(fresh) => {
+            if let Err(err) = rtdb::set_status(env, &fresh, &session_id, status) {
+                eprintln!("\r\nFailed to set status: {err}\r");
+            }
+        }
+        Err(err) => {
+            eprintln!("\r\nFailed to refresh credentials: {err}\r");
         }
     };
+
+    set_status(Some("loading"));
+
+    let clear_status = || set_status(None);
 
     loop {
         if cancel.load(Ordering::Relaxed) {
@@ -152,8 +157,15 @@ fn watch_and_upload(
             entry["questions"] =
                 serde_json::Value::Array(questions.into_iter().map(|m| json!({"message": m})).collect());
         }
-        if let Err(err) = rtdb::append_history_entry(env, &creds, &session_id, &entry) {
-            eprintln!("\r\nFailed to upload assistant turn: {err}\r");
+        match auth::ensure_fresh(env, &creds) {
+            Ok(fresh) => {
+                if let Err(err) = rtdb::append_history_entry(env, &fresh, &session_id, &entry) {
+                    eprintln!("\r\nFailed to upload assistant turn: {err}\r");
+                }
+            }
+            Err(err) => {
+                eprintln!("\r\nFailed to refresh credentials: {err}\r");
+            }
         }
     }
 
