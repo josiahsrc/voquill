@@ -61,7 +61,7 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
     final current = sessions[safeIndex];
     final currentHasPending = useAppStore().select(
       context,
-      (s) => sessionHasUnresolvedReviews(current.id, s),
+      (s) => activeTurnFor(current.id, s) != null,
     );
     final theme = Theme.of(context);
 

@@ -7,6 +7,7 @@ import 'package:app/state/remote_state.dart';
 import 'package:app/store/store.dart';
 import 'package:app/utils/audio_utils.dart';
 import 'package:app/utils/log_utils.dart';
+import 'package:app/utils/remote_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:record/record.dart';
@@ -116,8 +117,6 @@ Future<void> unsubscribeFromRemoteSession(String sessionId) async {
 }
 
 void _ingestHistory(String sessionId, List<SessionHistoryEntry> entries) {
-  String? messageToSend;
-
   produceAppState((draft) {
     final session = draft.remote.sessionById[sessionId];
     if (session == null) return;
@@ -136,77 +135,7 @@ void _ingestHistory(String sessionId, List<SessionHistoryEntry> entries) {
       }
     }
     session.historyIds = nextIds;
-
-    final pending = entries
-        .where((e) => e.isPendingReview)
-        .map((e) => e.id!)
-        .toList();
-
-    if (!session.batching && pending.isNotEmpty) {
-      session.batching = true;
-      session.batchReviewIds = pending;
-    } else if (session.batching) {
-      final merged = {...session.batchReviewIds, ...pending};
-      session.batchReviewIds = merged.toList();
-    }
-
-    if (session.batching && pending.isEmpty) {
-      messageToSend = _compileBatchMessage(
-        entries: entries,
-        batchIds: session.batchReviewIds.toSet(),
-        dictations: session.bufferedDictations,
-      );
-      session.batching = false;
-      session.batchReviewIds = [];
-      session.bufferedDictations = [];
-    }
   });
-
-  final message = messageToSend;
-  if (message != null && message.isNotEmpty) {
-    unawaited(sendPasteText(sessionId, message));
-  }
-}
-
-String? _compileBatchMessage({
-  required List<SessionHistoryEntry> entries,
-  required Set<String> batchIds,
-  required List<String> dictations,
-}) {
-  final reviewsInBatch =
-      entries.where((e) => e.id != null && batchIds.contains(e.id)).toList()
-        ..sort((a, b) => a.time.compareTo(b.time));
-  final denied = reviewsInBatch
-      .where((e) => e.status == SessionHistoryEntryStatus.denied)
-      .toList();
-
-  final cleanedDictations = dictations
-      .map((d) => d.trim())
-      .where((d) => d.isNotEmpty)
-      .toList();
-
-  if (denied.isEmpty && cleanedDictations.isEmpty) return null;
-
-  final buf = StringBuffer();
-  if (denied.isNotEmpty) {
-    buf.writeln('Sounds good, but a few things:');
-    buf.writeln();
-    for (final d in denied) {
-      buf.writeln('Feedback: ${d.message}');
-      buf.writeln('Answer: ${d.response ?? ''}');
-      buf.writeln();
-    }
-  } else if (cleanedDictations.isNotEmpty) {
-    buf.writeln('Everything looks good.');
-    buf.writeln();
-  }
-
-  if (cleanedDictations.isNotEmpty) {
-    buf.writeln(cleanedDictations.join('\n\n'));
-  }
-
-  final message = buf.toString().trim();
-  return message.isEmpty ? null : message;
 }
 
 Future<void> startRemoteRecording(String sessionId) async {
@@ -271,13 +200,13 @@ Future<void> stopRemoteRecording(String sessionId) async {
   runtime.audioSub = null;
   runtime.partialSub = null;
 
-  final denialId = session.pendingDenialId;
+  final wasDenying = session.isDenying;
 
   _mutateSession(sessionId, (s) {
     s.status = DictationPillStatus.idle;
     s.audioLevel = 0;
     s.partialText = '';
-    s.pendingDenialId = null;
+    s.isDenying = false;
   });
 
   unawaited(
@@ -287,7 +216,7 @@ Future<void> stopRemoteRecording(String sessionId) async {
       dictation: dictation,
       audioSub: audioSub,
       partialSub: partialSub,
-      denialId: denialId,
+      wasDenying: wasDenying,
     ),
   );
 }
@@ -298,7 +227,7 @@ Future<void> _finalizeInBackground({
   DictationSession? dictation,
   StreamSubscription? audioSub,
   StreamSubscription? partialSub,
-  String? denialId,
+  required bool wasDenying,
 }) async {
   try {
     await recorder?.stop();
@@ -310,25 +239,7 @@ Future<void> _finalizeInBackground({
     final text = result.text.trim();
     if (text.isEmpty) return;
 
-    final denial = denialId != null
-        ? getAppState().sessionHistoryEntryById[denialId]
-        : null;
-
-    if (denial != null) {
-      await updateHistoryEntry(
-        sessionId: sessionId,
-        entry: denial.produce((d) {
-          d.status = SessionHistoryEntryStatus.denied;
-          d.response = text;
-        }),
-      );
-    } else if (getAppState().remote.session(sessionId).batching) {
-      _mutateSession(sessionId, (s) {
-        s.bufferedDictations = [...s.bufferedDictations, text];
-      });
-    } else {
-      await sendPasteText(sessionId, text);
-    }
+    await _routeDictation(sessionId, text, wasDenying: wasDenying);
   } catch (e) {
     _logger.e('Failed to finalize: $e');
   } finally {
@@ -337,27 +248,135 @@ Future<void> _finalizeInBackground({
   }
 }
 
+Future<void> _routeDictation(
+  String sessionId,
+  String text, {
+  required bool wasDenying,
+}) async {
+  final turn = activeTurnFor(sessionId, getAppState());
+
+  if (turn == null) {
+    await sendPasteText(sessionId, text);
+    return;
+  }
+
+  if (wasDenying) {
+    final reviewIndex = turn.nextPendingReviewIndex;
+    if (reviewIndex != null) {
+      final updated = _updateReview(
+        turn,
+        reviewIndex,
+        (r) => r.copyWith(
+          status: AssistantReviewStatus.denied,
+          response: text,
+        ),
+      );
+      await _persistAndMaybeReply(sessionId, updated);
+      return;
+    }
+  }
+
+  final questionIndex = turn.nextPendingQuestionIndex;
+  if (questionIndex != null) {
+    final updated = _updateQuestion(
+      turn,
+      questionIndex,
+      (q) => q.copyWith(response: text),
+    );
+    await _persistAndMaybeReply(sessionId, updated);
+    return;
+  }
+
+  await sendPasteText(sessionId, text);
+}
+
+SessionHistoryEntry _updateReview(
+  SessionHistoryEntry entry,
+  int index,
+  AssistantReview Function(AssistantReview) update,
+) {
+  final list = [...entry.reviewList];
+  list[index] = update(list[index]);
+  return entry.produce((d) => d.reviews = list);
+}
+
+SessionHistoryEntry _updateQuestion(
+  SessionHistoryEntry entry,
+  int index,
+  AssistantQuestion Function(AssistantQuestion) update,
+) {
+  final list = [...entry.questionList];
+  list[index] = update(list[index]);
+  return entry.produce((d) => d.questions = list);
+}
+
+Future<void> _persistAndMaybeReply(
+  String sessionId,
+  SessionHistoryEntry entry,
+) async {
+  await updateHistoryEntry(sessionId: sessionId, entry: entry);
+  if (!entry.hasPendingItems) {
+    final reply = _compileReply(entry);
+    if (reply.isNotEmpty) {
+      await sendPasteText(sessionId, reply);
+    }
+  }
+}
+
+String _compileReply(SessionHistoryEntry entry) {
+  final denied = entry.reviewList.where((r) => r.isDenied).toList();
+  final questions = entry.questionList;
+  final hasDenied = denied.isNotEmpty;
+  final hasQuestions = questions.isNotEmpty;
+
+  final buf = StringBuffer();
+
+  if (hasDenied) {
+    buf.writeln("Let's change a few things:");
+    buf.writeln();
+    for (final r in denied) {
+      buf.writeln('- ${r.message}');
+      buf.writeln('  → ${r.response ?? ''}');
+    }
+  }
+
+  if (hasQuestions) {
+    if (buf.isNotEmpty) buf.writeln();
+    buf.writeln('Answers:');
+    for (final q in questions) {
+      buf.writeln('- ${q.message}');
+      buf.writeln('  → ${q.response ?? ''}');
+    }
+  }
+
+  return buf.toString().trim();
+}
+
 void cancelRemoteRecording(String sessionId) {
   final runtime = _runtimes[sessionId];
   _mutateSession(sessionId, (s) {
     s.status = DictationPillStatus.idle;
     s.audioLevel = 0;
     s.partialText = '';
-    s.pendingDenialId = null;
+    s.isDenying = false;
   });
   if (runtime != null) {
     unawaited(runtime.disposeRecording());
   }
 }
 
-void approveReview(String sessionId, SessionHistoryEntry entry) {
-  final approved = entry.produce(
-    (d) => d.status = SessionHistoryEntryStatus.approved,
+Future<void> approveReview(String sessionId, int reviewIndex) async {
+  final turn = activeTurnFor(sessionId, getAppState());
+  if (turn == null) return;
+  final updated = _updateReview(
+    turn,
+    reviewIndex,
+    (r) => r.copyWith(status: AssistantReviewStatus.approved),
   );
-  unawaited(updateHistoryEntry(sessionId: sessionId, entry: approved));
+  await _persistAndMaybeReply(sessionId, updated);
 }
 
-void denyReview(String sessionId, SessionHistoryEntry entry) {
-  _mutateSession(sessionId, (s) => s.pendingDenialId = entry.id);
-  startRemoteRecording(sessionId);
+Future<void> denyReview(String sessionId, int reviewIndex) async {
+  _mutateSession(sessionId, (s) => s.isDenying = true);
+  await startRemoteRecording(sessionId);
 }

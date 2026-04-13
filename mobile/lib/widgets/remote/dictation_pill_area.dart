@@ -11,7 +11,6 @@ class DictationPillArea extends StatelessWidget {
     required this.status,
     required this.audioLevel,
     required this.isRecording,
-    required this.denying,
     required this.onTapDown,
     required this.onTapUp,
     required this.onTapCancel,
@@ -21,7 +20,6 @@ class DictationPillArea extends StatelessWidget {
   final DictationPillStatus status;
   final double audioLevel;
   final bool isRecording;
-  final bool denying;
   final GestureTapDownCallback onTapDown;
   final GestureTapUpCallback onTapUp;
   final VoidCallback onTapCancel;
@@ -29,23 +27,9 @@ class DictationPillArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        AppAnimatedSize(
-          child: denying
-              ? Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    'Describe what you want changed',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

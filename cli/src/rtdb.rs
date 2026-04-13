@@ -108,16 +108,9 @@ pub fn append_history_entry(
     env: Env,
     creds: &Credentials,
     session_id: &str,
-    role: &str,
-    time: i64,
-    message: &str,
+    entry: &serde_json::Value,
 ) -> Result<()> {
-    let entry = json!({
-        "type": role,
-        "time": time,
-        "message": message,
-    });
-    let entry_str = serde_json::to_string(&entry)?;
+    let entry_str = serde_json::to_string(entry)?;
 
     let response = client()?
         .post(history_url(env, creds, session_id))

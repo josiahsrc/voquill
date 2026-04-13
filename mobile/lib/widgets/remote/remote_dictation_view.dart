@@ -10,6 +10,7 @@ import 'package:app/widgets/remote/dictation_empty_state.dart';
 import 'package:app/widgets/remote/dictation_history.dart';
 import 'package:app/widgets/remote/dictation_pill_area.dart';
 import 'package:app/widgets/remote/dictation_review_actions.dart';
+import 'package:app/widgets/remote/focus_prompt_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
@@ -92,19 +93,52 @@ class _RemoteDictationViewState extends State<RemoteDictationView>
   }
 
   void _handleCancel() {
-    final wasDenying = _session().pendingDenialId != null;
+    final wasDenying = _session().isDenying;
     _holdTimer?.cancel();
     _mode = null;
     cancelRemoteRecording(widget.sessionId);
     if (wasDenying) _swiperController.undo();
   }
 
-  void _handleSwipe(SessionHistoryEntry entry, CardSwiperDirection direction) {
+  _FocusPrompt? _resolveFocusPrompt({
+    required RemoteSessionState session,
+    required SessionHistoryEntry? activeTurn,
+  }) {
+    if (activeTurn == null) return null;
+
+    if (session.isDenying) {
+      final idx = activeTurn.nextPendingReviewIndex;
+      if (idx != null) {
+        return _FocusPrompt(
+          label: 'What should change',
+          prompt: activeTurn.reviewList[idx].message,
+        );
+      }
+    }
+
+    if (activeTurn.nextPendingReviewIndex == null) {
+      final idx = activeTurn.nextPendingQuestionIndex;
+      if (idx != null) {
+        return _FocusPrompt(
+          label: 'Question',
+          prompt: activeTurn.questionList[idx].message,
+        );
+      }
+    }
+
+    return null;
+  }
+
+  void _handleSwipe(
+    SessionHistoryEntry turn,
+    int reviewIndex,
+    CardSwiperDirection direction,
+  ) {
     if (direction == CardSwiperDirection.right) {
-      approveReview(widget.sessionId, entry);
+      approveReview(widget.sessionId, reviewIndex);
     } else if (direction == CardSwiperDirection.left) {
       _mode = _DictationMode.toggle;
-      denyReview(widget.sessionId, entry);
+      denyReview(widget.sessionId, reviewIndex);
     }
   }
 
@@ -120,14 +154,25 @@ class _RemoteDictationViewState extends State<RemoteDictationView>
       context,
       (s) => historyFor(widget.sessionId, s),
     );
-    final pendingReviews = history.where((e) => e.isPendingReview).toList();
+    final activeTurn = useAppStore().select(
+      context,
+      (s) => activeTurnFor(widget.sessionId, s),
+    );
 
     final hasHistory =
         session.partialText.isNotEmpty ||
         history.isNotEmpty ||
         session.isLoading;
+
     final showReviewButtons =
-        pendingReviews.isNotEmpty && !session.isRecording;
+        activeTurn != null &&
+        activeTurn.nextPendingReviewIndex != null &&
+        !session.isRecording;
+
+    final focusPrompt = _resolveFocusPrompt(
+      session: session,
+      activeTurn: activeTurn,
+    );
 
     return Column(
       children: [
@@ -146,11 +191,20 @@ class _RemoteDictationViewState extends State<RemoteDictationView>
               stops: const [0, 0.04, 0.96, 1],
             ).createShader(bounds),
             blendMode: BlendMode.dstIn,
-            child: hasHistory
+            child: focusPrompt != null
+                ? FocusPromptView(
+                    label: focusPrompt.label,
+                    prompt: focusPrompt.prompt,
+                    partialText: session.partialText,
+                  )
+                : hasHistory
                 ? DictationHistory(
                     history: history,
+                    activeTurnId: activeTurn?.id,
                     partialText: session.partialText,
                     isLoading: session.isLoading,
+                    isRecording: session.isRecording,
+                    isDenying: session.isDenying,
                     swiperController: _swiperController,
                     onSwipe: _handleSwipe,
                   )
@@ -169,7 +223,6 @@ class _RemoteDictationViewState extends State<RemoteDictationView>
                     status: session.status,
                     audioLevel: session.audioLevel,
                     isRecording: session.isRecording,
-                    denying: session.pendingDenialId != null,
                     onTapDown: _onTapDown,
                     onTapUp: _onTapUp,
                     onTapCancel: _onTapCancel,
@@ -180,4 +233,10 @@ class _RemoteDictationViewState extends State<RemoteDictationView>
       ],
     );
   }
+}
+
+class _FocusPrompt {
+  final String label;
+  final String prompt;
+  const _FocusPrompt({required this.label, required this.prompt});
 }

@@ -19,8 +19,12 @@ pub fn run(env: Env, command: Vec<String>) -> Result<()> {
         bail!("Missing command. Usage: voquill session <command> [args...]");
     }
 
-    let creds = credentials::load(env)?
+    let mut creds = credentials::load(env)?
         .ok_or_else(|| anyhow::anyhow!("Not signed in. Run `login` first."))?;
+
+    if auth::needs_refresh(&creds) {
+        auth::refresh(env, &mut creds).context("Failed to refresh credentials")?;
+    }
 
     let name = random_name::name();
     let session_id = random_name::id();

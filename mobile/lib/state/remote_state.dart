@@ -24,10 +24,7 @@ class RemoteSessionState with EquatableMixin {
   final double audioLevel;
   final String partialText;
   final bool isLoading;
-  final String? pendingDenialId;
-  final bool batching;
-  final List<String> batchReviewIds;
-  final List<String> bufferedDictations;
+  final bool isDenying;
   final List<String> historyIds;
 
   const RemoteSessionState({
@@ -35,10 +32,7 @@ class RemoteSessionState with EquatableMixin {
     this.audioLevel = 0,
     this.partialText = '',
     this.isLoading = false,
-    this.pendingDenialId,
-    this.batching = false,
-    this.batchReviewIds = const [],
-    this.bufferedDictations = const [],
+    this.isDenying = false,
     this.historyIds = const [],
   });
 
@@ -51,10 +45,7 @@ class RemoteSessionState with EquatableMixin {
     audioLevel,
     partialText,
     isLoading,
-    pendingDenialId,
-    batching,
-    batchReviewIds,
-    bufferedDictations,
+    isDenying,
     historyIds,
   ];
 }

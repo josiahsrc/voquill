@@ -9,10 +9,11 @@ List<SessionHistoryEntry> historyFor(String sessionId, AppState state) {
       .toList();
 }
 
-List<SessionHistoryEntry> pendingReviewsFor(String sessionId, AppState state) {
-  return historyFor(sessionId, state).where((e) => e.isPendingReview).toList();
-}
-
-bool sessionHasUnresolvedReviews(String sessionId, AppState state) {
-  return pendingReviewsFor(sessionId, state).isNotEmpty;
+SessionHistoryEntry? activeTurnFor(String sessionId, AppState state) {
+  final history = historyFor(sessionId, state);
+  for (var i = history.length - 1; i >= 0; i--) {
+    final entry = history[i];
+    if (entry.isAssistant && entry.hasPendingItems) return entry;
+  }
+  return null;
 }

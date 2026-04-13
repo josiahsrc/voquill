@@ -12,21 +12,65 @@ enum SessionHistoryEntryType {
   user,
   @JsonValue('assistant')
   assistant,
-  @JsonValue('summary')
-  summary,
-  @JsonValue('review')
-  review,
-  @JsonValue('question')
-  question,
 }
 
-enum SessionHistoryEntryStatus {
+enum AssistantReviewStatus {
   @JsonValue('approved')
   approved,
   @JsonValue('denied')
   denied,
-  @JsonValue('answered')
-  answered,
+}
+
+@JsonSerializable(includeIfNull: false)
+class AssistantReview with EquatableMixin {
+  final String message;
+  final AssistantReviewStatus? status;
+  final String? response;
+
+  const AssistantReview({required this.message, this.status, this.response});
+
+  factory AssistantReview.fromJson(Map<String, dynamic> json) =>
+      _$AssistantReviewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$AssistantReviewToJson(this);
+
+  AssistantReview copyWith({
+    AssistantReviewStatus? status,
+    String? response,
+    bool clearResponse = false,
+  }) => AssistantReview(
+    message: message,
+    status: status ?? this.status,
+    response: clearResponse ? null : (response ?? this.response),
+  );
+
+  bool get isPending => status == null;
+  bool get isApproved => status == AssistantReviewStatus.approved;
+  bool get isDenied => status == AssistantReviewStatus.denied;
+
+  @override
+  List<Object?> get props => [message, status, response];
+}
+
+@JsonSerializable(includeIfNull: false)
+class AssistantQuestion with EquatableMixin {
+  final String message;
+  final String? response;
+
+  const AssistantQuestion({required this.message, this.response});
+
+  factory AssistantQuestion.fromJson(Map<String, dynamic> json) =>
+      _$AssistantQuestionFromJson(json);
+
+  Map<String, dynamic> toJson() => _$AssistantQuestionToJson(this);
+
+  AssistantQuestion copyWith({String? response}) =>
+      AssistantQuestion(message: message, response: response ?? this.response);
+
+  bool get isPending => response == null;
+
+  @override
+  List<Object?> get props => [message, response];
 }
 
 @JsonSerializable(includeIfNull: false)
@@ -37,17 +81,19 @@ class SessionHistoryEntry with EquatableMixin {
   @JsonKey(unknownEnumValue: SessionHistoryEntryType.assistant)
   final SessionHistoryEntryType type;
   final int time;
-  final String message;
-  final SessionHistoryEntryStatus? status;
-  final String? response;
+  final String? message;
+  final String? summary;
+  final List<AssistantReview>? reviews;
+  final List<AssistantQuestion>? questions;
 
   const SessionHistoryEntry({
     this.id,
     required this.type,
     required this.time,
-    required this.message,
-    this.status,
-    this.response,
+    this.message,
+    this.summary,
+    this.reviews,
+    this.questions,
   });
 
   factory SessionHistoryEntry.fromJson(Map<String, dynamic> json) =>
@@ -70,9 +116,42 @@ class SessionHistoryEntry with EquatableMixin {
 
   DateTime get sentAt => DateTime.fromMillisecondsSinceEpoch(time);
 
-  bool get isPendingReview =>
-      type == SessionHistoryEntryType.review && status == null && id != null;
+  bool get isAssistant => type == SessionHistoryEntryType.assistant;
+  bool get isUser => type == SessionHistoryEntryType.user;
+
+  List<AssistantReview> get reviewList => reviews ?? const [];
+  List<AssistantQuestion> get questionList => questions ?? const [];
+
+  int? get nextPendingReviewIndex {
+    for (var i = 0; i < reviewList.length; i++) {
+      if (reviewList[i].isPending) return i;
+    }
+    return null;
+  }
+
+  int? get nextPendingQuestionIndex {
+    for (var i = 0; i < questionList.length; i++) {
+      if (questionList[i].isPending) return i;
+    }
+    return null;
+  }
+
+  bool get hasPendingItems =>
+      nextPendingReviewIndex != null || nextPendingQuestionIndex != null;
+
+  bool get hasAnyItems =>
+      (summary != null && summary!.isNotEmpty) ||
+      reviewList.isNotEmpty ||
+      questionList.isNotEmpty;
 
   @override
-  List<Object?> get props => [id, type, time, message, status, response];
+  List<Object?> get props => [
+    id,
+    type,
+    time,
+    message,
+    summary,
+    reviews,
+    questions,
+  ];
 }

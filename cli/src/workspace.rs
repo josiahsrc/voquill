@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use serde_json::json;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -54,11 +55,11 @@ pub fn build_instructions(session_name: &str, prompt: &str) -> String {
          <prompt>\n{prompt}\n</prompt>\n\n\
          ---\n\n\
          This session is relayed to a remote UI. Handle the user's prompt however you normally would.\n\n\
-         To send content back to the UI, write plain text files into .voquill/{name}/ . Each file's contents become one message surfaced in the UI. Output renders on a mobile device — be extremely brief and direct, no padding or hedging. Use any combination of the following, or none:\n\n\
+         To send content back to the UI, write plain text files into .voquill/{name}/ . The contents become a single agent turn rendered on a mobile device — be extremely brief and direct, no padding or hedging. Use any combination of the following, or none:\n\n\
          - summary.txt — recap of what you did or are proposing. One or two short sentences.\n\
          - review-0.txt, review-1.txt, ... — items for the user to approve or reject, numbered from 0 with no gaps. One short sentence each.\n\
          - question-0.txt, question-1.txt, ... — questions for the user, numbered from 0 with no gaps. One short sentence each.\n\n\
-         When you're done writing files, create an empty file named `complete` in the same folder to signal the turn is over. Do not delete files in this folder — the CLI manages cleanup.",
+         The UI walks the user through the reviews then the questions in order, then compiles their reply. When you're done writing files, create an empty file named `complete` in the same folder to signal the turn is over. Do not delete files in this folder — the CLI manages cleanup.",
         name = session_name,
         prompt = prompt,
     )
@@ -115,33 +116,45 @@ fn watch_and_upload(
         thread::sleep(POLL_INTERVAL);
     }
 
-    let base_time = now_millis();
-    let mut offset: i64 = 0;
-    let mut upload = |role: &str, path: &Path| {
-        let Ok(raw) = fs::read_to_string(path) else {
-            return;
-        };
-        let message = raw.trim();
-        if message.is_empty() {
-            return;
-        }
-        let time = base_time + offset;
-        offset += 1;
-        if let Err(err) = rtdb::append_history_entry(env, &creds, &session_id, role, time, message)
-        {
-            eprintln!("\r\nFailed to upload {role}: {err}\r");
+    let read_nonempty = |path: &Path| -> Option<String> {
+        let raw = fs::read_to_string(path).ok()?;
+        let trimmed = raw.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
         }
     };
 
-    let summary = dir.join("summary.txt");
-    if summary.exists() {
-        upload("summary", &summary);
-    }
-    for path in indexed_files(&dir, "review-")? {
-        upload("review", &path);
-    }
-    for path in indexed_files(&dir, "question-")? {
-        upload("question", &path);
+    let summary = read_nonempty(&dir.join("summary.txt"));
+    let reviews: Vec<String> = indexed_files(&dir, "review-")?
+        .iter()
+        .filter_map(|p| read_nonempty(p))
+        .collect();
+    let questions: Vec<String> = indexed_files(&dir, "question-")?
+        .iter()
+        .filter_map(|p| read_nonempty(p))
+        .collect();
+
+    if summary.is_some() || !reviews.is_empty() || !questions.is_empty() {
+        let mut entry = json!({
+            "type": "assistant",
+            "time": now_millis(),
+        });
+        if let Some(s) = summary {
+            entry["summary"] = json!(s);
+        }
+        if !reviews.is_empty() {
+            entry["reviews"] =
+                serde_json::Value::Array(reviews.into_iter().map(|m| json!({"message": m})).collect());
+        }
+        if !questions.is_empty() {
+            entry["questions"] =
+                serde_json::Value::Array(questions.into_iter().map(|m| json!({"message": m})).collect());
+        }
+        if let Err(err) = rtdb::append_history_entry(env, &creds, &session_id, &entry) {
+            eprintln!("\r\nFailed to upload assistant turn: {err}\r");
+        }
     }
 
     clear_status();
