@@ -62,10 +62,14 @@ void main() {
       },
     );
 
-    await tester.enterText(find.byType(TextField), '99');
+    const customMinutesKey = Key('custom-minutes');
+    final customMinutesFinder = find.byKey(customMinutesKey);
+
+    await tester.enterText(customMinutesFinder, '99');
     await tester.pumpAndSettle();
 
-    expect(find.text('60'), findsOneWidget);
+    final customMinutesField = tester.widget<TextField>(customMinutesFinder);
+    expect(customMinutesField.controller?.text, '60');
 
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();

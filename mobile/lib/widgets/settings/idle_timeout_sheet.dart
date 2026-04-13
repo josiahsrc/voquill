@@ -199,6 +199,7 @@ class _IdleTimeoutSheetState extends State<IdleTimeoutSheet> {
 
               // Custom input
               TextField(
+                key: const Key('custom-minutes'),
                 controller: _customController,
                 enabled: !_keepRunning,
                 keyboardType: TextInputType.number,
