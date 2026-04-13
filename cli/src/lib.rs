@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod commands;
 pub mod credentials;
+pub mod platform;
 pub mod random_name;
 pub mod rtdb;
 pub mod workspace;
