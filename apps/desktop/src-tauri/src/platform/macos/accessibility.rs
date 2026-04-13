@@ -883,8 +883,10 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {
 
 pub fn check_focused_paste_target() -> crate::commands::PasteTargetState {
     use crate::commands::PasteTargetState;
-    catch_unwind(AssertUnwindSafe(|| unsafe { check_focused_paste_target_impl() }))
-        .unwrap_or(PasteTargetState::Unknown)
+    catch_unwind(AssertUnwindSafe(|| unsafe {
+        check_focused_paste_target_impl()
+    }))
+    .unwrap_or(PasteTargetState::Unknown)
 }
 
 unsafe fn check_focused_paste_target_impl() -> crate::commands::PasteTargetState {
@@ -917,12 +919,7 @@ unsafe fn check_focused_paste_target_impl() -> crate::commands::PasteTargetState
 
     let role = get_string_attribute(focused, ax_role.as_concrete_TypeRef());
 
-    let editable_roles = [
-        "AXTextField",
-        "AXTextArea",
-        "AXComboBox",
-        "AXSearchField",
-    ];
+    let editable_roles = ["AXTextField", "AXTextArea", "AXComboBox", "AXSearchField"];
     if let Some(ref r) = role {
         if editable_roles.iter().any(|er| er == r) {
             CFRelease(focused);
@@ -947,11 +944,8 @@ unsafe fn check_focused_paste_target_impl() -> crate::commands::PasteTargetState
     }
 
     settable = false;
-    let value_settable_result = AXUIElementIsAttributeSettable(
-        focused,
-        ax_value.as_concrete_TypeRef(),
-        &mut settable,
-    );
+    let value_settable_result =
+        AXUIElementIsAttributeSettable(focused, ax_value.as_concrete_TypeRef(), &mut settable);
     CFRelease(focused);
 
     if value_settable_result == AX_ERROR_SUCCESS && settable {
@@ -995,12 +989,13 @@ pub fn gather_accessibility_dump() -> crate::commands::AccessibilityDumpResult {
 }
 
 pub fn get_focused_field_info() -> Option<crate::commands::AccessibilityFieldInfo> {
-    catch_unwind(AssertUnwindSafe(|| unsafe { get_focused_field_info_impl() })).unwrap_or_else(
-        |_| {
-            log::error!("get_focused_field_info panicked, returning None");
-            None
-        },
-    )
+    catch_unwind(AssertUnwindSafe(|| unsafe {
+        get_focused_field_info_impl()
+    }))
+    .unwrap_or_else(|_| {
+        log::error!("get_focused_field_info panicked, returning None");
+        None
+    })
 }
 
 unsafe fn get_focused_field_info_impl() -> Option<crate::commands::AccessibilityFieldInfo> {
@@ -1058,11 +1053,8 @@ unsafe fn get_focused_field_info_impl() -> Option<crate::commands::Accessibility
 
     while depth < MAX_LEVELS_UP {
         let mut parent: CFTypeRef = ptr::null();
-        let parent_result = AXUIElementCopyAttributeValue(
-            current,
-            ax_parent.as_concrete_TypeRef(),
-            &mut parent,
-        );
+        let parent_result =
+            AXUIElementCopyAttributeValue(current, ax_parent.as_concrete_TypeRef(), &mut parent);
 
         if parent_result != AX_ERROR_SUCCESS || parent.is_null() {
             break;
@@ -1084,10 +1076,8 @@ unsafe fn get_focused_field_info_impl() -> Option<crate::commands::Accessibility
                 let child_pid_ok =
                     AXUIElementGetPid(child as AXUIElementRef, &mut child_pid) == AX_ERROR_SUCCESS;
                 let mut current_pid: i32 = 0;
-                let current_pid_ok = AXUIElementGetPid(
-                    current as AXUIElementRef,
-                    &mut current_pid,
-                ) == AX_ERROR_SUCCESS;
+                let current_pid_ok = AXUIElementGetPid(current as AXUIElementRef, &mut current_pid)
+                    == AX_ERROR_SUCCESS;
                 if child_pid_ok
                     && current_pid_ok
                     && child_pid == current_pid
@@ -1206,7 +1196,10 @@ unsafe fn focus_accessibility_field_impl(
     );
     if focus_result != AX_ERROR_SUCCESS {
         CFRelease(element);
-        return Err(format!("Failed to focus element: AX error {}", focus_result));
+        return Err(format!(
+            "Failed to focus element: AX error {}",
+            focus_result
+        ));
     }
 
     let text_len = get_string_attribute(element, ax_value.as_concrete_TypeRef())
@@ -1255,10 +1248,7 @@ pub fn write_accessibility_fields(
     })
 }
 
-unsafe fn resolve_element_by_path(
-    app_pid: i32,
-    index_path: &[usize],
-) -> Option<CFTypeRef> {
+unsafe fn resolve_element_by_path(app_pid: i32, index_path: &[usize]) -> Option<CFTypeRef> {
     let app_element = AXUIElementCreateApplication(app_pid);
     if app_element.is_null() {
         return None;
@@ -1341,11 +1331,7 @@ unsafe fn write_accessibility_fields_impl(
         };
 
         let mut settable = false;
-        AXUIElementIsAttributeSettable(
-            element,
-            ax_value.as_concrete_TypeRef(),
-            &mut settable,
-        );
+        AXUIElementIsAttributeSettable(element, ax_value.as_concrete_TypeRef(), &mut settable);
 
         if !settable {
             CFRelease(element);

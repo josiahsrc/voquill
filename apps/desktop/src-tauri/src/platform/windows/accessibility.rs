@@ -98,7 +98,11 @@ where
         let mut opt = cell.borrow_mut();
         if opt.is_none() {
             unsafe {
-                *opt = Some(CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER)?);
+                *opt = Some(CoCreateInstance(
+                    &CUIAutomation,
+                    None,
+                    CLSCTX_INPROC_SERVER,
+                )?);
             }
             log::info!("Cached IUIAutomation instance on STA thread");
         }
@@ -115,13 +119,11 @@ fn empty_text_field_info() -> TextFieldInfo {
 }
 
 pub fn get_text_field_info() -> TextFieldInfo {
-    run_on_uia_thread(|| {
-        match try_get_text_field_info() {
-            Ok(info) => info,
-            Err(e) => {
-                log::error!("Error getting text field info: {:?}", e);
-                empty_text_field_info()
-            }
+    run_on_uia_thread(|| match try_get_text_field_info() {
+        Ok(info) => info,
+        Err(e) => {
+            log::error!("Error getting text field info: {:?}", e);
+            empty_text_field_info()
         }
     })
 }
@@ -231,14 +233,12 @@ fn is_non_text_control(control_type: i32) -> bool {
 }
 
 pub fn get_screen_context() -> ScreenContextInfo {
-    run_on_uia_thread(|| {
-        match try_get_screen_context() {
-            Ok(info) => info,
-            Err(e) => {
-                log::error!("Error getting screen context: {:?}", e);
-                ScreenContextInfo {
-                    screen_context: None,
-                }
+    run_on_uia_thread(|| match try_get_screen_context() {
+        Ok(info) => info,
+        Err(e) => {
+            log::error!("Error getting screen context: {:?}", e);
+            ScreenContextInfo {
+                screen_context: None,
             }
         }
     })
@@ -250,17 +250,15 @@ const DUMP_MAX_DEPTH: usize = 30;
 const DUMP_MAX_ELEMENTS: usize = 5000;
 
 pub fn gather_accessibility_dump() -> AccessibilityDumpResult {
-    run_on_uia_thread(|| {
-        match try_gather_accessibility_dump() {
-            Ok(result) => result,
-            Err(e) => {
-                log::error!("Error gathering accessibility dump: {:?}", e);
-                AccessibilityDumpResult {
-                    dump: None,
-                    window_title: None,
-                    process_name: None,
-                    element_count: 0,
-                }
+    run_on_uia_thread(|| match try_gather_accessibility_dump() {
+        Ok(result) => result,
+        Err(e) => {
+            log::error!("Error gathering accessibility dump: {:?}", e);
+            AccessibilityDumpResult {
+                dump: None,
+                window_title: None,
+                process_name: None,
+                element_count: 0,
             }
         }
     })
@@ -295,10 +293,7 @@ fn try_gather_accessibility_dump() -> Result<AccessibilityDumpResult, windows::c
         let mut element_count: usize = 0;
 
         // Build window header line
-        let mut header = format!(
-            "[Window] \"{}\"",
-            window_title.as_deref().unwrap_or("")
-        );
+        let mut header = format!("[Window] \"{}\"", window_title.as_deref().unwrap_or(""));
         if pid > 0 {
             header.push_str(&format!(" (pid={})", pid));
         }
@@ -403,7 +398,14 @@ unsafe fn dump_children(
             lines.push(line);
             *element_count += 1;
 
-            dump_children(automation, &child, depth + 1, lines, element_count, is_java_app)?;
+            dump_children(
+                automation,
+                &child,
+                depth + 1,
+                lines,
+                element_count,
+                is_java_app,
+            )?;
         }
     }
 
@@ -955,17 +957,13 @@ unsafe fn resolve_element(
             match resolve_element_by_fingerprint(automation, app_pid, chain) {
                 Ok(el) => return Ok(el),
                 Err(e) => {
-                    log::warn!(
-                        "Fingerprint resolution failed ({e}), trying subtree search"
-                    );
+                    log::warn!("Fingerprint resolution failed ({e}), trying subtree search");
 
                     // If the target element has an AutomationId, search the
                     // window subtree directly. This handles Chrome/Electron
                     // where intermediate UI nodes shift but the leaf element
                     // has a stable AutomationId (e.g. "input", "RootWebArea").
-                    if let Ok(el) =
-                        resolve_element_by_subtree_search(automation, app_pid, chain)
-                    {
+                    if let Ok(el) = resolve_element_by_subtree_search(automation, app_pid, chain) {
                         return Ok(el);
                     }
                     log::warn!("Subtree search failed, falling back to index path");
@@ -1083,13 +1081,11 @@ fn is_container_control_type(control_type: i32) -> bool {
 }
 
 pub fn get_focused_field_info() -> Option<crate::commands::AccessibilityFieldInfo> {
-    run_on_uia_thread(|| {
-        match try_get_focused_field_info() {
-            Ok(info) => info,
-            Err(e) => {
-                log::error!("Error getting focused field info: {:?}", e);
-                None
-            }
+    run_on_uia_thread(|| match try_get_focused_field_info() {
+        Ok(info) => info,
+        Err(e) => {
+            log::error!("Error getting focused field info: {:?}", e);
+            None
         }
     })
 }
@@ -1106,15 +1102,16 @@ fn is_java_process_name(name: Option<&str>) -> bool {
     .unwrap_or(false)
 }
 
-fn try_get_focused_field_info() -> Result<Option<crate::commands::AccessibilityFieldInfo>, windows::core::Error> {
+fn try_get_focused_field_info(
+) -> Result<Option<crate::commands::AccessibilityFieldInfo>, windows::core::Error> {
     with_automation(|automation| unsafe {
         let focused = automation.GetFocusedElement()?;
 
         // Get the process ID early so we can detect Java
         let mut app_pid: Option<i32> = None;
-        if let Ok(pid_variant) = focused.GetCurrentPropertyValue(
-            windows::Win32::UI::Accessibility::UIA_ProcessIdPropertyId,
-        ) {
+        if let Ok(pid_variant) = focused
+            .GetCurrentPropertyValue(windows::Win32::UI::Accessibility::UIA_ProcessIdPropertyId)
+        {
             let pid_val = pid_variant.Anonymous.Anonymous.Anonymous.lVal;
             if pid_val > 0 {
                 app_pid = Some(pid_val);
@@ -1201,8 +1198,7 @@ fn try_get_focused_field_info() -> Result<Option<crate::commands::AccessibilityF
                         let comparison = automation.CompareElements(&current, &sibling)?;
                         if comparison.as_bool() {
                             element_index_path.push(i as usize);
-                            fingerprint_chain
-                                .push(build_element_fingerprint(&current, i as usize));
+                            fingerprint_chain.push(build_element_fingerprint(&current, i as usize));
                             break;
                         }
                     }
@@ -1249,10 +1245,15 @@ pub fn read_field_values(fields: Vec<FieldValueRequest>) -> Vec<FieldValueResult
                     // JAB path
                     if field.backend.as_deref() == Some("jab") {
                         return match super::jab::find_hwnd_for_pid(field.app_pid as u32) {
-                            Some(hwnd) => match super::jab::jab_read_text(hwnd, &field.element_index_path) {
-                                Ok(value) => FieldValueResult { value, error: None },
-                                Err(e) => FieldValueResult { value: None, error: Some(e) },
-                            },
+                            Some(hwnd) => {
+                                match super::jab::jab_read_text(hwnd, &field.element_index_path) {
+                                    Ok(value) => FieldValueResult { value, error: None },
+                                    Err(e) => FieldValueResult {
+                                        value: None,
+                                        error: Some(e),
+                                    },
+                                }
+                            }
                             None => FieldValueResult {
                                 value: None,
                                 error: Some(format!("No window for PID {}", field.app_pid)),
@@ -1270,7 +1271,10 @@ pub fn read_field_values(fields: Vec<FieldValueRequest>) -> Vec<FieldValueResult
                         Ok(element) => {
                             // Try ValuePattern first
                             if let Some(val) = get_element_value(&element) {
-                                return FieldValueResult { value: Some(val), error: None };
+                                return FieldValueResult {
+                                    value: Some(val),
+                                    error: None,
+                                };
                             }
                             // Try TextPattern
                             let pattern = element.GetCurrentPattern(UIA_TextPatternId).ok();
@@ -1280,15 +1284,24 @@ pub fn read_field_values(fields: Vec<FieldValueRequest>) -> Vec<FieldValueResult
                                         if let Ok(text) = range.GetText(2000) {
                                             let s = text.to_string();
                                             if !s.is_empty() {
-                                                return FieldValueResult { value: Some(s), error: None };
+                                                return FieldValueResult {
+                                                    value: Some(s),
+                                                    error: None,
+                                                };
                                             }
                                         }
                                     }
                                 }
                             }
-                            FieldValueResult { value: Some(String::new()), error: None }
+                            FieldValueResult {
+                                value: Some(String::new()),
+                                error: None,
+                            }
                         }
-                        Err(e) => FieldValueResult { value: None, error: Some(e) },
+                        Err(e) => FieldValueResult {
+                            value: None,
+                            error: Some(e),
+                        },
                     }
                 })
                 .collect())
@@ -1296,7 +1309,13 @@ pub fn read_field_values(fields: Vec<FieldValueRequest>) -> Vec<FieldValueResult
             Ok(results) => results,
             Err(e) => {
                 let err = format!("Failed to create UIAutomation: {e}");
-                fields.iter().map(|_| FieldValueResult { value: None, error: Some(err.clone()) }).collect()
+                fields
+                    .iter()
+                    .map(|_| FieldValueResult {
+                        value: None,
+                        error: Some(err.clone()),
+                    })
+                    .collect()
             }
         }
     })
@@ -1341,8 +1360,7 @@ fn resolve_element_by_path(
             }
         }
 
-        let mut current = app_window
-            .ok_or_else(|| format!("No window found for PID {app_pid}"))?;
+        let mut current = app_window.ok_or_else(|| format!("No window found for PID {app_pid}"))?;
 
         for &index in index_path {
             let children_condition = automation
@@ -1353,7 +1371,8 @@ fn resolve_element_by_path(
                 .map_err(|e| format!("Failed to enumerate children: {e}"))?;
             let child_count = children
                 .Length()
-                .map_err(|e| format!("Failed to get child count: {e}"))? as usize;
+                .map_err(|e| format!("Failed to get child count: {e}"))?
+                as usize;
 
             if index >= child_count {
                 return Err(format!(
@@ -1432,14 +1451,17 @@ pub fn focus_accessibility_field(
                         .subsec_nanos() as usize)
                         % (text_len + 1);
 
-                    let cursor_range = doc_range.Clone()
+                    let cursor_range = doc_range
+                        .Clone()
                         .map_err(|e| format!("Failed to clone range: {e}"))?;
 
-                    cursor_range.MoveEndpointByRange(
-                        windows::Win32::UI::Accessibility::TextPatternRangeEndpoint_End,
-                        &doc_range,
-                        windows::Win32::UI::Accessibility::TextPatternRangeEndpoint_Start,
-                    ).ok();
+                    cursor_range
+                        .MoveEndpointByRange(
+                            windows::Win32::UI::Accessibility::TextPatternRangeEndpoint_End,
+                            &doc_range,
+                            windows::Win32::UI::Accessibility::TextPatternRangeEndpoint_Start,
+                        )
+                        .ok();
 
                     use windows::Win32::UI::Accessibility::TextUnit_Character;
                     cursor_range.Move(TextUnit_Character, position as i32).ok();
@@ -1483,11 +1505,21 @@ pub fn write_accessibility_fields(
                     Some(hwnd) => {
                         let result: Result<(), String> = match &entry.jab_write_method {
                             JabWriteMethod::SetTextContents => {
-                                log::info!("JAB write via setTextContents for PID {}", entry.app_pid);
-                                super::jab::jab_write_text(hwnd, &entry.element_index_path, &entry.value)
+                                log::info!(
+                                    "JAB write via setTextContents for PID {}",
+                                    entry.app_pid
+                                );
+                                super::jab::jab_write_text(
+                                    hwnd,
+                                    &entry.element_index_path,
+                                    &entry.value,
+                                )
                             }
                             JabWriteMethod::ClipboardPaste => {
-                                log::info!("JAB write via clipboard paste for PID {}", entry.app_pid);
+                                log::info!(
+                                    "JAB write via clipboard paste for PID {}",
+                                    entry.app_pid
+                                );
                                 unsafe {
                                     let _ = windows::Win32::UI::WindowsAndMessaging::SetForegroundWindow(hwnd);
                                 }
@@ -1496,11 +1528,18 @@ pub fn write_accessibility_fields(
                                         std::thread::sleep(std::time::Duration::from_millis(100));
                                         super::input::select_all_keystroke();
                                         std::thread::sleep(std::time::Duration::from_millis(50));
-                                        super::input::paste_text_into_focused_field(&entry.value, None).map(|_| ())
+                                        super::input::paste_text_into_focused_field(
+                                            &entry.value,
+                                            None,
+                                        )
+                                        .map(|_| ())
                                     })
                             }
                             JabWriteMethod::KeystrokeSimulation => {
-                                log::info!("JAB write via keystroke simulation for PID {}", entry.app_pid);
+                                log::info!(
+                                    "JAB write via keystroke simulation for PID {}",
+                                    entry.app_pid
+                                );
                                 unsafe {
                                     let _ = windows::Win32::UI::WindowsAndMessaging::SetForegroundWindow(hwnd);
                                 }
@@ -1513,22 +1552,34 @@ pub fn write_accessibility_fields(
                                     })
                             }
                             JabWriteMethod::KeystrokeSimulationSmart => {
-                                log::info!("JAB write via smart keystroke diff for PID {}", entry.app_pid);
+                                log::info!(
+                                    "JAB write via smart keystroke diff for PID {}",
+                                    entry.app_pid
+                                );
                                 unsafe {
                                     let _ = windows::Win32::UI::WindowsAndMessaging::SetForegroundWindow(hwnd);
                                 }
                                 super::jab::jab_focus_element(hwnd, &entry.element_index_path)
                                     .and_then(|()| {
                                         std::thread::sleep(std::time::Duration::from_millis(100));
-                                        jab_smart_write(hwnd, &entry.element_index_path, &entry.value)
+                                        jab_smart_write(
+                                            hwnd,
+                                            &entry.element_index_path,
+                                            &entry.value,
+                                        )
                                     })
                             }
                         };
                         match result {
-                            Ok(()) => { succeeded += 1; }
+                            Ok(()) => {
+                                succeeded += 1;
+                            }
                             Err(e) => {
                                 failed += 1;
-                                errors.push(format!("JAB write failed for PID {}: {e}", entry.app_pid));
+                                errors.push(format!(
+                                    "JAB write failed for PID {}: {e}",
+                                    entry.app_pid
+                                ));
                             }
                         }
                         continue;
@@ -1612,7 +1663,11 @@ fn find_longest_match(a: &[char], b: &[char], min_len: usize) -> Option<(usize, 
             }
         }
     }
-    if best.2 >= min_len { Some(best) } else { None }
+    if best.2 >= min_len {
+        Some(best)
+    } else {
+        None
+    }
 }
 
 /// Recursively find all matching blocks between old and new char slices.
@@ -1629,7 +1684,10 @@ fn find_matching_blocks(
             let mut blocks = Vec::new();
             if oi > 0 && ni > 0 {
                 blocks.extend(find_matching_blocks(
-                    &old[..oi], &new[..ni], old_offset, new_offset,
+                    &old[..oi],
+                    &new[..ni],
+                    old_offset,
+                    new_offset,
                 ));
             }
             blocks.push((old_offset + oi, new_offset + ni, mlen));
@@ -1637,8 +1695,10 @@ fn find_matching_blocks(
             let rn = ni + mlen;
             if ro < old.len() && rn < new.len() {
                 blocks.extend(find_matching_blocks(
-                    &old[ro..], &new[rn..],
-                    old_offset + ro, new_offset + rn,
+                    &old[ro..],
+                    &new[rn..],
+                    old_offset + ro,
+                    new_offset + rn,
                 ));
             }
             blocks
@@ -1684,8 +1744,7 @@ fn jab_smart_write(
     index_path: &[usize],
     desired: &str,
 ) -> Result<(), String> {
-    let current = super::jab::jab_read_text(hwnd, index_path)?
-        .unwrap_or_default();
+    let current = super::jab::jab_read_text(hwnd, index_path)?.unwrap_or_default();
 
     if current == desired {
         log::info!("JAB smart write: text already matches, no edits needed");
@@ -1761,8 +1820,8 @@ unsafe fn try_write_via_paste(element: &IUIAutomationElement, value: &str) -> Re
 }
 
 fn get_process_name(pid: u32) -> Option<String> {
-    use windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
     use windows::Win32::System::ProcessStatus::GetModuleFileNameExW;
+    use windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
 
     unsafe {
         let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;

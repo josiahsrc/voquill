@@ -43,8 +43,7 @@ pub fn try_spawn_pill(app: &tauri::AppHandle, pill_path: &std::path::Path) -> bo
         command.creation_flags(CREATE_NO_WINDOW);
     }
 
-    let mut child = match command.spawn()
-    {
+    let mut child = match command.spawn() {
         Ok(child) => child,
         Err(err) => {
             log::warn!("Failed to spawn pill overlay: {err}");
@@ -262,9 +261,7 @@ fn start_stdout_reader(app: tauri::AppHandle, reader: std::io::BufReader<ChildSt
                         }
                     } else if line.contains("\"open_conversation\"") {
                         if let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) {
-                            if let Some(id) =
-                                val.get("conversation_id").and_then(|v| v.as_str())
-                            {
+                            if let Some(id) = val.get("conversation_id").and_then(|v| v.as_str()) {
                                 let payload = serde_json::json!({ "conversationId": id });
                                 let _ = app.emit_to("main", "open-pill-conversation", payload);
                             }
@@ -289,8 +286,7 @@ fn start_stdout_reader(app: tauri::AppHandle, reader: std::io::BufReader<ChildSt
                                 "status": status,
                                 "alwaysAllow": always_allow,
                             });
-                            let _ =
-                                app.emit_to("main", "overlay-resolve-permission", payload);
+                            let _ = app.emit_to("main", "overlay-resolve-permission", payload);
                         }
                     } else if line.contains("\"style_switch\"") {
                         if line.contains("\"forward\"") {
