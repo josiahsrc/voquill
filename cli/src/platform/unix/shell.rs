@@ -10,6 +10,9 @@ pub fn build_command(command: &[String]) -> CommandBuilder {
     let mut cmd = CommandBuilder::new(shell);
     cmd.arg("-ic");
     cmd.arg(joined);
+    if let Ok(cwd) = std::env::current_dir() {
+        cmd.cwd(cwd);
+    }
     cmd
 }
 
