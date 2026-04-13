@@ -1815,6 +1815,15 @@ pub fn get_selected_text() -> Option<String> {
     })
 }
 
+pub fn check_focused_paste_target() -> crate::commands::PasteTargetState {
+    use crate::commands::PasteTargetState;
+    match try_is_text_input_focused() {
+        Ok(true) => PasteTargetState::Editable,
+        Ok(false) => PasteTargetState::NotEditable,
+        Err(_) => PasteTargetState::Unknown,
+    }
+}
+
 fn try_get_selected_text_uia() -> Result<Option<String>, windows::core::Error> {
     with_automation(|automation| unsafe {
         let focused = automation.GetFocusedElement()?;

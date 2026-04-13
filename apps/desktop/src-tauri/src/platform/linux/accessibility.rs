@@ -65,6 +65,10 @@ pub fn read_field_values(fields: Vec<FieldValueRequest>) -> Vec<FieldValueResult
         .collect()
 }
 
+pub fn check_focused_paste_target() -> crate::commands::PasteTargetState {
+    crate::commands::PasteTargetState::Unknown
+}
+
 pub fn get_selected_text() -> Option<String> {
     if super::detect::is_wayland() {
         super::wl::accessibility::get_selected_text()
