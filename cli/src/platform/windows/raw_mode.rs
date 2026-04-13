@@ -1,8 +1,8 @@
 use windows_sys::Win32::Foundation::{HANDLE, INVALID_HANDLE_VALUE};
 use windows_sys::Win32::System::Console::{
-    DISABLE_NEWLINE_AUTO_RETURN, ENABLE_PROCESSED_OUTPUT, ENABLE_VIRTUAL_TERMINAL_INPUT,
-    ENABLE_VIRTUAL_TERMINAL_PROCESSING, GetConsoleMode, GetStdHandle, STD_INPUT_HANDLE,
-    STD_OUTPUT_HANDLE, SetConsoleMode,
+    DISABLE_NEWLINE_AUTO_RETURN, ENABLE_ECHO_INPUT, ENABLE_LINE_INPUT, ENABLE_PROCESSED_INPUT,
+    ENABLE_VIRTUAL_TERMINAL_INPUT, ENABLE_VIRTUAL_TERMINAL_PROCESSING, GetConsoleMode,
+    GetStdHandle, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, SetConsoleMode,
 };
 
 pub struct RawModeGuard {
@@ -33,10 +33,11 @@ impl RawModeGuard {
                 return None;
             }
 
-            let in_mode = ENABLE_VIRTUAL_TERMINAL_INPUT;
-            let out_mode = ENABLE_PROCESSED_OUTPUT
-                | ENABLE_VIRTUAL_TERMINAL_PROCESSING
-                | DISABLE_NEWLINE_AUTO_RETURN;
+            let in_mode = (orig_in
+                & !(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_PROCESSED_INPUT))
+                | ENABLE_VIRTUAL_TERMINAL_INPUT;
+            let out_mode =
+                orig_out | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
 
             if SetConsoleMode(stdin, in_mode) == 0 {
                 return None;
