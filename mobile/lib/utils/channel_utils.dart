@@ -17,7 +17,8 @@ const _sharedChannel = MethodChannel('com.voquill.mobile/shared');
 
 bool? _canSyncOverrideForTesting;
 
-bool get _canSync => _canSyncOverrideForTesting ?? (Platform.isIOS || Platform.isAndroid);
+bool get _canSync =>
+    _canSyncOverrideForTesting ?? (Platform.isIOS || Platform.isAndroid);
 bool get canSyncKeyboardBridge => _canSync;
 
 @visibleForTesting
@@ -175,11 +176,9 @@ Future<void> openKeyboardSettings() async {
 Future<void> syncMixpanelUser({required String uid}) async {
   if (!_canSync) return;
 
-  _sharedChannel
-      .invokeMethod('setMixpanelUser', {'uid': uid})
-      .catchError((e) {
-        _logger.w('Failed to sync Mixpanel user', e);
-      });
+  _sharedChannel.invokeMethod('setMixpanelUser', {'uid': uid}).catchError((e) {
+    _logger.w('Failed to sync Mixpanel user', e);
+  });
 
   await IncrementKeyboardCounterApi().call(null);
 }
@@ -221,24 +220,33 @@ Future<void> syncKeyboardAiConfig({
     await _sharedChannel.invokeMethod('setKeyboardAiConfig', {
       'transcriptionMode': transcriptionMode,
       'postProcessingMode': postProcessingMode,
-      if (transcriptionProvider != null) 'transcriptionProvider': transcriptionProvider,
-      if (transcriptionApiKey != null) 'transcriptionApiKey': transcriptionApiKey,
-      if (transcriptionBaseUrl != null) 'transcriptionBaseUrl': transcriptionBaseUrl,
+      if (transcriptionProvider != null)
+        'transcriptionProvider': transcriptionProvider,
+      if (transcriptionApiKey != null)
+        'transcriptionApiKey': transcriptionApiKey,
+      if (transcriptionBaseUrl != null)
+        'transcriptionBaseUrl': transcriptionBaseUrl,
       if (transcriptionModel != null) 'transcriptionModel': transcriptionModel,
       if (clearTranscriptionModel) 'clearTranscriptionModel': 'true',
-      if (transcriptionAzureRegion != null) 'transcriptionAzureRegion': transcriptionAzureRegion,
-      if (postProcessingProvider != null) 'postProcessingProvider': postProcessingProvider,
-      if (postProcessingApiKey != null) 'postProcessingApiKey': postProcessingApiKey,
-      if (postProcessingBaseUrl != null) 'postProcessingBaseUrl': postProcessingBaseUrl,
-      if (postProcessingModel != null) 'postProcessingModel': postProcessingModel,
+      if (transcriptionAzureRegion != null)
+        'transcriptionAzureRegion': transcriptionAzureRegion,
+      if (postProcessingProvider != null)
+        'postProcessingProvider': postProcessingProvider,
+      if (postProcessingApiKey != null)
+        'postProcessingApiKey': postProcessingApiKey,
+      if (postProcessingBaseUrl != null)
+        'postProcessingBaseUrl': postProcessingBaseUrl,
+      if (postProcessingModel != null)
+        'postProcessingModel': postProcessingModel,
     });
   } catch (e) {
     _logger.w('Failed to sync keyboard AI config', e);
   }
 }
 
-Future<List<LocalTranscriptionModel>> listLocalTranscriptionModels() async {
-  if (!_canSync) return [];
+Future<List<LocalTranscriptionModel>?>
+listLocalTranscriptionModelsOrNull() async {
+  if (!_canSync) return null;
 
   try {
     final result = await _sharedChannel.invokeListMethod<dynamic>(
@@ -254,8 +262,12 @@ Future<List<LocalTranscriptionModel>> listLocalTranscriptionModels() async {
         .toList();
   } catch (e) {
     _logger.w('Failed to list local transcription models', e);
-    return [];
+    return null;
   }
+}
+
+Future<List<LocalTranscriptionModel>> listLocalTranscriptionModels() async {
+  return (await listLocalTranscriptionModelsOrNull()) ?? [];
 }
 
 Future<void> downloadLocalTranscriptionModel(String slug) async {
@@ -290,9 +302,7 @@ Future<bool> selectLocalTranscriptionModel(String slug) async {
   try {
     final result = await _sharedChannel.invokeMethod<dynamic>(
       'selectLocalTranscriptionModel',
-      {
-      'slug': slug,
-      },
+      {'slug': slug},
     );
     if (result is bool) return result;
     return true;

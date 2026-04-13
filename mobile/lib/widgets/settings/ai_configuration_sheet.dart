@@ -257,10 +257,17 @@ class _LocalContentState extends State<_LocalContent> {
     try {
       final models = await listLocalTranscriptionModels();
       if (!mounted) return;
-      setState(() {
-        _models = models;
-        _unavailable = false;
-      });
+      if (models == null) {
+        setState(() {
+          _models = [];
+          _unavailable = true;
+        });
+      } else {
+        setState(() {
+          _models = models;
+          _unavailable = false;
+        });
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {

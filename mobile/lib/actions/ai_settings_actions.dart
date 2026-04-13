@@ -218,8 +218,13 @@ Future<String?> getApiKeyValue(String id) async {
   return await _secureStorage.read(key: '$_secureKeyPrefix$id');
 }
 
-Future<List<LocalTranscriptionModel>> listLocalTranscriptionModels() {
-  return channel_utils.listLocalTranscriptionModels().then((models) {
+Future<List<LocalTranscriptionModel>?> listLocalTranscriptionModels() {
+  if (!isLocalTranscriptionBridgeAvailable()) {
+    return Future.value(null);
+  }
+
+  return channel_utils.listLocalTranscriptionModelsOrNull().then((models) {
+    if (models == null) return null;
     final order = <String, int>{};
     for (var i = 0; i < LocalTranscriptionModel.supportedSlugs.length; i++) {
       order[LocalTranscriptionModel.supportedSlugs[i]] = i;
@@ -245,12 +250,15 @@ Future<void> downloadLocalTranscriptionModel(String slug) {
 
 Future<bool> _isSelectedLocalTranscriptionModel(String slug) async {
   final models = await listLocalTranscriptionModels();
+  if (models == null) return false;
   return models.where((model) => model.slug == slug).firstOrNull?.selected ==
       true;
 }
 
-Future<LocalTranscriptionModel?> _firstSelectableLocalTranscriptionModel() async {
+Future<LocalTranscriptionModel?>
+_firstSelectableLocalTranscriptionModel() async {
   final models = await listLocalTranscriptionModels();
+  if (models == null) return null;
   return models.where((model) => model.downloaded && model.valid).firstOrNull;
 }
 
@@ -309,7 +317,7 @@ Future<void> syncKeyboardAiSettings() async {
     if (transcriptionMode == AiMode.local) {
       final localModels = await listLocalTranscriptionModels();
       transcriptionModel = localModels
-          .where((m) => m.selected)
+          ?.where((m) => m.selected)
           .firstOrNull
           ?.slug;
     } else if (transcriptionMode == AiMode.api) {
@@ -359,6 +367,6 @@ Future<void> syncKeyboardAiSettings() async {
       postProcessingModel: postProcessingModel,
     );
   } catch (e) {
-    _logger.w('Failed to sync AI settings to keyboard', e);
+    _logger.w('Failed to sync keyboard AI settings', e);
   }
 }

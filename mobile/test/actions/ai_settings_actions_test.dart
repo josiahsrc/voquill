@@ -50,10 +50,7 @@ void main() {
       'ai_post_processing_mode': AiMode.cloud.name,
     });
 
-    await expectLater(
-      setPostProcessingMode(AiMode.local),
-      throwsArgumentError,
-    );
+    await expectLater(setPostProcessingMode(AiMode.local), throwsArgumentError);
     expect(await getPostProcessingMode(), AiMode.cloud);
   });
 
@@ -74,25 +71,31 @@ void main() {
     expect(postProcessingModeForSync(AiMode.cloud), AiMode.cloud);
   });
 
-  test('local sync clears transcription model when no local model is selected', () {
-    expect(
-      shouldClearTranscriptionModelForSync(
-        transcriptionMode: AiMode.local,
-        transcriptionModel: null,
-      ),
-      isTrue,
-    );
-  });
+  test(
+    'local sync clears transcription model when no local model is selected',
+    () {
+      expect(
+        shouldClearTranscriptionModelForSync(
+          transcriptionMode: AiMode.local,
+          transcriptionModel: null,
+        ),
+        isTrue,
+      );
+    },
+  );
 
-  test('local sync keeps transcription model when a local model is selected', () {
-    expect(
-      shouldClearTranscriptionModelForSync(
-        transcriptionMode: AiMode.local,
-        transcriptionModel: 'tiny',
-      ),
-      isFalse,
-    );
-  });
+  test(
+    'local sync keeps transcription model when a local model is selected',
+    () {
+      expect(
+        shouldClearTranscriptionModelForSync(
+          transcriptionMode: AiMode.local,
+          transcriptionModel: 'tiny',
+        ),
+        isFalse,
+      );
+    },
+  );
 
   test(
     'syncKeyboardAiSettings sends explicit clear when local mode has no selected model',
@@ -134,6 +137,23 @@ void main() {
       expect(args['transcriptionMode'], AiMode.local.name);
       expect(args['clearTranscriptionModel'], 'true');
       expect(args.containsKey('transcriptionModel'), isFalse);
+    },
+  );
+
+  test(
+    'listLocalTranscriptionModels returns null when native listing fails',
+    () async {
+      channel_utils.debugSetCanSyncOverride(true);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            if (call.method == 'listLocalTranscriptionModels') {
+              throw PlatformException(code: 'NATIVE_FAILURE');
+            }
+            return null;
+          });
+
+      final models = await listLocalTranscriptionModels();
+      expect(models, isNull);
     },
   );
 
@@ -191,11 +211,11 @@ void main() {
         'ai_post_processing_mode': AiMode.cloud.name,
       });
 
-        final calls = <MethodCall>[];
-        var downloaded = true;
-        var selected = true;
-        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(channel, (call) async {
+      final calls = <MethodCall>[];
+      var downloaded = true;
+      var selected = true;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
             calls.add(call);
             if (call.method == 'listLocalTranscriptionModels') {
               return [
