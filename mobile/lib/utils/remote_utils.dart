@@ -11,9 +11,8 @@ List<SessionHistoryEntry> historyFor(String sessionId, AppState state) {
 
 SessionHistoryEntry? activeTurnFor(String sessionId, AppState state) {
   final history = historyFor(sessionId, state);
-  for (var i = history.length - 1; i >= 0; i--) {
-    final entry = history[i];
-    if (entry.isAssistant && entry.hasPendingItems) return entry;
-  }
+  if (history.isEmpty) return null;
+  final last = history.last;
+  if (last.isAssistant && last.hasPendingItems) return last;
   return null;
 }

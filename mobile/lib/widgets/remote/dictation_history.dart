@@ -3,52 +3,48 @@ import 'package:app/utils/theme_utils.dart';
 import 'package:app/widgets/remote/assistant_turn_card.dart';
 import 'package:app/widgets/remote/dictation_message.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 
-class DictationHistory extends StatelessWidget {
+class DictationHistory extends StatefulWidget {
   const DictationHistory({
     super.key,
+    required this.sessionId,
     required this.history,
     required this.activeTurnId,
     required this.partialText,
     required this.isLoading,
-    required this.isRecording,
-    required this.isDenying,
-    required this.swiperController,
-    required this.onSwipe,
   });
 
+  final String sessionId;
   final List<SessionHistoryEntry> history;
   final String? activeTurnId;
   final String partialText;
   final bool isLoading;
-  final bool isRecording;
-  final bool isDenying;
-  final CardSwiperController swiperController;
-  final void Function(
-    SessionHistoryEntry turn,
-    int reviewIndex,
-    CardSwiperDirection direction,
-  )
-  onSwipe;
+
+  @override
+  State<DictationHistory> createState() => _DictationHistoryState();
+}
+
+class _DictationHistoryState extends State<DictationHistory> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final items = <Widget>[];
-    for (final entry in history) {
+    for (final entry in widget.history) {
       if (entry.isAssistant) {
-        final isActive = entry.id != null && entry.id == activeTurnId;
-        final onQuestion = isActive && entry.nextPendingReviewIndex == null;
+        final isActive = entry.id != null && entry.id == widget.activeTurnId;
         items.add(
           AssistantTurnCard(
             key: ValueKey('turn-${entry.id}'),
             entry: entry,
             isActive: isActive,
-            activeSwiperController: isActive ? swiperController : null,
-            onSwipe: (idx, dir) => onSwipe(entry, idx, dir),
-            partialAnswer:
-                onQuestion && isRecording && !isDenying ? partialText : '',
-            isAnsweringQuestion: onQuestion,
+            sessionId: widget.sessionId,
           ),
         );
       } else if (entry.message != null) {
@@ -62,17 +58,22 @@ class DictationHistory extends StatelessWidget {
       }
     }
 
-    if (partialText.isNotEmpty && activeTurnId == null) {
-      items.add(DictationMessage(text: partialText));
+    if (widget.partialText.isNotEmpty) {
+      items.add(DictationMessage(text: widget.partialText));
     }
-    if (isLoading) items.add(const _LoadingIndicator());
+    if (widget.isLoading) items.add(const _LoadingIndicator());
 
-    return ListView.separated(
-      padding: Theming.padding.copyWith(top: 16, bottom: 16),
-      reverse: true,
-      itemCount: items.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) => items[items.length - 1 - index],
+    return Scrollbar(
+      controller: _scrollController,
+      thumbVisibility: true,
+      child: ListView.separated(
+        controller: _scrollController,
+        padding: Theming.padding.copyWith(top: 16, bottom: 16),
+        reverse: true,
+        itemCount: items.length,
+        separatorBuilder: (_, _) => const Divider(height: 1),
+        itemBuilder: (context, index) => items[items.length - 1 - index],
+      ),
     );
   }
 }

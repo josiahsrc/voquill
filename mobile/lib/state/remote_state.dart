@@ -5,6 +5,8 @@ part 'remote_state.draft.dart';
 
 enum DictationPillStatus { idle, recording, processing }
 
+enum DictationContext { none, main, review }
+
 @draft
 class RemoteState with EquatableMixin {
   final Map<String, RemoteSessionState> sessionById;
@@ -21,6 +23,7 @@ class RemoteState with EquatableMixin {
 @draft
 class RemoteSessionState with EquatableMixin {
   final DictationPillStatus status;
+  final DictationContext dictationContext;
   final double audioLevel;
   final String partialText;
   final bool isLoading;
@@ -29,6 +32,7 @@ class RemoteSessionState with EquatableMixin {
 
   const RemoteSessionState({
     this.status = DictationPillStatus.idle,
+    this.dictationContext = DictationContext.none,
     this.audioLevel = 0,
     this.partialText = '',
     this.isLoading = false,
@@ -39,9 +43,22 @@ class RemoteSessionState with EquatableMixin {
   bool get isRecording => status == DictationPillStatus.recording;
   bool get isIdle => status == DictationPillStatus.idle;
 
+  DictationPillStatus statusFor(DictationContext ctx) =>
+      dictationContext == ctx ? status : DictationPillStatus.idle;
+
+  double audioLevelFor(DictationContext ctx) =>
+      dictationContext == ctx ? audioLevel : 0;
+
+  bool isRecordingFor(DictationContext ctx) =>
+      dictationContext == ctx && isRecording;
+
+  String partialTextFor(DictationContext ctx) =>
+      dictationContext == ctx ? partialText : '';
+
   @override
   List<Object?> get props => [
     status,
+    dictationContext,
     audioLevel,
     partialText,
     isLoading,

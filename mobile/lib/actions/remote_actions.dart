@@ -14,6 +14,8 @@ import 'package:record/record.dart';
 
 final _logger = createNamedLogger('remote_actions');
 
+enum DictationTarget { freeForm, activeTurn }
+
 class _RemoteSessionRuntime {
   AudioRecorder? recorder;
   DictationSession? dictation;
@@ -138,11 +140,17 @@ void _ingestHistory(String sessionId, List<SessionHistoryEntry> entries) {
   });
 }
 
-Future<void> startRemoteRecording(String sessionId) async {
+Future<void> startRemoteRecording(
+  String sessionId, {
+  required DictationContext context,
+}) async {
   final state = getAppState();
   if (state.remote.session(sessionId).isRecording) return;
 
-  _mutateSession(sessionId, (s) => s.status = DictationPillStatus.recording);
+  _mutateSession(sessionId, (s) {
+    s.status = DictationPillStatus.recording;
+    s.dictationContext = context;
+  });
 
   final runtime = _runtime(sessionId);
   try {
@@ -186,7 +194,10 @@ Future<void> startRemoteRecording(String sessionId) async {
   }
 }
 
-Future<void> stopRemoteRecording(String sessionId) async {
+Future<void> stopRemoteRecording(
+  String sessionId, {
+  required DictationTarget target,
+}) async {
   final session = getAppState().remote.session(sessionId);
   if (!session.isRecording) return;
 
@@ -204,6 +215,7 @@ Future<void> stopRemoteRecording(String sessionId) async {
 
   _mutateSession(sessionId, (s) {
     s.status = DictationPillStatus.idle;
+    s.dictationContext = DictationContext.none;
     s.audioLevel = 0;
     s.partialText = '';
     s.isDenying = false;
@@ -216,6 +228,7 @@ Future<void> stopRemoteRecording(String sessionId) async {
       dictation: dictation,
       audioSub: audioSub,
       partialSub: partialSub,
+      target: target,
       wasDenying: wasDenying,
     ),
   );
@@ -227,6 +240,7 @@ Future<void> _finalizeInBackground({
   DictationSession? dictation,
   StreamSubscription? audioSub,
   StreamSubscription? partialSub,
+  required DictationTarget target,
   required bool wasDenying,
 }) async {
   try {
@@ -239,7 +253,12 @@ Future<void> _finalizeInBackground({
     final text = result.text.trim();
     if (text.isEmpty) return;
 
-    await _routeDictation(sessionId, text, wasDenying: wasDenying);
+    await _routeDictation(
+      sessionId,
+      text,
+      target: target,
+      wasDenying: wasDenying,
+    );
   } catch (e) {
     _logger.e('Failed to finalize: $e');
   } finally {
@@ -251,8 +270,14 @@ Future<void> _finalizeInBackground({
 Future<void> _routeDictation(
   String sessionId,
   String text, {
+  required DictationTarget target,
   required bool wasDenying,
 }) async {
+  if (target == DictationTarget.freeForm) {
+    await sendPasteText(sessionId, text);
+    return;
+  }
+
   final turn = activeTurnFor(sessionId, getAppState());
 
   if (turn == null) {
@@ -356,6 +381,7 @@ void cancelRemoteRecording(String sessionId) {
   final runtime = _runtimes[sessionId];
   _mutateSession(sessionId, (s) {
     s.status = DictationPillStatus.idle;
+    s.dictationContext = DictationContext.none;
     s.audioLevel = 0;
     s.partialText = '';
     s.isDenying = false;
@@ -378,5 +404,5 @@ Future<void> approveReview(String sessionId, int reviewIndex) async {
 
 Future<void> denyReview(String sessionId, int reviewIndex) async {
   _mutateSession(sessionId, (s) => s.isDenying = true);
-  await startRemoteRecording(sessionId);
+  await startRemoteRecording(sessionId, context: DictationContext.review);
 }

@@ -1,6 +1,5 @@
 import 'package:app/model/desktop_session_model.dart';
 import 'package:app/store/store.dart';
-import 'package:app/utils/remote_utils.dart';
 import 'package:app/widgets/remote/remote_dictation_view.dart';
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -59,10 +58,6 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
 
     final safeIndex = _currentIndex.clamp(0, sessions.length - 1);
     final current = sessions[safeIndex];
-    final currentHasPending = useAppStore().select(
-      context,
-      (s) => activeTurnFor(current.id, s) != null,
-    );
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -74,9 +69,6 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
               child: PageView.builder(
                 controller: _controller,
                 itemCount: sessions.length,
-                physics: currentHasPending
-                    ? const NeverScrollableScrollPhysics()
-                    : null,
                 onPageChanged: (index) =>
                     setState(() => _currentIndex = index),
                 itemBuilder: (context, index) => RemoteDictationView(
