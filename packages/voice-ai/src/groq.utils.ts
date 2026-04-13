@@ -20,6 +20,16 @@ export const GENERATE_TEXT_MODELS = [
 ] as const;
 export type GenerateTextModel = (typeof GENERATE_TEXT_MODELS)[number];
 
+// Models that support `response_format: { type: "json_schema" }`.
+// See https://console.groq.com/docs/structured-outputs
+const JSON_SCHEMA_SUPPORTED_MODELS = new Set<string>([
+  "moonshotai/kimi-k2-instruct-0905",
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-120b",
+  "meta-llama/llama-4-scout-17b-16e-instruct",
+  "meta-llama/llama-4-maverick-17b-128e-instruct",
+]);
+
 export const TRANSCRIPTION_MODELS = ["whisper-large-v3-turbo"] as const;
 export type TranscriptionModel = (typeof TRANSCRIPTION_MODELS)[number];
 
@@ -144,14 +154,16 @@ export const groqGenerateTextResponse = async ({
         model,
         max_completion_tokens: 8192,
         response_format: jsonResponse
-          ? {
-              type: "json_schema",
-              json_schema: {
-                name: jsonResponse.name,
-                description: jsonResponse.description,
-                schema: jsonResponse.schema,
-              },
-            }
+          ? JSON_SCHEMA_SUPPORTED_MODELS.has(model)
+            ? {
+                type: "json_schema",
+                json_schema: {
+                  name: jsonResponse.name,
+                  description: jsonResponse.description,
+                  schema: jsonResponse.schema,
+                },
+              }
+            : { type: "json_object" }
           : undefined,
       });
 
