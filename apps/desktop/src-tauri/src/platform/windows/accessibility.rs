@@ -198,36 +198,20 @@ fn try_is_text_input_focused() -> Result<bool, windows::core::Error> {
 }
 
 fn is_non_text_control(control_type: i32) -> bool {
+    // Keep this list narrow. Electron/custom/terminal surfaces (Terminus etc.)
+    // often report focus as Window/Pane/List/ListItem/Document/Custom even
+    // when a text input is active, so anything ambiguous is treated as
+    // potentially editable and paste falls through to a real keystroke.
     [
-        UIA_AppBarControlTypeId.0,
         UIA_ButtonControlTypeId.0,
-        UIA_CalendarControlTypeId.0,
         UIA_CheckBoxControlTypeId.0,
-        UIA_DataGridControlTypeId.0,
-        UIA_HeaderControlTypeId.0,
-        UIA_HeaderItemControlTypeId.0,
-        UIA_HyperlinkControlTypeId.0,
-        UIA_ImageControlTypeId.0,
-        UIA_ListControlTypeId.0,
-        UIA_ListItemControlTypeId.0,
-        UIA_MenuControlTypeId.0,
-        UIA_MenuBarControlTypeId.0,
         UIA_MenuItemControlTypeId.0,
         UIA_ProgressBarControlTypeId.0,
         UIA_RadioButtonControlTypeId.0,
-        UIA_SemanticZoomControlTypeId.0,
         UIA_SliderControlTypeId.0,
         UIA_SplitButtonControlTypeId.0,
-        UIA_StatusBarControlTypeId.0,
-        UIA_TabControlTypeId.0,
-        UIA_TabItemControlTypeId.0,
-        UIA_TableControlTypeId.0,
         UIA_ThumbControlTypeId.0,
         UIA_TitleBarControlTypeId.0,
-        UIA_ToolBarControlTypeId.0,
-        UIA_TreeControlTypeId.0,
-        UIA_TreeItemControlTypeId.0,
-        UIA_WindowControlTypeId.0,
     ]
     .contains(&control_type)
 }
@@ -1870,6 +1854,19 @@ pub fn get_selected_text() -> Option<String> {
 
 pub fn check_focused_paste_target() -> crate::commands::PasteTargetState {
     use crate::commands::PasteTargetState;
+
+    // Shell surfaces (desktop wallpaper / icons) never accept pasted text:
+    // Progman hosts the desktop, WorkerW is its sibling when a wallpaper
+    // slideshow or Web-content desktop is active. UIA reports the focused
+    // element as a ListItem here, which we otherwise treat as potentially
+    // editable.
+    let fg = super::input::get_foreground_window_target_info();
+    if let Some(cls) = fg.class_name.as_deref() {
+        if cls == "Progman" || cls == "WorkerW" {
+            return PasteTargetState::NotEditable;
+        }
+    }
+
     match try_is_text_input_focused() {
         Ok(true) => PasteTargetState::Editable,
         Ok(false) => PasteTargetState::NotEditable,
