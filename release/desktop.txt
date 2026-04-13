@@ -1,0 +1,2 @@
+- Fix issue with some Groq models not working
+- Fix issue with windows not pasting in Terminus and Warp
