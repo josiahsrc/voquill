@@ -1,5 +1,6 @@
 import 'package:app/model/desktop_session_model.dart';
 import 'package:app/store/store.dart';
+import 'package:app/utils/remote_utils.dart';
 import 'package:app/widgets/remote/remote_dictation_view.dart';
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -17,7 +18,6 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
   late PageController _controller;
   int _currentIndex = 0;
   bool _initialized = false;
-  final Map<String, bool> _pendingBySession = {};
 
   @override
   void dispose() {
@@ -58,13 +58,15 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
     }
 
     final safeIndex = _currentIndex.clamp(0, sessions.length - 1);
-    final currentName = sessions[safeIndex].name;
-    final currentHasPending =
-        _pendingBySession[sessions[safeIndex].id] ?? false;
+    final current = sessions[safeIndex];
+    final currentHasPending = useAppStore().select(
+      context,
+      (s) => sessionHasUnresolvedReviews(current.id, s),
+    );
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(currentName)),
+      appBar: AppBar(title: Text(current.name)),
       body: SafeArea(
         child: Column(
           children: [
@@ -80,12 +82,6 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
                 itemBuilder: (context, index) => RemoteDictationView(
                   key: ValueKey(sessions[index].id),
                   sessionId: sessions[index].id,
-                  onPendingReviewsChanged: (hasPending) {
-                    if (!mounted) return;
-                    final id = sessions[index].id;
-                    if ((_pendingBySession[id] ?? false) == hasPending) return;
-                    setState(() => _pendingBySession[id] = hasPending);
-                  },
                 ),
               ),
             ),

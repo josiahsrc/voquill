@@ -1,0 +1,60 @@
+import 'package:draft/draft.dart';
+import 'package:equatable/equatable.dart';
+
+part 'remote_state.draft.dart';
+
+enum DictationPillStatus { idle, recording, processing }
+
+@draft
+class RemoteState with EquatableMixin {
+  final Map<String, RemoteSessionState> sessionById;
+
+  const RemoteState({this.sessionById = const {}});
+
+  RemoteSessionState session(String id) =>
+      sessionById[id] ?? const RemoteSessionState();
+
+  @override
+  List<Object?> get props => [sessionById];
+}
+
+@draft
+class RemoteSessionState with EquatableMixin {
+  final DictationPillStatus status;
+  final double audioLevel;
+  final String partialText;
+  final bool isLoading;
+  final String? pendingDenialId;
+  final bool batching;
+  final List<String> batchReviewIds;
+  final List<String> bufferedDictations;
+  final List<String> historyIds;
+
+  const RemoteSessionState({
+    this.status = DictationPillStatus.idle,
+    this.audioLevel = 0,
+    this.partialText = '',
+    this.isLoading = false,
+    this.pendingDenialId,
+    this.batching = false,
+    this.batchReviewIds = const [],
+    this.bufferedDictations = const [],
+    this.historyIds = const [],
+  });
+
+  bool get isRecording => status == DictationPillStatus.recording;
+  bool get isIdle => status == DictationPillStatus.idle;
+
+  @override
+  List<Object?> get props => [
+    status,
+    audioLevel,
+    partialText,
+    isLoading,
+    pendingDenialId,
+    batching,
+    batchReviewIds,
+    bufferedDictations,
+    historyIds,
+  ];
+}

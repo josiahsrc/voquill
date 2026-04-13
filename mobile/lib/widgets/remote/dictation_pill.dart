@@ -1,8 +1,7 @@
+import 'package:app/state/remote_state.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/widgets/common/audio_waveform.dart';
 import 'package:flutter/material.dart';
-
-enum DictationPillStatus { idle, recording, processing }
 
 class DictationPill extends StatelessWidget {
   const DictationPill({

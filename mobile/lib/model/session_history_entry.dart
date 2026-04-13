@@ -70,6 +70,9 @@ class SessionHistoryEntry with EquatableMixin {
 
   DateTime get sentAt => DateTime.fromMillisecondsSinceEpoch(time);
 
+  bool get isPendingReview =>
+      type == SessionHistoryEntryType.review && status == null && id != null;
+
   @override
   List<Object?> get props => [id, type, time, message, status, response];
 }
