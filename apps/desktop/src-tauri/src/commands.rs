@@ -59,6 +59,13 @@ pub enum PasteTargetState {
     Unknown,
 }
 
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PasteOutcome {
+    Pasted,
+    CopiedToClipboard,
+}
+
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppTargetUpsertArgs {
@@ -1277,7 +1284,47 @@ pub fn copy_to_clipboard(text: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> {
+pub async fn paste(text: String, keybind: Option<String>) -> Result<PasteOutcome, String> {
+    // Probe the focused target first. If it clearly can't accept text, write
+    // the transcript to the clipboard and skip the paste keystroke entirely —
+    // that avoids the race where paste's delayed clipboard-restore overwrites
+    // the transcript we just put there. A short timeout keeps paste latency
+    // bounded if the accessibility probe stalls.
+    let target = tokio::time::timeout(
+        std::time::Duration::from_millis(500),
+        tauri::async_runtime::spawn_blocking(
+            crate::platform::accessibility::check_focused_paste_target,
+        ),
+    )
+    .await
+    .ok()
+    .and_then(|r| r.ok())
+    .unwrap_or(PasteTargetState::Unknown);
+
+    if matches!(target, PasteTargetState::NotEditable) {
+        let copy_result = tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+            let mut clipboard = arboard::Clipboard::new()
+                .map_err(|e| format!("clipboard unavailable: {e}"))?;
+            clipboard
+                .set_text(text)
+                .map_err(|e| format!("failed to set clipboard: {e}"))
+        })
+        .await;
+
+        return match copy_result {
+            Ok(Ok(())) => Ok(PasteOutcome::CopiedToClipboard),
+            Ok(Err(err)) => {
+                log::error!("Copy-to-clipboard fallback failed: {err}");
+                Err(err)
+            }
+            Err(err) => {
+                let message = format!("Paste task join error: {err}");
+                log::error!("{message}");
+                Err(message)
+            }
+        };
+    }
+
     let join_result = tauri::async_runtime::spawn_blocking(move || {
         platform_paste_text(&text, keybind.as_deref())
     })
@@ -1289,7 +1336,7 @@ pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> 
                 log::error!("Paste failed: {err}");
             }
 
-            result
+            result.map(|()| PasteOutcome::Pasted)
         }
         Err(err) => {
             let message = format!("Paste task join error: {err}");

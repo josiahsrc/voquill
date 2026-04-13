@@ -10,7 +10,7 @@ import { sendPillFlashMessage } from "./overlay.utils";
 import { sanitizeIndentation } from "./string.utils";
 import { getMyUserPreferences } from "./user.utils";
 
-type PasteTargetState = "editable" | "not_editable" | "unknown";
+type PasteOutcome = "pasted" | "copied_to_clipboard";
 
 export const routeTranscriptOutput = async (
   args: RouteTranscriptOutputArgs,
@@ -62,43 +62,18 @@ export const insertLocalTranscriptOutput = async (
 ): Promise<void> => {
   const sanitized = sanitizeIndentation(text);
 
-  await invoke<void>("paste", {
+  const outcome = await invoke<PasteOutcome>("paste", {
     text: sanitized,
     keybind,
   });
 
-  checkFocusedPasteTarget().then((target) => {
-    if (target === "not_editable") {
-      getLogger().info(
-        "Focused element was not editable, copying transcription to clipboard",
-      );
-      copyToClipboardFallback(sanitized);
-    }
-  });
-};
-
-const checkFocusedPasteTarget = async (): Promise<PasteTargetState> => {
-  try {
-    return await invoke<PasteTargetState>("check_focused_paste_target");
-  } catch (error) {
-    getLogger().verbose(`check_focused_paste_target failed: ${error}`);
-    return "unknown";
-  }
-};
-
-const copyToClipboardFallback = async (text: string): Promise<void> => {
-  try {
-    await invoke<void>("copy_to_clipboard", { text });
+  if (outcome === "copied_to_clipboard") {
+    getLogger().info(
+      "Focused element was not editable, transcription copied to clipboard",
+    );
     sendPillFlashMessage(
       getIntl().formatMessage({
         defaultMessage: "Transcript copied to clipboard",
-      }),
-    );
-  } catch (error) {
-    getLogger().error(`Clipboard fallback failed: ${error}`);
-    sendPillFlashMessage(
-      getIntl().formatMessage({
-        defaultMessage: "Couldn't paste transcription",
       }),
     );
   }
