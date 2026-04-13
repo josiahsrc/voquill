@@ -62,6 +62,11 @@ export const insertLocalTranscriptOutput = async (
 ): Promise<void> => {
   const sanitized = sanitizeIndentation(text);
 
+  await invoke<void>("paste", {
+    text: sanitized,
+    keybind,
+  });
+
   checkFocusedPasteTarget().then((target) => {
     if (target === "not_editable") {
       getLogger().info(
@@ -69,11 +74,6 @@ export const insertLocalTranscriptOutput = async (
       );
       copyToClipboardFallback(sanitized);
     }
-  });
-
-  await invoke<void>("paste", {
-    text: sanitized,
-    keybind,
   });
 };
 
