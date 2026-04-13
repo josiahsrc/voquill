@@ -88,6 +88,8 @@ extern "C" {
     ) -> AXError;
     fn AXValueGetValue(value: CFTypeRef, value_type: i32, out: *mut CFRange) -> bool;
     fn AXValueCreate(value_type: i32, value: *const CFRange) -> CFTypeRef;
+    fn AXUIElementGetPid(element: AXUIElementRef, pid: *mut i32) -> AXError;
+    fn AXUIElementCreateApplication(pid: i32) -> AXUIElementRef;
 }
 
 /// Get text field information (cursor position, selection length, text content) without screen context.
@@ -881,8 +883,10 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {
 
 pub fn check_focused_paste_target() -> crate::commands::PasteTargetState {
     use crate::commands::PasteTargetState;
-    catch_unwind(AssertUnwindSafe(|| unsafe { check_focused_paste_target_impl() }))
-        .unwrap_or(PasteTargetState::Unknown)
+    catch_unwind(AssertUnwindSafe(|| unsafe {
+        check_focused_paste_target_impl()
+    }))
+    .unwrap_or(PasteTargetState::Unknown)
 }
 
 unsafe fn check_focused_paste_target_impl() -> crate::commands::PasteTargetState {
@@ -915,12 +919,7 @@ unsafe fn check_focused_paste_target_impl() -> crate::commands::PasteTargetState
 
     let role = get_string_attribute(focused, ax_role.as_concrete_TypeRef());
 
-    let editable_roles = [
-        "AXTextField",
-        "AXTextArea",
-        "AXComboBox",
-        "AXSearchField",
-    ];
+    let editable_roles = ["AXTextField", "AXTextArea", "AXComboBox", "AXSearchField"];
     if let Some(ref r) = role {
         if editable_roles.iter().any(|er| er == r) {
             CFRelease(focused);
@@ -945,11 +944,8 @@ unsafe fn check_focused_paste_target_impl() -> crate::commands::PasteTargetState
     }
 
     settable = false;
-    let value_settable_result = AXUIElementIsAttributeSettable(
-        focused,
-        ax_value.as_concrete_TypeRef(),
-        &mut settable,
-    );
+    let value_settable_result =
+        AXUIElementIsAttributeSettable(focused, ax_value.as_concrete_TypeRef(), &mut settable);
     CFRelease(focused);
 
     if value_settable_result == AX_ERROR_SUCCESS && settable {
@@ -982,3 +978,406 @@ pub fn get_selected_text() -> Option<String> {
     selected.filter(|s| !s.is_empty())
 }
 
+pub fn gather_accessibility_dump() -> crate::commands::AccessibilityDumpResult {
+    log::warn!("gather_accessibility_dump not yet implemented for macOS (AX API)");
+    crate::commands::AccessibilityDumpResult {
+        dump: None,
+        window_title: None,
+        process_name: None,
+        element_count: 0,
+    }
+}
+
+pub fn get_focused_field_info() -> Option<crate::commands::AccessibilityFieldInfo> {
+    catch_unwind(AssertUnwindSafe(|| unsafe {
+        get_focused_field_info_impl()
+    }))
+    .unwrap_or_else(|_| {
+        log::error!("get_focused_field_info panicked, returning None");
+        None
+    })
+}
+
+unsafe fn get_focused_field_info_impl() -> Option<crate::commands::AccessibilityFieldInfo> {
+    let ax_focused_ui_element = CFString::new("AXFocusedUIElement");
+    let ax_role = CFString::new("AXRole");
+    let ax_title = CFString::new("AXTitle");
+    let ax_description = CFString::new("AXDescription");
+    let ax_value = CFString::new("AXValue");
+    let ax_placeholder = CFString::new("AXPlaceholderValue");
+    let ax_parent = CFString::new("AXParent");
+    let ax_children = CFString::new("AXChildren");
+
+    let system_wide = AXUIElementCreateSystemWide();
+    if system_wide.is_null() {
+        return None;
+    }
+
+    let mut focused_element: CFTypeRef = ptr::null();
+    let result = AXUIElementCopyAttributeValue(
+        system_wide,
+        ax_focused_ui_element.as_concrete_TypeRef(),
+        &mut focused_element,
+    );
+    CFRelease(system_wide);
+
+    if result != AX_ERROR_SUCCESS || focused_element.is_null() {
+        return None;
+    }
+
+    let role = get_string_attribute(focused_element, ax_role.as_concrete_TypeRef());
+    let title = get_string_attribute(focused_element, ax_title.as_concrete_TypeRef());
+    let description = get_string_attribute(focused_element, ax_description.as_concrete_TypeRef());
+    let value = get_string_attribute(focused_element, ax_value.as_concrete_TypeRef());
+    let placeholder = get_string_attribute(focused_element, ax_placeholder.as_concrete_TypeRef());
+
+    let mut is_settable = false;
+    AXUIElementIsAttributeSettable(
+        focused_element,
+        ax_value.as_concrete_TypeRef(),
+        &mut is_settable,
+    );
+
+    let mut app_pid: Option<i32> = None;
+    let mut pid: i32 = 0;
+    if AXUIElementGetPid(focused_element as AXUIElementRef, &mut pid) == AX_ERROR_SUCCESS {
+        app_pid = Some(pid);
+    }
+
+    let mut element_index_path: Vec<usize> = Vec::new();
+    let mut app_name: Option<String> = None;
+    let mut window_title: Option<String> = None;
+
+    let mut current = focused_element;
+    let mut depth = 0;
+
+    while depth < MAX_LEVELS_UP {
+        let mut parent: CFTypeRef = ptr::null();
+        let parent_result =
+            AXUIElementCopyAttributeValue(current, ax_parent.as_concrete_TypeRef(), &mut parent);
+
+        if parent_result != AX_ERROR_SUCCESS || parent.is_null() {
+            break;
+        }
+
+        let mut children_ref: CFTypeRef = ptr::null();
+        let children_result = AXUIElementCopyAttributeValue(
+            parent,
+            ax_children.as_concrete_TypeRef(),
+            &mut children_ref,
+        );
+        if children_result == AX_ERROR_SUCCESS && !children_ref.is_null() {
+            let arr = children_ref as core_foundation::array::CFArrayRef;
+            let count = CFArrayGetCount(arr);
+            let mut found = false;
+            for i in 0..count {
+                let child = CFArrayGetValueAtIndex(arr, i);
+                let mut child_pid: i32 = 0;
+                let child_pid_ok =
+                    AXUIElementGetPid(child as AXUIElementRef, &mut child_pid) == AX_ERROR_SUCCESS;
+                let mut current_pid: i32 = 0;
+                let current_pid_ok = AXUIElementGetPid(current as AXUIElementRef, &mut current_pid)
+                    == AX_ERROR_SUCCESS;
+                if child_pid_ok
+                    && current_pid_ok
+                    && child_pid == current_pid
+                    && core_foundation::base::CFEqual(child, current) != 0
+                {
+                    element_index_path.push(i as usize);
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                for i in 0..count {
+                    let child = CFArrayGetValueAtIndex(arr, i);
+                    if child == current {
+                        element_index_path.push(i as usize);
+                        break;
+                    }
+                }
+            }
+            CFRelease(children_ref);
+        }
+
+        let parent_role = get_string_attribute(parent, ax_role.as_concrete_TypeRef());
+        if let Some(ref r) = parent_role {
+            if r == "AXWindow" {
+                window_title = get_string_attribute(parent, ax_title.as_concrete_TypeRef());
+            }
+            if r == "AXApplication" {
+                app_name = get_string_attribute(parent, ax_title.as_concrete_TypeRef());
+                if current != focused_element {
+                    CFRelease(current);
+                }
+                current = focused_element;
+                CFRelease(parent);
+                break;
+            }
+        }
+
+        if current != focused_element {
+            CFRelease(current);
+        }
+        current = parent;
+        depth += 1;
+    }
+
+    if current != focused_element {
+        CFRelease(current);
+    }
+
+    element_index_path.reverse();
+
+    CFRelease(focused_element);
+
+    Some(crate::commands::AccessibilityFieldInfo {
+        role,
+        title,
+        description,
+        value,
+        placeholder,
+        app_pid,
+        app_name,
+        window_title,
+        is_settable,
+        element_index_path,
+        fingerprint_chain: vec![],
+        can_paste: false,
+        backend: None,
+    })
+}
+
+pub fn focus_accessibility_field(
+    app_pid: i32,
+    element_index_path: &[usize],
+    _fingerprint_chain: Option<&[crate::commands::ElementFingerprint]>,
+    _backend: Option<&str>,
+) -> Result<(), String> {
+    catch_unwind(AssertUnwindSafe(|| unsafe {
+        focus_accessibility_field_impl(app_pid, element_index_path)
+    }))
+    .unwrap_or_else(|_| {
+        log::error!("focus_accessibility_field panicked");
+        Err("focus_accessibility_field panicked".to_string())
+    })
+}
+
+unsafe fn focus_accessibility_field_impl(
+    app_pid: i32,
+    element_index_path: &[usize],
+) -> Result<(), String> {
+    let ax_focused = CFString::new("AXFocused");
+    let ax_value = CFString::new("AXValue");
+    let ax_selected_text_range = CFString::new("AXSelectedTextRange");
+
+    let app_element = AXUIElementCreateApplication(app_pid);
+    if app_element.is_null() {
+        return Err("Failed to create app element".to_string());
+    }
+
+    let raise_attr = CFString::new("AXFrontmost");
+    let cf_true = core_foundation::boolean::CFBoolean::true_value();
+    AXUIElementSetAttributeValue(
+        app_element,
+        raise_attr.as_concrete_TypeRef(),
+        cf_true.as_CFTypeRef(),
+    );
+    CFRelease(app_element);
+
+    let element = resolve_element_by_path(app_pid, element_index_path)
+        .ok_or_else(|| "Could not resolve element by path".to_string())?;
+
+    let cf_true = core_foundation::boolean::CFBoolean::true_value();
+    let focus_result = AXUIElementSetAttributeValue(
+        element,
+        ax_focused.as_concrete_TypeRef(),
+        cf_true.as_CFTypeRef(),
+    );
+    if focus_result != AX_ERROR_SUCCESS {
+        CFRelease(element);
+        return Err(format!(
+            "Failed to focus element: AX error {}",
+            focus_result
+        ));
+    }
+
+    let text_len = get_string_attribute(element, ax_value.as_concrete_TypeRef())
+        .map(|s| s.len())
+        .unwrap_or(0);
+
+    if text_len > 0 {
+        let position = (std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .subsec_nanos() as usize)
+            % (text_len + 1);
+
+        let range = CFRange {
+            location: position as isize,
+            length: 0,
+        };
+        let range_value = AXValueCreate(AX_VALUE_TYPE_CF_RANGE, &range);
+        if !range_value.is_null() {
+            AXUIElementSetAttributeValue(
+                element,
+                ax_selected_text_range.as_concrete_TypeRef(),
+                range_value,
+            );
+            CFRelease(range_value);
+        }
+    }
+
+    CFRelease(element);
+    Ok(())
+}
+
+pub fn write_accessibility_fields(
+    entries: Vec<crate::commands::AccessibilityWriteEntry>,
+) -> crate::commands::AccessibilityWriteResult {
+    catch_unwind(AssertUnwindSafe(|| unsafe {
+        write_accessibility_fields_impl(entries)
+    }))
+    .unwrap_or_else(|_| {
+        log::error!("write_accessibility_fields panicked");
+        crate::commands::AccessibilityWriteResult {
+            succeeded: 0,
+            failed: 0,
+            errors: vec!["write_accessibility_fields panicked".to_string()],
+        }
+    })
+}
+
+unsafe fn resolve_element_by_path(app_pid: i32, index_path: &[usize]) -> Option<CFTypeRef> {
+    let app_element = AXUIElementCreateApplication(app_pid);
+    if app_element.is_null() {
+        return None;
+    }
+
+    let ax_children = CFString::new("AXChildren");
+    let mut current = app_element;
+
+    for &index in index_path {
+        let mut children_ref: CFTypeRef = ptr::null();
+        let result = AXUIElementCopyAttributeValue(
+            current,
+            ax_children.as_concrete_TypeRef(),
+            &mut children_ref,
+        );
+        if result != AX_ERROR_SUCCESS || children_ref.is_null() {
+            if current != app_element {
+                CFRelease(current);
+            }
+            CFRelease(app_element);
+            return None;
+        }
+
+        let arr = children_ref as core_foundation::array::CFArrayRef;
+        let count = CFArrayGetCount(arr) as usize;
+        if index >= count {
+            CFRelease(children_ref);
+            if current != app_element {
+                CFRelease(current);
+            }
+            CFRelease(app_element);
+            return None;
+        }
+
+        let child = CFArrayGetValueAtIndex(arr, index as isize);
+        if child.is_null() {
+            CFRelease(children_ref);
+            if current != app_element {
+                CFRelease(current);
+            }
+            CFRelease(app_element);
+            return None;
+        }
+
+        core_foundation::base::CFRetain(child);
+        CFRelease(children_ref);
+
+        if current != app_element {
+            CFRelease(current);
+        }
+        current = child;
+    }
+
+    if current == app_element {
+        CFRelease(app_element);
+        return None;
+    }
+
+    CFRelease(app_element);
+    Some(current)
+}
+
+unsafe fn write_accessibility_fields_impl(
+    entries: Vec<crate::commands::AccessibilityWriteEntry>,
+) -> crate::commands::AccessibilityWriteResult {
+    let ax_value = CFString::new("AXValue");
+    let mut succeeded = 0usize;
+    let mut failed = 0usize;
+    let mut errors: Vec<String> = Vec::new();
+
+    for entry in &entries {
+        let element = resolve_element_by_path(entry.app_pid, &entry.element_index_path);
+        let Some(element) = element else {
+            failed += 1;
+            errors.push(format!(
+                "Could not resolve element for PID {} path {:?}",
+                entry.app_pid, entry.element_index_path
+            ));
+            continue;
+        };
+
+        let mut settable = false;
+        AXUIElementIsAttributeSettable(element, ax_value.as_concrete_TypeRef(), &mut settable);
+
+        if !settable {
+            CFRelease(element);
+            failed += 1;
+            errors.push(format!(
+                "AXValue not settable for PID {} path {:?}",
+                entry.app_pid, entry.element_index_path
+            ));
+            continue;
+        }
+
+        let cf_text = CFString::new(&entry.value);
+        let set_result = AXUIElementSetAttributeValue(
+            element,
+            ax_value.as_concrete_TypeRef(),
+            cf_text.as_CFTypeRef(),
+        );
+
+        CFRelease(element);
+
+        if set_result != AX_ERROR_SUCCESS {
+            failed += 1;
+            errors.push(format!(
+                "AXUIElementSetAttributeValue failed with {} for PID {} path {:?}",
+                set_result, entry.app_pid, entry.element_index_path
+            ));
+        } else {
+            succeeded += 1;
+        }
+    }
+
+    crate::commands::AccessibilityWriteResult {
+        succeeded,
+        failed,
+        errors,
+    }
+}
+
+pub fn read_field_values(
+    fields: Vec<crate::commands::FieldValueRequest>,
+) -> Vec<crate::commands::FieldValueResult> {
+    fields
+        .iter()
+        .map(|_| crate::commands::FieldValueResult {
+            value: None,
+            error: Some("Not implemented for macOS".to_string()),
+        })
+        .collect()
+}

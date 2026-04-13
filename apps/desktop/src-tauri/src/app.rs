@@ -83,14 +83,19 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 WindowEvent::CloseRequested { api, .. } => {
                     api.prevent_close();
                     if window.label() == "main" {
-                        let _ = window.app_handle().save_window_state(StateFlags::SIZE | StateFlags::POSITION);
+                        let _ = window
+                            .app_handle()
+                            .save_window_state(StateFlags::SIZE | StateFlags::POSITION);
                         let _ = window.hide();
                         // On Windows, force the WebView to stay active after hiding the window
                         // so that background JS (global hotkey detection via keys_held events)
                         // continues running while the app is minimized to the system tray.
                         #[cfg(target_os = "windows")]
                         {
-                            crate::platform::window::keep_webview_active(window.app_handle(), "main");
+                            crate::platform::window::keep_webview_active(
+                                window.app_handle(),
+                                "main",
+                            );
                             crate::platform::window::set_webview_keepalive(true);
                         }
                         #[cfg(target_os = "macos")]
@@ -278,6 +283,11 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_text_field_info,
             crate::commands::get_screen_context,
             crate::commands::get_selected_text,
+            crate::commands::gather_accessibility_dump,
+            crate::commands::get_focused_field_info,
+            crate::commands::write_accessibility_fields,
+            crate::commands::focus_accessibility_field,
+            crate::commands::read_accessibility_field_values,
             crate::commands::check_focused_paste_target,
             crate::commands::read_enterprise_target,
             crate::commands::run_terminal_command,

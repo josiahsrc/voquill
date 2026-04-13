@@ -3,12 +3,14 @@ import 'package:app/model/common_model.dart';
 import 'package:app/model/desktop_session_model.dart';
 import 'package:app/model/config_model.dart';
 import 'package:app/model/member_model.dart';
+import 'package:app/model/session_history_entry.dart';
 import 'package:app/model/term_model.dart';
 import 'package:app/model/tone_model.dart';
 import 'package:app/model/transcription_model.dart';
 import 'package:app/model/user_model.dart';
 import 'package:app/state/dictionary_state.dart';
 import 'package:app/state/onboarding_state.dart';
+import 'package:app/state/remote_state.dart';
 import 'package:app/state/snackbar_state.dart';
 import 'package:app/state/styles_state.dart';
 import 'package:draft/draft.dart';
@@ -31,11 +33,13 @@ class AppState with EquatableMixin {
   final Map<String, Tone> toneById;
   final Map<String, Transcription> transcriptionById;
   final Map<String, DesktopSession> desktopSessionById;
+  final Map<String, SessionHistoryEntry> sessionHistoryEntryById;
 
   final SnackbarState snackbar;
   final OnboardingState onboarding;
   final DictionaryState dictionary;
   final StylesState styles;
+  final RemoteState remote;
 
   final List<String> dictationLanguages;
   final String? activeDictationLanguage;
@@ -54,11 +58,13 @@ class AppState with EquatableMixin {
     this.toneById = const {},
     this.transcriptionById = const {},
     this.desktopSessionById = const {},
+    this.sessionHistoryEntryById = const {},
     this.sortedTranscriptionIds = const [],
     this.snackbar = const SnackbarState(),
     this.onboarding = const OnboardingState(),
     this.dictionary = const DictionaryState(),
     this.styles = const StylesState(),
+    this.remote = const RemoteState(),
     this.dictationLanguages = const ['en'],
     this.activeDictationLanguage,
     this.hasMicrophonePermission = false,
@@ -81,11 +87,13 @@ class AppState with EquatableMixin {
     toneById,
     transcriptionById,
     desktopSessionById,
+    sessionHistoryEntryById,
     sortedTranscriptionIds,
     snackbar,
     onboarding,
     dictionary,
     styles,
+    remote,
     dictationLanguages,
     activeDictationLanguage,
     hasMicrophonePermission,

@@ -1,0 +1,904 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { t } from "../../i18n/translations";
+import { defaultLocale, type Locale } from "../../types/locale";
+import { getLocaleStaticPaths, localePath } from "../../utils/paths";
+export const getStaticPaths = getLocaleStaticPaths;
+
+const locale = (Astro.params.locale ?? defaultLocale) as Locale;
+const tr = t(locale);
+
+const clientMessages = {
+  showPassword: tr.authorizeShowPassword,
+  hidePassword: tr.authorizeHidePassword,
+  cliOnly: tr.authorizeErrCliOnly,
+  signingIn: tr.authorizeSigningIn,
+  creatingAccount: tr.authorizeCreatingAccount,
+  sending: tr.authorizeSending,
+  enterValidEmail: tr.authorizeEnterValidEmail,
+  passwordMinLength: tr.authorizePasswordMinLength,
+  passwordsDoNotMatch: tr.authorizePasswordsDoNotMatch,
+  errInvalidCredential: tr.authorizeErrInvalidCredential,
+  errEmailInUse: tr.authorizeErrEmailInUse,
+  errWeakPassword: tr.authorizeErrWeakPassword,
+  errInvalidEmail: tr.authorizeErrInvalidEmail,
+  errCancelled: tr.authorizeErrCancelled,
+  errTooManyRequests: tr.authorizeErrTooManyRequests,
+  errNetwork: tr.authorizeErrNetwork,
+  titleSignIn: tr.authorizeTitleSignIn,
+  titleSignUp: tr.authorizeTitleSignUp,
+  titleResetPassword: tr.authorizeTitleResetPassword,
+  titleEmailSent: tr.authorizeTitleEmailSent,
+};
+---
+
+<Layout
+  title={tr.authorizePageTitle}
+  description={tr.authorizePageDescription}
+  lang={locale}
+  robots="noindex, nofollow"
+>
+  <main class="authorize-main">
+    <div class="authorize-wrap">
+      <a href={localePath(locale, "/")} class="brand" aria-label="Voquill">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">Voquill</span>
+      </a>
+      <section class="authorize-card">
+        <p id="authorize-env" class="authorize-env" hidden></p>
+        <h2 id="authorize-title" class="authorize-title">
+          {tr.authorizeTitleSignIn}
+        </h2>
+
+        <section data-mode="signIn" class="mode-section">
+          <button
+            type="button"
+            class="provider-button"
+            data-action="google-signin"
+          >
+            <svg class="provider-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 10.2v3.93h5.52c-.24 1.46-1.7 4.28-5.52 4.28a6.2 6.2 0 0 1 0-12.4c1.93 0 3.23.82 3.97 1.53l2.7-2.6A9.88 9.88 0 0 0 12 2a10 10 0 1 0 0 20c5.78 0 9.6-4.05 9.6-9.77 0-.66-.07-1.17-.16-1.68H12Z"
+              ></path>
+            </svg>
+            <span>{tr.authorizeContinueWithGoogle}</span>
+          </button>
+
+          <div class="divider"><span>{tr.authorizeOr}</span></div>
+
+          <label class="field">
+            <span class="field-label">{tr.authorizeEmail}</span>
+            <input type="email" autocomplete="email" data-input="si-email" />
+          </label>
+
+          <label class="field">
+            <span class="field-label">{tr.authorizePassword}</span>
+            <span class="password-wrap">
+              <input
+                type="password"
+                autocomplete="current-password"
+                data-input="si-password"
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                data-action="toggle-si-password"
+                aria-label={tr.authorizeShowPassword}
+              >
+                <span aria-hidden="true">{tr.authorizeShowPassword}</span>
+              </button>
+            </span>
+          </label>
+
+          <button
+            type="button"
+            class="btn-primary submit-button"
+            data-action="signin-submit"
+            disabled
+          >
+            {tr.authorizeLogIn}
+          </button>
+
+          <div class="inline-links">
+            <button type="button" class="link-button" data-action="to-reset"
+              >{tr.authorizeForgot}</button
+            >
+            <button type="button" class="link-button" data-action="to-signup"
+              >{tr.authorizeCreateAccount}</button
+            >
+          </div>
+        </section>
+
+        <section data-mode="signUp" class="mode-section" hidden>
+          <button
+            type="button"
+            class="provider-button"
+            data-action="google-signin"
+          >
+            <svg class="provider-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 10.2v3.93h5.52c-.24 1.46-1.7 4.28-5.52 4.28a6.2 6.2 0 0 1 0-12.4c1.93 0 3.23.82 3.97 1.53l2.7-2.6A9.88 9.88 0 0 0 12 2a10 10 0 1 0 0 20c5.78 0 9.6-4.05 9.6-9.77 0-.66-.07-1.17-.16-1.68H12Z"
+              ></path>
+            </svg>
+            <span>{tr.authorizeContinueWithGoogle}</span>
+          </button>
+
+          <div class="divider"><span>{tr.authorizeOr}</span></div>
+
+          <label class="field">
+            <span class="field-label">{tr.authorizeEmail}</span>
+            <input type="email" autocomplete="email" data-input="su-email" />
+            <span class="field-error" data-error="su-email" hidden></span>
+          </label>
+
+          <label class="field">
+            <span class="field-label">{tr.authorizePassword}</span>
+            <span class="password-wrap">
+              <input
+                type="password"
+                autocomplete="new-password"
+                data-input="su-password"
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                data-action="toggle-su-password"
+                aria-label={tr.authorizeShowPassword}
+              >
+                <span aria-hidden="true">{tr.authorizeShowPassword}</span>
+              </button>
+            </span>
+            <span class="field-error" data-error="su-password" hidden></span>
+          </label>
+
+          <label class="field">
+            <span class="field-label">{tr.authorizeConfirmPassword}</span>
+            <span class="password-wrap">
+              <input
+                type="password"
+                autocomplete="new-password"
+                data-input="su-confirm"
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                data-action="toggle-su-confirm"
+                aria-label={tr.authorizeShowPassword}
+              >
+                <span aria-hidden="true">{tr.authorizeShowPassword}</span>
+              </button>
+            </span>
+            <span class="field-error" data-error="su-confirm" hidden></span>
+          </label>
+
+          <button
+            type="button"
+            class="btn-primary submit-button"
+            data-action="signup-submit"
+            disabled
+          >
+            {tr.authorizeCreateAccount}
+          </button>
+
+          <div class="inline-links centered">
+            <button type="button" class="link-button" data-action="to-signin">
+              {tr.authorizeHaveAccount}
+            </button>
+          </div>
+        </section>
+
+        <section data-mode="resetPassword" class="mode-section" hidden>
+          <p class="mode-description">{tr.authorizeResetDescription}</p>
+          <label class="field">
+            <span class="field-label">{tr.authorizeEmail}</span>
+            <input type="email" autocomplete="email" data-input="rp-email" />
+          </label>
+          <button
+            type="button"
+            class="btn-primary submit-button"
+            data-action="reset-submit"
+            disabled
+          >
+            {tr.authorizeSendResetLink}
+          </button>
+          <div class="inline-links centered">
+            <button type="button" class="link-button" data-action="to-signin">
+              {tr.authorizeBack}
+            </button>
+          </div>
+        </section>
+
+        <section data-mode="passwordResetSent" class="mode-section" hidden>
+          <p class="mode-description">{tr.authorizeResetSentDescription}</p>
+          <div class="inline-links centered">
+            <button type="button" class="link-button" data-action="to-signin">
+              {tr.authorizeBack}
+            </button>
+          </div>
+        </section>
+
+        <p class="terms-notice">
+          {tr.authorizeTermsPrefix}
+          <a href={localePath(locale, "/terms")} target="_blank" rel="noopener"
+            >{tr.authorizeTermsLink}</a
+          >
+          {tr.authorizeAnd}
+          <a
+            href={localePath(locale, "/privacy")}
+            target="_blank"
+            rel="noopener">{tr.authorizePrivacyLink}</a
+          >
+        </p>
+
+        <p id="authorize-error" class="authorize-error" hidden></p>
+      </section>
+    </div>
+  </main>
+
+  <script
+    type="application/json"
+    id="authorize-i18n"
+    is:inline
+    set:html={JSON.stringify(clientMessages)}
+  />
+</Layout>
+
+<script>
+  import { initializeApp } from "firebase/app";
+  import {
+    connectAuthEmulator,
+    createUserWithEmailAndPassword,
+    getAuth,
+    GoogleAuthProvider,
+    sendPasswordResetEmail,
+    signInWithEmailAndPassword,
+    signInWithPopup,
+    type User,
+  } from "firebase/auth";
+
+  const FIREBASE_CONFIGS = {
+    prod: {
+      apiKey: "AIzaSyDZV0yVGw8lzyZcQFEVQe9SbgFtXH2Tv94",
+      authDomain: "voquill-prod.firebaseapp.com",
+      projectId: "voquill-prod",
+      storageBucket: "voquill-prod.firebasestorage.app",
+      messagingSenderId: "777461284594",
+      appId: "1:777461284594:web:ec1f851002cbbeb55e5a6b",
+    },
+    dev: {
+      apiKey: "AIzaSyAteG4sQc4z6nJcHZ2oX5fsUAYqHzM6IAE",
+      authDomain: "voquill-dev.firebaseapp.com",
+      projectId: "voquill-dev",
+      storageBucket: "voquill-dev.firebasestorage.app",
+      messagingSenderId: "778214168359",
+      appId: "1:778214168359:web:bed428c0e200b74fd77b02",
+    },
+  } as const;
+
+  const EMULATOR_AUTH_URL = "http://127.0.0.1:9099";
+  const MIN_PASSWORD_LENGTH = 8;
+
+  type Env = "prod" | "dev" | "emulator";
+  type Mode = "signIn" | "signUp" | "resetPassword" | "passwordResetSent";
+
+  type ClientMessages = {
+    showPassword: string;
+    hidePassword: string;
+    cliOnly: string;
+    signingIn: string;
+    creatingAccount: string;
+    sending: string;
+    enterValidEmail: string;
+    passwordMinLength: string;
+    passwordsDoNotMatch: string;
+    errInvalidCredential: string;
+    errEmailInUse: string;
+    errWeakPassword: string;
+    errInvalidEmail: string;
+    errCancelled: string;
+    errTooManyRequests: string;
+    errNetwork: string;
+    titleSignIn: string;
+    titleSignUp: string;
+    titleResetPassword: string;
+    titleEmailSent: string;
+  };
+
+  const i18nEl = document.getElementById("authorize-i18n")!;
+  const messages: ClientMessages = JSON.parse(i18nEl.textContent ?? "{}");
+
+  const params = new URLSearchParams(window.location.search);
+  const port = params.get("port");
+  const state = params.get("state");
+  const envParam = params.get("env");
+  const env: Env =
+    envParam === "dev" || envParam === "emulator" ? envParam : "prod";
+
+  const firebaseConfig =
+    env === "prod" ? FIREBASE_CONFIGS.prod : FIREBASE_CONFIGS.dev;
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  if (env === "emulator") {
+    connectAuthEmulator(auth, EMULATOR_AUTH_URL, { disableWarnings: true });
+  }
+
+  const titleEl = document.getElementById("authorize-title")!;
+  const envEl = document.getElementById(
+    "authorize-env",
+  ) as HTMLParagraphElement;
+  const errorEl = document.getElementById(
+    "authorize-error",
+  ) as HTMLParagraphElement;
+
+  if (env !== "prod") {
+    envEl.textContent = `Environment: ${env}`;
+    envEl.hidden = false;
+  }
+
+  function portIsValid(value: string | null): value is string {
+    if (!value) return false;
+    const n = Number(value);
+    return Number.isInteger(n) && n >= 1024 && n <= 65535;
+  }
+
+  function showError(message: string) {
+    errorEl.textContent = message;
+    errorEl.hidden = false;
+  }
+
+  function clearError() {
+    errorEl.hidden = true;
+    errorEl.textContent = "";
+  }
+
+  const TITLES: Record<Mode, string> = {
+    signIn: messages.titleSignIn,
+    signUp: messages.titleSignUp,
+    resetPassword: messages.titleResetPassword,
+    passwordResetSent: messages.titleEmailSent,
+  };
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!portIsValid(port) || !state) {
+    showError(messages.cliOnly);
+    document
+      .querySelectorAll<HTMLElement>(".mode-section")
+      .forEach((el) => (el.hidden = true));
+  } else {
+    mount(port, state);
+  }
+
+  function mount(port: string, state: string) {
+    setMode("signIn");
+
+    wireMode();
+    wirePasswordToggles();
+    wireValidation();
+    wireSubmits(port, state);
+  }
+
+  function setMode(mode: Mode) {
+    titleEl.textContent = TITLES[mode];
+    document.querySelectorAll<HTMLElement>("[data-mode]").forEach((section) => {
+      section.hidden = section.dataset.mode !== mode;
+    });
+    clearError();
+    refreshSubmitStates();
+  }
+
+  function wireMode() {
+    document
+      .querySelectorAll<HTMLButtonElement>('[data-action="to-signin"]')
+      .forEach((el) => el.addEventListener("click", () => setMode("signIn")));
+    document
+      .querySelectorAll<HTMLButtonElement>('[data-action="to-signup"]')
+      .forEach((el) => el.addEventListener("click", () => setMode("signUp")));
+    document
+      .querySelectorAll<HTMLButtonElement>('[data-action="to-reset"]')
+      .forEach((el) =>
+        el.addEventListener("click", () => setMode("resetPassword")),
+      );
+  }
+
+  function wirePasswordToggles() {
+    const toggles: [string, string][] = [
+      ["toggle-si-password", "si-password"],
+      ["toggle-su-password", "su-password"],
+      ["toggle-su-confirm", "su-confirm"],
+    ];
+    for (const [action, inputKey] of toggles) {
+      const btn = document.querySelector<HTMLButtonElement>(
+        `[data-action="${action}"]`,
+      );
+      const input = document.querySelector<HTMLInputElement>(
+        `[data-input="${inputKey}"]`,
+      );
+      if (!btn || !input) continue;
+      btn.addEventListener("click", () => {
+        const showing = input.type === "text";
+        input.type = showing ? "password" : "text";
+        btn.setAttribute(
+          "aria-label",
+          showing ? messages.showPassword : messages.hidePassword,
+        );
+        const label = btn.querySelector("span");
+        if (label)
+          label.textContent = showing
+            ? messages.showPassword
+            : messages.hidePassword;
+      });
+    }
+  }
+
+  function input(name: string): HTMLInputElement {
+    return document.querySelector<HTMLInputElement>(`[data-input="${name}"]`)!;
+  }
+
+  function errorSlot(name: string): HTMLElement {
+    return document.querySelector<HTMLElement>(`[data-error="${name}"]`)!;
+  }
+
+  function submitButton(action: string): HTMLButtonElement {
+    return document.querySelector<HTMLButtonElement>(
+      `[data-action="${action}"]`,
+    )!;
+  }
+
+  function wireValidation() {
+    ["si-email", "si-password"].forEach((name) =>
+      input(name).addEventListener("input", refreshSubmitStates),
+    );
+    ["su-email", "su-password", "su-confirm"].forEach((name) =>
+      input(name).addEventListener("input", () => {
+        refreshSignUpValidation();
+        refreshSubmitStates();
+      }),
+    );
+    input("rp-email").addEventListener("input", refreshSubmitStates);
+  }
+
+  function refreshSubmitStates() {
+    submitButton("signin-submit").disabled = !(
+      emailPattern.test(input("si-email").value.trim()) &&
+      input("si-password").value.length > 0
+    );
+
+    const suEmail = input("su-email").value.trim();
+    const suPassword = input("su-password").value;
+    const suConfirm = input("su-confirm").value;
+    submitButton("signup-submit").disabled = !(
+      emailPattern.test(suEmail) &&
+      suPassword.length >= MIN_PASSWORD_LENGTH &&
+      suConfirm === suPassword
+    );
+
+    submitButton("reset-submit").disabled = !emailPattern.test(
+      input("rp-email").value.trim(),
+    );
+  }
+
+  function setFieldError(name: string, message: string | null) {
+    const el = errorSlot(name);
+    if (!el) return;
+    if (message) {
+      el.textContent = message;
+      el.hidden = false;
+    } else {
+      el.textContent = "";
+      el.hidden = true;
+    }
+  }
+
+  function refreshSignUpValidation() {
+    const email = input("su-email").value.trim();
+    const password = input("su-password").value;
+    const confirm = input("su-confirm").value;
+
+    setFieldError(
+      "su-email",
+      email.length > 0 && !emailPattern.test(email)
+        ? messages.enterValidEmail
+        : null,
+    );
+    setFieldError(
+      "su-password",
+      password.length > 0 && password.length < MIN_PASSWORD_LENGTH
+        ? messages.passwordMinLength
+        : null,
+    );
+    setFieldError(
+      "su-confirm",
+      confirm.length > 0 && confirm !== password
+        ? messages.passwordsDoNotMatch
+        : null,
+    );
+  }
+
+  async function handleUserSignedIn(user: User, port: string, state: string) {
+    const idTokenResult = await user.getIdTokenResult();
+    const callback = new URL(`http://127.0.0.1:${port}/callback`);
+    callback.searchParams.set("state", state);
+    callback.searchParams.set("idToken", idTokenResult.token);
+    callback.searchParams.set("refreshToken", user.refreshToken);
+    callback.searchParams.set(
+      "expiresAt",
+      String(Date.parse(idTokenResult.expirationTime)),
+    );
+    if (user.email) callback.searchParams.set("email", user.email);
+    callback.searchParams.set("uid", user.uid);
+    window.location.href = callback.toString();
+  }
+
+  function describeError(err: unknown): string {
+    if (err instanceof Error) {
+      const code = (err as { code?: string }).code;
+      switch (code) {
+        case "auth/invalid-credential":
+        case "auth/wrong-password":
+        case "auth/user-not-found":
+          return messages.errInvalidCredential;
+        case "auth/email-already-in-use":
+          return messages.errEmailInUse;
+        case "auth/weak-password":
+          return messages.errWeakPassword;
+        case "auth/invalid-email":
+          return messages.errInvalidEmail;
+        case "auth/popup-closed-by-user":
+        case "auth/cancelled-popup-request":
+          return messages.errCancelled;
+        case "auth/too-many-requests":
+          return messages.errTooManyRequests;
+        case "auth/network-request-failed":
+          return messages.errNetwork;
+      }
+      return err.message;
+    }
+    return String(err);
+  }
+
+  function lockButton(btn: HTMLButtonElement, label: string) {
+    btn.dataset.originalLabel = btn.textContent ?? "";
+    btn.textContent = label;
+    btn.disabled = true;
+  }
+
+  function unlockButton(btn: HTMLButtonElement) {
+    if (btn.dataset.originalLabel !== undefined) {
+      btn.textContent = btn.dataset.originalLabel;
+    }
+    refreshSubmitStates();
+  }
+
+  function wireSubmits(port: string, state: string) {
+    document
+      .querySelectorAll<HTMLButtonElement>('[data-action="google-signin"]')
+      .forEach((btn) =>
+        btn.addEventListener("click", async () => {
+          clearError();
+          lockButton(btn, messages.signingIn);
+          try {
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            await handleUserSignedIn(result.user, port, state);
+          } catch (err) {
+            showError(describeError(err));
+            unlockButton(btn);
+          }
+        }),
+      );
+
+    submitButton("signin-submit").addEventListener("click", async () => {
+      const btn = submitButton("signin-submit");
+      clearError();
+      lockButton(btn, messages.signingIn);
+      try {
+        const result = await signInWithEmailAndPassword(
+          auth,
+          input("si-email").value.trim(),
+          input("si-password").value,
+        );
+        await handleUserSignedIn(result.user, port, state);
+      } catch (err) {
+        showError(describeError(err));
+        unlockButton(btn);
+      }
+    });
+
+    submitButton("signup-submit").addEventListener("click", async () => {
+      const btn = submitButton("signup-submit");
+      clearError();
+      lockButton(btn, messages.creatingAccount);
+      try {
+        const result = await createUserWithEmailAndPassword(
+          auth,
+          input("su-email").value.trim(),
+          input("su-password").value,
+        );
+        await handleUserSignedIn(result.user, port, state);
+      } catch (err) {
+        showError(describeError(err));
+        unlockButton(btn);
+      }
+    });
+
+    submitButton("reset-submit").addEventListener("click", async () => {
+      const btn = submitButton("reset-submit");
+      clearError();
+      lockButton(btn, messages.sending);
+      try {
+        await sendPasswordResetEmail(auth, input("rp-email").value.trim());
+        setMode("passwordResetSent");
+      } catch (err) {
+        showError(describeError(err));
+      } finally {
+        unlockButton(btn);
+      }
+    });
+  }
+</script>
+
+<style>
+  .authorize-main {
+    min-height: calc(100vh - 88px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 0;
+  }
+
+  .authorize-wrap {
+    width: 100%;
+    max-width: 460px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .authorize-card {
+    background: var(--level0);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: var(--shadow);
+  }
+
+  .authorize-env {
+    align-self: flex-start;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--level2);
+    color: var(--text-strong);
+  }
+
+  .authorize-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .authorize-error {
+    color: #d23f3f;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    text-align: center;
+  }
+
+  .mode-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .mode-section[hidden] {
+    display: none;
+  }
+
+  .mode-description {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .provider-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--level0);
+    color: var(--text-strong);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease;
+  }
+
+  .provider-button:hover:not(:disabled) {
+    border-color: var(--text-muted);
+  }
+
+  .provider-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .provider-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .field input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--level1);
+    color: var(--text-strong);
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.15s ease;
+  }
+
+  .field input:focus {
+    outline: none;
+    border-color: var(--text-strong);
+  }
+
+  .field-error {
+    font-size: 0.8rem;
+    color: #d23f3f;
+  }
+
+  .password-wrap {
+    position: relative;
+    display: flex;
+  }
+
+  .password-wrap input {
+    padding-right: 68px;
+  }
+
+  .password-toggle {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 30px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  .password-toggle:hover {
+    color: var(--text-strong);
+  }
+
+  .submit-button {
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 0.95rem;
+  }
+
+  .submit-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .inline-links {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .inline-links.centered {
+    justify-content: center;
+  }
+
+  .link-button {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: var(--text-strong);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+    font-family: inherit;
+  }
+
+  .link-button:hover {
+    color: var(--text-muted);
+  }
+
+  .terms-notice {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.5;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+
+  .terms-notice a {
+    color: inherit;
+    text-decoration: underline;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-strong);
+  }
+
+  .brand-mark {
+    width: 52px;
+    height: 52px;
+    display: block;
+    background-color: currentColor;
+    mask: url("/app-logo.svg") center/contain no-repeat;
+    -webkit-mask: url("/app-logo.svg") center/contain no-repeat;
+  }
+</style>

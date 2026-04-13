@@ -10,7 +10,11 @@
   },
   "dependencies": {
     "astro": "^5.18.1",
+    "firebase": "^11.2.0",
     "marked": "^16.4.2",
     "mixpanel-browser": "^2.77.0"
+  },
+  "devDependencies": {
+    "prettier-plugin-astro": "^0.14.1"
   }
 }
