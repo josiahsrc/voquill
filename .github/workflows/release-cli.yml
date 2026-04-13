@@ -393,6 +393,15 @@ jobs:
             codename="dev"
           fi
 
+          # reprepro rejects any .deb whose arch isn't declared in
+          # conf/distributions, so append arm64 to any Architectures: line
+          # that's missing it before calling includedeb.
+          dist_file="conf/distributions"
+          if [[ -f "${dist_file}" ]]; then
+            sed -i '/^Architectures:/{/\barm64\b/!s/$/ arm64/}' "${dist_file}"
+            cat "${dist_file}"
+          fi
+
           for deb in ../debs/*.deb; do
             # Add Section field if missing (required by reprepro)
             mkdir -p ../repack

@@ -83,14 +83,19 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 WindowEvent::CloseRequested { api, .. } => {
                     api.prevent_close();
                     if window.label() == "main" {
-                        let _ = window.app_handle().save_window_state(StateFlags::SIZE | StateFlags::POSITION);
+                        let _ = window
+                            .app_handle()
+                            .save_window_state(StateFlags::SIZE | StateFlags::POSITION);
                         let _ = window.hide();
                         // On Windows, force the WebView to stay active after hiding the window
                         // so that background JS (global hotkey detection via keys_held events)
                         // continues running while the app is minimized to the system tray.
                         #[cfg(target_os = "windows")]
                         {
-                            crate::platform::window::keep_webview_active(window.app_handle(), "main");
+                            crate::platform::window::keep_webview_active(
+                                window.app_handle(),
+                                "main",
+                            );
                             crate::platform::window::set_webview_keepalive(true);
                         }
                         #[cfg(target_os = "macos")]
@@ -256,6 +261,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::hotkey_delete,
             crate::commands::set_tray_title,
             crate::commands::set_menu_icon,
+            crate::commands::set_tray_visible,
             crate::commands::api_key_create,
             crate::commands::api_key_list,
             crate::commands::api_key_delete,

@@ -1,3 +1,0 @@
-- Fix issue with MacOS pasting on Arc browser and Discord
-- Update onboarding flow to use fun watercolor images
-- Bug fixes and improvements

@@ -6,8 +6,7 @@ use windows::Win32::System::Com::{
 
 unsafe fn get_endpoint_volume() -> Result<IAudioEndpointVolume, windows::core::Error> {
     let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
-    let enumerator: IMMDeviceEnumerator =
-        CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)?;
+    let enumerator: IMMDeviceEnumerator = CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)?;
     let device = enumerator.GetDefaultAudioEndpoint(eRender, eConsole)?;
     device.Activate(CLSCTX_ALL, None)
 }

@@ -170,7 +170,7 @@ jobs:
         id: release_body
         run: |
           set -euo pipefail
-          body="$(cat apps/desktop/RELEASE_NOTES.txt)"
+          body="$(cat release/desktop.txt)"
           printf 'release_body<<EOF\n%s\nEOF\n' "$body" >> "$GITHUB_OUTPUT"
 
       - name: Create release tag

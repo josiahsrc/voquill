@@ -6,12 +6,12 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
+use windows::core::{HSTRING, PCSTR};
 use windows::Win32::Foundation::HWND;
 use windows::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW};
 use windows::Win32::UI::WindowsAndMessaging::{
     DispatchMessageW, GetWindowThreadProcessId, PeekMessageW, TranslateMessage, MSG, PM_REMOVE,
 };
-use windows::core::{HSTRING, PCSTR};
 
 const MAX_STRING_SIZE: usize = 1024;
 const SHORT_STRING_SIZE: usize = 256;
@@ -56,8 +56,7 @@ type GetContextInfoFn = unsafe extern "C" fn(i32, JOBJECT64, *mut AccessibleCont
 type GetChildFn = unsafe extern "C" fn(i32, JOBJECT64, i32) -> JOBJECT64;
 type GetParentFn = unsafe extern "C" fn(i32, JOBJECT64) -> JOBJECT64;
 type ReleaseObjectFn = unsafe extern "C" fn(i32, JOBJECT64);
-type GetTextInfoFn =
-    unsafe extern "C" fn(i32, JOBJECT64, *mut AccessibleTextInfo, i32, i32) -> i32;
+type GetTextInfoFn = unsafe extern "C" fn(i32, JOBJECT64, *mut AccessibleTextInfo, i32, i32) -> i32;
 type GetTextRangeFn = unsafe extern "C" fn(i32, JOBJECT64, i32, i32, *mut u16, i16) -> i32;
 type SetTextContentsFn = unsafe extern "C" fn(i32, JOBJECT64, *const u16) -> i32;
 type RequestFocusFn = unsafe extern "C" fn(i32, JOBJECT64) -> i32;
@@ -108,7 +107,13 @@ fn find_jab_dll() -> Option<std::path::PathBuf> {
         std::env::var("ProgramFiles").ok(),
         std::env::var("ProgramFiles(x86)").ok(),
     ];
-    let java_dirs = ["Java", "Eclipse Adoptium", "AdoptOpenJDK", "Amazon Corretto", "Zulu"];
+    let java_dirs = [
+        "Java",
+        "Eclipse Adoptium",
+        "AdoptOpenJDK",
+        "Amazon Corretto",
+        "Zulu",
+    ];
     for pf in program_files.iter().flatten() {
         for java_dir in &java_dirs {
             let base = std::path::PathBuf::from(pf).join(java_dir);
@@ -125,7 +130,9 @@ fn find_jab_dll() -> Option<std::path::PathBuf> {
 
     // 4. OpenWebStart / IcedTea-Web JRE cache
     if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
-        let ows_base = std::path::PathBuf::from(&local_app_data).join("icedtea-web").join("cache");
+        let ows_base = std::path::PathBuf::from(&local_app_data)
+            .join("icedtea-web")
+            .join("cache");
         if let Ok(entries) = std::fs::read_dir(&ows_base) {
             for entry in entries.flatten() {
                 let dll = entry.path().join("bin").join("windowsaccessbridge-64.dll");
@@ -160,11 +167,7 @@ fn find_jab_dll_for_pid(pid: u32) -> Option<std::path::PathBuf> {
         // The JAB DLL lives in the same bin/ directory as java.exe / javaw.exe
         let dll = exe_dir.join("windowsaccessbridge-64.dll");
         if dll.exists() {
-            log::info!(
-                "Found JAB DLL via process PID {}: {}",
-                pid,
-                dll.display()
-            );
+            log::info!("Found JAB DLL via process PID {}: {}", pid, dll.display());
             return Some(dll);
         }
 
@@ -192,16 +195,16 @@ static JAB_API_STANDARD: OnceLock<Option<JabApi>> = OnceLock::new();
 static JAB_API_PID_BASED: OnceLock<Option<JabApi>> = OnceLock::new();
 static JAB_BRIDGE_RUNNING: AtomicBool = AtomicBool::new(false);
 
+#[allow(clippy::missing_transmute_annotations)]
 fn load_jab_from_path(dll_path: &std::path::Path) -> Option<JabApi> {
     log::info!("Loading JAB DLL from: {}", dll_path.display());
 
     unsafe {
-        let hmodule =
-            LoadLibraryW(&HSTRING::from(dll_path.to_string_lossy().as_ref())).ok()?;
+        let hmodule = LoadLibraryW(&HSTRING::from(dll_path.to_string_lossy().as_ref())).ok()?;
 
         macro_rules! load_fn {
-            ($name:literal, $ty:ty) => {
-                std::mem::transmute::<_, $ty>(GetProcAddress(
+            ($name:literal) => {
+                std::mem::transmute(GetProcAddress(
                     hmodule,
                     PCSTR::from_raw(concat!($name, "\0").as_ptr()),
                 )?)
@@ -209,27 +212,26 @@ fn load_jab_from_path(dll_path: &std::path::Path) -> Option<JabApi> {
         }
 
         Some(JabApi {
-            windows_run: load_fn!("Windows_run", WindowsRunFn),
-            get_context_from_hwnd: load_fn!("getAccessibleContextFromHWND", GetContextFromHwndFn),
-            get_context_with_focus: load_fn!("getAccessibleContextWithFocus", GetContextWithFocusFn),
-            get_context_info: load_fn!("getAccessibleContextInfo", GetContextInfoFn),
-            get_child: load_fn!("getAccessibleChildFromContext", GetChildFn),
-            get_parent: load_fn!("getAccessibleParentFromContext", GetParentFn),
-            release_object: load_fn!("releaseJavaObject", ReleaseObjectFn),
-            get_text_info: load_fn!("getAccessibleTextInfo", GetTextInfoFn),
-            get_text_range: load_fn!("getAccessibleTextRange", GetTextRangeFn),
-            set_text_contents: load_fn!("setTextContents", SetTextContentsFn),
-            request_focus: load_fn!("requestFocus", RequestFocusFn),
-            set_caret_position: load_fn!("setCaretPosition", SetCaretPositionFn),
+            windows_run: load_fn!("Windows_run"),
+            get_context_from_hwnd: load_fn!("getAccessibleContextFromHWND"),
+            get_context_with_focus: load_fn!("getAccessibleContextWithFocus"),
+            get_context_info: load_fn!("getAccessibleContextInfo"),
+            get_child: load_fn!("getAccessibleChildFromContext"),
+            get_parent: load_fn!("getAccessibleParentFromContext"),
+            release_object: load_fn!("releaseJavaObject"),
+            get_text_info: load_fn!("getAccessibleTextInfo"),
+            get_text_range: load_fn!("getAccessibleTextRange"),
+            set_text_contents: load_fn!("setTextContents"),
+            request_focus: load_fn!("requestFocus"),
+            set_caret_position: load_fn!("setCaretPosition"),
         })
     }
 }
 
 fn get_jab_api(hint_pid: Option<u32>) -> Option<&'static JabApi> {
     // Try standard search (JAVA_HOME, PATH, common install dirs)
-    let standard = JAB_API_STANDARD.get_or_init(|| {
-        find_jab_dll().and_then(|p| load_jab_from_path(&p))
-    });
+    let standard =
+        JAB_API_STANDARD.get_or_init(|| find_jab_dll().and_then(|p| load_jab_from_path(&p)));
     if standard.is_some() {
         return standard.as_ref();
     }
@@ -299,7 +301,11 @@ fn init_jab_for_hwnd(hwnd: HWND) -> Option<(&'static JabApi, i32, JOBJECT64)> {
     let pid = unsafe {
         let mut pid: u32 = 0;
         GetWindowThreadProcessId(hwnd, Some(&mut pid));
-        if pid > 0 { Some(pid) } else { None }
+        if pid > 0 {
+            Some(pid)
+        } else {
+            None
+        }
     };
 
     let api = get_jab_api(pid)?;
@@ -523,8 +529,7 @@ pub fn jab_get_focused_field_info(
         let mut vm_id: i32 = 0;
         let mut focused_ac: JOBJECT64 = 0;
 
-        if (api.get_context_with_focus)(hwnd, &mut vm_id, &mut focused_ac) == 0 || focused_ac == 0
-        {
+        if (api.get_context_with_focus)(hwnd, &mut vm_id, &mut focused_ac) == 0 || focused_ac == 0 {
             pump_messages(200);
             if (api.get_context_with_focus)(hwnd, &mut vm_id, &mut focused_ac) == 0
                 || focused_ac == 0
@@ -727,7 +732,11 @@ pub fn jab_focus_element(hwnd: HWND, index_path: &[usize]) -> Result<(), String>
 // ---------------------------------------------------------------------------
 
 /// Set the caret (cursor) position within a JAB text element.
-pub fn jab_set_caret_position(hwnd: HWND, index_path: &[usize], position: usize) -> Result<(), String> {
+pub fn jab_set_caret_position(
+    hwnd: HWND,
+    index_path: &[usize],
+    position: usize,
+) -> Result<(), String> {
     let (api, vm_id, root_ac) =
         init_jab_for_hwnd(hwnd).ok_or_else(|| "JAB bridge not available".to_string())?;
 
@@ -768,8 +777,7 @@ pub fn jab_read_text(hwnd: HWND, index_path: &[usize]) -> Result<Option<String>,
 
         let value = if has_info && info.accessible_text != 0 {
             let mut text_info: AccessibleTextInfo = std::mem::zeroed();
-            if (api.get_text_info)(vm_id, ac, &mut text_info, 0, 0) != 0
-                && text_info.char_count > 0
+            if (api.get_text_info)(vm_id, ac, &mut text_info, 0, 0) != 0 && text_info.char_count > 0
             {
                 let len = text_info.char_count.min(2000);
                 let mut buf = vec![0u16; (len + 1) as usize];
@@ -777,7 +785,11 @@ pub fn jab_read_text(hwnd: HWND, index_path: &[usize]) -> Result<Option<String>,
                     != 0
                 {
                     let text = wchar_to_string(&buf);
-                    if text.is_empty() { None } else { Some(text) }
+                    if text.is_empty() {
+                        None
+                    } else {
+                        Some(text)
+                    }
                 } else {
                     None
                 }
@@ -787,7 +799,11 @@ pub fn jab_read_text(hwnd: HWND, index_path: &[usize]) -> Result<Option<String>,
         } else {
             // Try name as fallback
             let name = wchar_to_string(&info.name);
-            if name.is_empty() { None } else { Some(name) }
+            if name.is_empty() {
+                None
+            } else {
+                Some(name)
+            }
         };
 
         if target != 0 {

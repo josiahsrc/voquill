@@ -1404,8 +1404,8 @@ pub async fn paste(text: String, keybind: Option<String>) -> Result<PasteOutcome
 
     if matches!(target, PasteTargetState::NotEditable) {
         let copy_result = tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
-            let mut clipboard = arboard::Clipboard::new()
-                .map_err(|e| format!("clipboard unavailable: {e}"))?;
+            let mut clipboard =
+                arboard::Clipboard::new().map_err(|e| format!("clipboard unavailable: {e}"))?;
             clipboard
                 .set_text(text)
                 .map_err(|e| format!("failed to set clipboard: {e}"))
@@ -1553,6 +1553,16 @@ pub fn set_menu_icon(
 }
 
 #[tauri::command]
+pub fn set_tray_visible(app: AppHandle, visible: bool) -> Result<(), String> {
+    use tauri::tray::TrayIconId;
+    if let Some(tray) = app.tray_by_id(&TrayIconId::new("main")) {
+        tray.set_visible(visible).map_err(|err| err.to_string())
+    } else {
+        Ok(())
+    }
+}
+
+#[tauri::command]
 pub async fn get_text_field_info() -> Result<TextFieldInfo, String> {
     tokio::time::timeout(
         std::time::Duration::from_secs(2),
@@ -1623,9 +1633,7 @@ pub async fn write_accessibility_fields(
 }
 
 #[tauri::command]
-pub async fn focus_accessibility_field(
-    target: AccessibilityFocusTarget,
-) -> Result<(), String> {
+pub async fn focus_accessibility_field(target: AccessibilityFocusTarget) -> Result<(), String> {
     tokio::time::timeout(
         std::time::Duration::from_secs(2),
         tauri::async_runtime::spawn_blocking(move || {

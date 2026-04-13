@@ -50,6 +50,7 @@ type LocalUserPreferences = {
   dictationAudioDim: number;
   pasteKeybind: Nullable<string>;
   useNewBackend: boolean;
+  menuBarIconHidden: boolean;
 };
 
 // Normalize post-processing mode for backwards compatibility
@@ -105,6 +106,7 @@ const fromLocalPreferences = (
   remoteReceiverAutoStart: preferences.remoteReceiverAutoStart ?? false,
   dictationAudioDim: preferences.dictationAudioDim ?? 1.0,
   pasteKeybind: preferences.pasteKeybind ?? null,
+  menuBarIconHidden: preferences.menuBarIconHidden ?? false,
 });
 
 const toLocalPreferences = (
@@ -149,6 +151,7 @@ const toLocalPreferences = (
   dictationAudioDim: preferences.dictationAudioDim ?? 1.0,
   pasteKeybind: preferences.pasteKeybind ?? null,
   useNewBackend: true,
+  menuBarIconHidden: preferences.menuBarIconHidden ?? false,
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

@@ -355,9 +355,7 @@ mod cpal_impl {
                         return Ok(());
                     }
                     Err(err) => {
-                        log::warn!(
-                            "host {host_id:?} did not yield a usable input device: {err}"
-                        );
+                        log::warn!("host {host_id:?} did not yield a usable input device: {err}");
                         last_err = Some(err);
                     }
                 }
@@ -658,9 +656,7 @@ mod cpal_impl {
             let fallback_preferred = preferred_label.or(preferred_normalized);
 
             if let Some(reason) = avoid_reason {
-                log::debug!(
-                    "deprioritising device '{label}' ({reason}); will try if others fail"
-                );
+                log::debug!("deprioritising device '{label}' ({reason}); will try if others fail");
             }
 
             let config = match device.default_input_config() {
@@ -942,8 +938,7 @@ mod cpal_impl {
             .build_input_stream(
                 config,
                 move |data: &[T], _| {
-                    let mut mono_samples =
-                        Vec::with_capacity(data.len() / channel_count + 1);
+                    let mut mono_samples = Vec::with_capacity(data.len() / channel_count + 1);
 
                     if channel_count == 1 {
                         for sample in data {
