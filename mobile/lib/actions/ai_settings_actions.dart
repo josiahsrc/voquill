@@ -1,7 +1,8 @@
 import 'dart:convert';
 
 import 'package:app/model/api_key_model.dart';
-import 'package:app/utils/channel_utils.dart';
+import 'package:app/model/local_transcription_model.dart';
+import 'package:app/utils/channel_utils.dart' as channel_utils;
 import 'package:app/utils/log_utils.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,16 +21,29 @@ final _secureStorage = const FlutterSecureStorage(
   aOptions: AndroidOptions(encryptedSharedPreferences: true),
 );
 
+AiMode postProcessingModeForSync(AiMode mode) {
+  if (mode == AiMode.local) {
+    _logger.w('Syncing invalid local post-processing mode as cloud');
+    return AiMode.cloud;
+  }
+  return mode;
+}
+
 Future<AiMode> getTranscriptionMode() async {
   final prefs = await SharedPreferences.getInstance();
   final value = prefs.getString(_kTranscriptionMode);
   if (value == AiMode.api.name) return AiMode.api;
+  if (value == AiMode.local.name) return AiMode.local;
   return AiMode.cloud;
 }
 
-Future<void> setTranscriptionMode(AiMode mode) async {
+Future<void> _persistTranscriptionMode(AiMode mode) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(_kTranscriptionMode, mode.name);
+}
+
+Future<void> setTranscriptionMode(AiMode mode) async {
+  await _persistTranscriptionMode(mode);
   await syncKeyboardAiSettings();
 }
 
@@ -37,10 +51,21 @@ Future<AiMode> getPostProcessingMode() async {
   final prefs = await SharedPreferences.getInstance();
   final value = prefs.getString(_kPostProcessingMode);
   if (value == AiMode.api.name) return AiMode.api;
+  if (value == AiMode.local.name) {
+    _logger.w('Found invalid local mode for post-processing');
+    return AiMode.local;
+  }
   return AiMode.cloud;
 }
 
 Future<void> setPostProcessingMode(AiMode mode) async {
+  if (mode == AiMode.local) {
+    throw ArgumentError.value(
+      mode,
+      'mode',
+      'Post-processing only supports cloud or api modes.',
+    );
+  }
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(_kPostProcessingMode, mode.name);
   await syncKeyboardAiSettings();
@@ -61,7 +86,10 @@ Future<List<ApiKey>> loadApiKeys() async {
 
 Future<void> _saveApiKeyList(List<ApiKey> keys) async {
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(_kApiKeys, jsonEncode(keys.map((k) => k.toJson()).toList()));
+  await prefs.setString(
+    _kApiKeys,
+    jsonEncode(keys.map((k) => k.toJson()).toList()),
+  );
 }
 
 Future<ApiKey> createApiKey({
@@ -75,7 +103,9 @@ Future<ApiKey> createApiKey({
 }) async {
   final keys = await loadApiKeys();
   final id = const Uuid().v4();
-  final suffix = keyValue.length >= 4 ? keyValue.substring(keyValue.length - 4) : keyValue;
+  final suffix = keyValue.length >= 4
+      ? keyValue.substring(keyValue.length - 4)
+      : keyValue;
   final now = DateTime.now().toUtc().toIso8601String();
 
   final apiKey = ApiKey(
@@ -188,10 +218,91 @@ Future<String?> getApiKeyValue(String id) async {
   return await _secureStorage.read(key: '$_secureKeyPrefix$id');
 }
 
+Future<List<LocalTranscriptionModel>?> listLocalTranscriptionModels() {
+  if (!isLocalTranscriptionBridgeAvailable()) {
+    return Future.value(null);
+  }
+
+  return channel_utils.listLocalTranscriptionModelsOrNull().then((models) {
+    if (models == null) return null;
+    final order = <String, int>{};
+    for (var i = 0; i < LocalTranscriptionModel.supportedSlugs.length; i++) {
+      order[LocalTranscriptionModel.supportedSlugs[i]] = i;
+    }
+
+    final sorted = [...models];
+    sorted.sort((a, b) {
+      final aOrder = order[a.slug] ?? order.length;
+      final bOrder = order[b.slug] ?? order.length;
+      return aOrder.compareTo(bOrder);
+    });
+    return sorted;
+  });
+}
+
+bool isLocalTranscriptionBridgeAvailable() {
+  return channel_utils.canSyncKeyboardBridge;
+}
+
+Future<void> downloadLocalTranscriptionModel(String slug) {
+  return channel_utils.downloadLocalTranscriptionModel(slug);
+}
+
+Future<bool> _isSelectedLocalTranscriptionModel(String slug) async {
+  final models = await listLocalTranscriptionModels();
+  if (models == null) return false;
+  return models.where((model) => model.slug == slug).firstOrNull?.selected ==
+      true;
+}
+
+Future<LocalTranscriptionModel?>
+_firstSelectableLocalTranscriptionModel() async {
+  final models = await listLocalTranscriptionModels();
+  if (models == null) return null;
+  return models.where((model) => model.downloaded && model.valid).firstOrNull;
+}
+
+Future<void> deleteLocalTranscriptionModel(String slug) async {
+  final wasSelected = await _isSelectedLocalTranscriptionModel(slug);
+  final didDelete = await channel_utils.deleteLocalTranscriptionModel(slug);
+  if (!didDelete) return;
+
+  if (wasSelected) {
+    final fallbackModel = await _firstSelectableLocalTranscriptionModel();
+    if (fallbackModel != null) {
+      await channel_utils.selectLocalTranscriptionModel(fallbackModel.slug);
+    }
+
+    // Keep local transcription mode after selecting a fallback model.
+    await _persistTranscriptionMode(AiMode.local);
+  }
+
+  await syncKeyboardAiSettings();
+}
+
+Future<bool> selectLocalTranscriptionModel(String slug) async {
+  final didSelect = await channel_utils.selectLocalTranscriptionModel(slug);
+  if (!didSelect) return false;
+
+  await _persistTranscriptionMode(AiMode.local);
+  await syncKeyboardAiSettings();
+  return true;
+}
+
+bool shouldClearTranscriptionModelForSync({
+  required AiMode transcriptionMode,
+  required String? transcriptionModel,
+}) {
+  return transcriptionMode == AiMode.local && transcriptionModel == null;
+}
+
 Future<void> syncKeyboardAiSettings() async {
   try {
     final transcriptionMode = await getTranscriptionMode();
-    final postProcessingMode = await getPostProcessingMode();
+    final storedPostProcessingMode = await getPostProcessingMode();
+    final postProcessingMode = postProcessingModeForSync(
+      storedPostProcessingMode,
+    );
 
     String? transcriptionProvider;
     String? transcriptionApiKey;
@@ -203,7 +314,13 @@ Future<void> syncKeyboardAiSettings() async {
     String? postProcessingBaseUrl;
     String? postProcessingModel;
 
-    if (transcriptionMode == AiMode.api) {
+    if (transcriptionMode == AiMode.local) {
+      final localModels = await listLocalTranscriptionModels();
+      transcriptionModel = localModels
+          ?.where((m) => m.selected)
+          .firstOrNull
+          ?.slug;
+    } else if (transcriptionMode == AiMode.api) {
       final keyId = await getSelectedTranscriptionKeyId();
       if (keyId != null) {
         final keys = await loadApiKeys();
@@ -232,13 +349,17 @@ Future<void> syncKeyboardAiSettings() async {
       }
     }
 
-    await syncKeyboardAiConfig(
+    await channel_utils.syncKeyboardAiConfig(
       transcriptionMode: transcriptionMode.name,
       postProcessingMode: postProcessingMode.name,
       transcriptionProvider: transcriptionProvider,
       transcriptionApiKey: transcriptionApiKey,
       transcriptionBaseUrl: transcriptionBaseUrl,
       transcriptionModel: transcriptionModel,
+      clearTranscriptionModel: shouldClearTranscriptionModelForSync(
+        transcriptionMode: transcriptionMode,
+        transcriptionModel: transcriptionModel,
+      ),
       transcriptionAzureRegion: transcriptionAzureRegion,
       postProcessingProvider: postProcessingProvider,
       postProcessingApiKey: postProcessingApiKey,
@@ -246,6 +367,6 @@ Future<void> syncKeyboardAiSettings() async {
       postProcessingModel: postProcessingModel,
     );
   } catch (e) {
-    _logger.w('Failed to sync AI settings to keyboard', e);
+    _logger.w('Failed to sync keyboard AI settings', e);
   }
 }

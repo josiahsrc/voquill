@@ -3,17 +3,28 @@ import 'dart:io' show Platform;
 import 'package:app/api/api_token_api.dart';
 import 'package:app/api/counter_api.dart';
 import 'package:app/flavor.dart';
+import 'package:app/model/local_transcription_model.dart';
 import 'package:app/model/tone_model.dart';
 import 'package:app/utils/env_utils.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 final _logger = createNamedLogger('channel_utils');
 
 const _sharedChannel = MethodChannel('com.voquill.mobile/shared');
 
-bool get _canSync => Platform.isIOS || Platform.isAndroid;
+bool? _canSyncOverrideForTesting;
+
+bool get _canSync =>
+    _canSyncOverrideForTesting ?? (Platform.isIOS || Platform.isAndroid);
+bool get canSyncKeyboardBridge => _canSync;
+
+@visibleForTesting
+void debugSetCanSyncOverride(bool? value) {
+  _canSyncOverrideForTesting = value;
+}
 
 Future<void> syncKeyboardAuth() async {
   if (!_canSync) {
@@ -165,11 +176,9 @@ Future<void> openKeyboardSettings() async {
 Future<void> syncMixpanelUser({required String uid}) async {
   if (!_canSync) return;
 
-  _sharedChannel
-      .invokeMethod('setMixpanelUser', {'uid': uid})
-      .catchError((e) {
-        _logger.w('Failed to sync Mixpanel user', e);
-      });
+  _sharedChannel.invokeMethod('setMixpanelUser', {'uid': uid}).catchError((e) {
+    _logger.w('Failed to sync Mixpanel user', e);
+  });
 
   await IncrementKeyboardCounterApi().call(null);
 }
@@ -198,6 +207,7 @@ Future<void> syncKeyboardAiConfig({
   String? transcriptionApiKey,
   String? transcriptionBaseUrl,
   String? transcriptionModel,
+  bool clearTranscriptionModel = false,
   String? transcriptionAzureRegion,
   String? postProcessingProvider,
   String? postProcessingApiKey,
@@ -210,19 +220,124 @@ Future<void> syncKeyboardAiConfig({
     await _sharedChannel.invokeMethod('setKeyboardAiConfig', {
       'transcriptionMode': transcriptionMode,
       'postProcessingMode': postProcessingMode,
-      if (transcriptionProvider != null) 'transcriptionProvider': transcriptionProvider,
-      if (transcriptionApiKey != null) 'transcriptionApiKey': transcriptionApiKey,
-      if (transcriptionBaseUrl != null) 'transcriptionBaseUrl': transcriptionBaseUrl,
+      if (transcriptionProvider != null)
+        'transcriptionProvider': transcriptionProvider,
+      if (transcriptionApiKey != null)
+        'transcriptionApiKey': transcriptionApiKey,
+      if (transcriptionBaseUrl != null)
+        'transcriptionBaseUrl': transcriptionBaseUrl,
       if (transcriptionModel != null) 'transcriptionModel': transcriptionModel,
-      if (transcriptionAzureRegion != null) 'transcriptionAzureRegion': transcriptionAzureRegion,
-      if (postProcessingProvider != null) 'postProcessingProvider': postProcessingProvider,
-      if (postProcessingApiKey != null) 'postProcessingApiKey': postProcessingApiKey,
-      if (postProcessingBaseUrl != null) 'postProcessingBaseUrl': postProcessingBaseUrl,
-      if (postProcessingModel != null) 'postProcessingModel': postProcessingModel,
+      if (clearTranscriptionModel) 'clearTranscriptionModel': 'true',
+      if (transcriptionAzureRegion != null)
+        'transcriptionAzureRegion': transcriptionAzureRegion,
+      if (postProcessingProvider != null)
+        'postProcessingProvider': postProcessingProvider,
+      if (postProcessingApiKey != null)
+        'postProcessingApiKey': postProcessingApiKey,
+      if (postProcessingBaseUrl != null)
+        'postProcessingBaseUrl': postProcessingBaseUrl,
+      if (postProcessingModel != null)
+        'postProcessingModel': postProcessingModel,
     });
   } catch (e) {
     _logger.w('Failed to sync keyboard AI config', e);
   }
+}
+
+Future<List<LocalTranscriptionModel>?>
+listLocalTranscriptionModelsOrNull() async {
+  if (!_canSync) return null;
+
+  try {
+    final result = await _sharedChannel.invokeListMethod<dynamic>(
+      'listLocalTranscriptionModels',
+    );
+    if (result == null) return [];
+    return result
+        .map(
+          (entry) => _localTranscriptionModelFromMap(
+            Map<String, dynamic>.from(entry as Map),
+          ),
+        )
+        .toList();
+  } catch (e) {
+    _logger.w('Failed to list local transcription models', e);
+    return null;
+  }
+}
+
+Future<List<LocalTranscriptionModel>> listLocalTranscriptionModels() async {
+  return (await listLocalTranscriptionModelsOrNull()) ?? [];
+}
+
+Future<void> downloadLocalTranscriptionModel(String slug) async {
+  if (!_canSync) return;
+
+  try {
+    await _sharedChannel.invokeMethod('downloadLocalTranscriptionModel', {
+      'slug': slug,
+    });
+  } catch (e) {
+    _logger.w('Failed to download local transcription model', e);
+  }
+}
+
+Future<bool> deleteLocalTranscriptionModel(String slug) async {
+  if (!_canSync) return false;
+
+  try {
+    await _sharedChannel.invokeMethod('deleteLocalTranscriptionModel', {
+      'slug': slug,
+    });
+    return true;
+  } catch (e) {
+    _logger.w('Failed to delete local transcription model', e);
+    return false;
+  }
+}
+
+Future<bool> selectLocalTranscriptionModel(String slug) async {
+  if (!_canSync) return false;
+
+  try {
+    final result = await _sharedChannel.invokeMethod<dynamic>(
+      'selectLocalTranscriptionModel',
+      {'slug': slug},
+    );
+    if (result is bool) return result;
+    return true;
+  } catch (e) {
+    _logger.w('Failed to select local transcription model', e);
+    return false;
+  }
+}
+
+LocalTranscriptionModel _localTranscriptionModelFromMap(
+  Map<String, dynamic> map,
+) {
+  return LocalTranscriptionModel(
+    slug: map['slug'] as String,
+    label: map['label'] as String,
+    helper: map['helper'] as String,
+    sizeBytes: (map['sizeBytes'] as num).toInt(),
+    languageSupport: _localTranscriptionLanguageSupportFromValue(
+      map['languageSupport'] as String?,
+    ),
+    downloaded: map['downloaded'] == true,
+    valid: map['valid'] == true,
+    selected: map['selected'] == true,
+    downloadProgress: (map['downloadProgress'] as num?)?.toDouble(),
+    validationError: map['validationError'] as String?,
+  );
+}
+
+LocalTranscriptionLanguageSupport _localTranscriptionLanguageSupportFromValue(
+  String? value,
+) {
+  return switch (value) {
+    'englishOnly' => LocalTranscriptionLanguageSupport.englishOnly,
+    _ => LocalTranscriptionLanguageSupport.multilingual,
+  };
 }
 
 Future<void> syncKeyboardDictationLanguages({

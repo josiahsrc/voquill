@@ -10,6 +10,7 @@ node_modules
 .ignore
 .claude
 .venv
+.worktrees/
 
 # Local env files
 .env

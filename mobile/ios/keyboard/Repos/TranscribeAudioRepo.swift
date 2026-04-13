@@ -174,11 +174,13 @@ class CloudTranscribeAudioRepo: BaseTranscribeAudioRepo {
 enum TranscribeError: Error, LocalizedError {
     case noAudioData
     case exportFailed(String)
+    case invalidConfiguration(String)
 
     var errorDescription: String? {
         switch self {
         case .noAudioData: return "No audio data found"
         case .exportFailed(let msg): return "Audio export failed: \(msg)"
+        case .invalidConfiguration(let msg): return msg
         }
     }
 }

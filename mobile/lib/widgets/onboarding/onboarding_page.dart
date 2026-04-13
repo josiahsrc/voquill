@@ -19,30 +19,33 @@ class OnboardingPage extends StatefulWidget {
 }
 
 class _OnboardingPageState extends State<OnboardingPage> {
-  MultiPageController? _controller;
+  late MultiPageController _controller;
 
   @override
   void initState() {
     super.initState();
+    _controller = MultiPageController();
+    _controller.addListener(_handleControllerChanged);
     _restore();
   }
 
   Future<void> _restore() async {
     final saved = await restoreOnboardingProgress();
-    if (!mounted) return;
-    final MultiPageController controller;
-    if (saved != null) {
-      controller = MultiPageController.restore(
-        target: saved.target,
-        history: saved.history,
-      );
-    } else {
-      controller = MultiPageController();
-    }
-    controller.addListener(() => _onPageChanged(controller));
+    if (!mounted || saved == null) return;
+    final controller = MultiPageController.restore(
+      target: saved.target,
+      history: saved.history,
+    );
+    controller.addListener(_handleControllerChanged);
     setState(() {
+      _controller.removeListener(_handleControllerChanged);
+      _controller.dispose();
       _controller = controller;
     });
+  }
+
+  void _handleControllerChanged() {
+    _onPageChanged(_controller);
   }
 
   void _onPageChanged(MultiPageController controller) {
@@ -55,20 +58,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _controller.removeListener(_handleControllerChanged);
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = _controller;
-    if (controller == null) {
-      return const Scaffold(body: SizedBox.shrink());
-    }
-
     return Scaffold(
       body: MultiPagePresenter(
-        controller: controller,
+        controller: _controller,
         items: [
           MultiPageItem.fromPage(const CreateAccountForm()),
           MultiPageItem.fromPage(const AboutYouForm()),

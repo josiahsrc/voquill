@@ -117,7 +117,8 @@ enum ApiKeyProvider {
 
 enum AiMode {
   cloud,
-  api;
+  api,
+  local;
 
   String get displayName {
     switch (this) {
@@ -125,6 +126,8 @@ enum AiMode {
         return 'Cloud';
       case AiMode.api:
         return 'API';
+      case AiMode.local:
+        return 'Local';
     }
   }
 }

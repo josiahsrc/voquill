@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:app/actions/ai_settings_actions.dart';
 import 'package:app/actions/session_actions.dart';
 import 'package:intl/intl.dart';
 import 'package:app/api/dictation_api.dart';
+import 'package:app/model/api_key_model.dart';
 import 'package:app/store/store.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/utils/audio_utils.dart';
@@ -43,6 +45,7 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
   DictationSession? _session;
   StreamSubscription? _audioSub;
   StreamSubscription? _partialSub;
+  AiMode? _transcriptionMode;
 
   double _audioLevel = 0;
   _PageStatus _status = _PageStatus.idle;
@@ -54,6 +57,14 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
   bool get _isRecording => _status == _PageStatus.recording;
   bool get _isIdle => _status == _PageStatus.idle;
   bool get _isProcessing => _status == _PageStatus.processing;
+  bool get _isModeLoading => _transcriptionMode == null;
+  bool get _localModeUnavailable => _transcriptionMode == AiMode.local;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadTranscriptionMode());
+  }
 
   @override
   void dispose() {
@@ -61,8 +72,14 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
     super.dispose();
   }
 
+  Future<void> _loadTranscriptionMode() async {
+    final mode = await getTranscriptionMode();
+    if (!mounted) return;
+    setState(() => _transcriptionMode = mode);
+  }
+
   Future<void> _startRecording() async {
-    if (_isRecording) return;
+    if (_isRecording || _isModeLoading || _localModeUnavailable) return;
 
     setState(() => _status = _PageStatus.recording);
 
@@ -101,6 +118,9 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
     } catch (e) {
       _logger.e('Failed to start recording: $e');
       _cancel();
+      if (mounted) {
+        setState(() => _status = _PageStatus.idle);
+      }
     }
   }
 
@@ -152,12 +172,13 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
     _recorder = null;
     _session = null;
     _mode = null;
+    _status = _PageStatus.idle;
     _audioLevel = 0;
     _partialText = '';
   }
 
   void _onTapDown(TapDownDetails _) {
-    if (_isProcessing) return;
+    if (_isProcessing || _isModeLoading || _localModeUnavailable) return;
 
     if (_isIdle) {
       _mode = _DictationMode.waitingForMode;
@@ -237,6 +258,40 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
   }
 
   Widget _buildEmptyState(ThemeData theme, AppColors colors) {
+    if (_localModeUnavailable) {
+      return Center(
+        child: Padding(
+          padding: Theming.padding.copyWith(top: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.phonelink_erase_rounded,
+                size: 72,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
+              const SizedBox(height: 32),
+              Text(
+                'Local transcription stays on device',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Air Transcription does not support local mode yet. Use the Voquill keyboard or switch AI Transcription to Cloud or API Key.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Center(
       child: Padding(
         padding: Theming.padding.copyWith(top: 32),
@@ -335,6 +390,27 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
   }
 
   Widget _buildPill(ThemeData theme, AppColors colors) {
+    if (_localModeUnavailable) {
+      return Container(
+        width: _pillWidth,
+        height: _pillHeight,
+        decoration: BoxDecoration(
+          color: colors.level2,
+          borderRadius: BorderRadius.circular(_pillRadius),
+        ),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Text(
+          'Local mode unavailable here',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: colors.onLevel2.withValues(alpha: 0.8),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }
+
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
@@ -357,15 +433,20 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
               opacity: _isIdle ? 1 : 0,
               duration: const Duration(milliseconds: 150),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.mic_rounded, size: 28, color: colors.onPrimary),
                   const SizedBox(width: 8),
-                  Text(
-                    'Tap to dictate',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: colors.onPrimary,
-                      fontWeight: FontWeight.w500,
+                  Flexible(
+                    child: Text(
+                      'Tap to dictate',
+                      overflow: TextOverflow.fade,
+                      softWrap: false,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: colors.onPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
