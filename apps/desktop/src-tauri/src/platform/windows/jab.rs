@@ -192,6 +192,7 @@ static JAB_API_STANDARD: OnceLock<Option<JabApi>> = OnceLock::new();
 static JAB_API_PID_BASED: OnceLock<Option<JabApi>> = OnceLock::new();
 static JAB_BRIDGE_RUNNING: AtomicBool = AtomicBool::new(false);
 
+#[allow(clippy::missing_transmute_annotations)]
 fn load_jab_from_path(dll_path: &std::path::Path) -> Option<JabApi> {
     log::info!("Loading JAB DLL from: {}", dll_path.display());
 
@@ -401,7 +402,7 @@ pub fn gather_jab_dump(hwnd: HWND) -> Option<(String, usize)> {
         let mut lines: Vec<String> = Vec::new();
         let mut count: usize = 0;
 
-        dump_jab_element(&api, vm_id, ac, 0, &mut lines, &mut count);
+        dump_jab_element(api, vm_id, ac, 0, &mut lines, &mut count);
         (api.release_object)(vm_id, ac);
 
         if lines.is_empty() {
@@ -450,7 +451,7 @@ unsafe fn dump_jab_element(
     }
 
     if info.accessible_text != 0 {
-        extract_text_append(&api, vm_id, ac, &mut line);
+        extract_text_append(api, vm_id, ac, &mut line);
     }
 
     let mut annotations: Vec<String> = Vec::new();
@@ -659,7 +660,7 @@ pub fn jab_write_text(hwnd: HWND, index_path: &[usize], text: &str) -> Result<()
         init_jab_for_hwnd(hwnd).ok_or_else(|| "JAB bridge not available".to_string())?;
 
     unsafe {
-        let target = navigate_to_element(&api, vm_id, root_ac, index_path)?;
+        let target = navigate_to_element(api, vm_id, root_ac, index_path)?;
         let ac_to_write = if target == 0 { root_ac } else { target };
 
         // Convert text to null-terminated UTF-16
@@ -689,7 +690,7 @@ pub fn jab_focus_element(hwnd: HWND, index_path: &[usize]) -> Result<(), String>
         init_jab_for_hwnd(hwnd).ok_or_else(|| "JAB bridge not available".to_string())?;
 
     unsafe {
-        let target = navigate_to_element(&api, vm_id, root_ac, index_path)?;
+        let target = navigate_to_element(api, vm_id, root_ac, index_path)?;
         let ac_to_focus = if target == 0 { root_ac } else { target };
 
         let result = (api.request_focus)(vm_id, ac_to_focus);
@@ -732,7 +733,7 @@ pub fn jab_set_caret_position(hwnd: HWND, index_path: &[usize], position: usize)
         init_jab_for_hwnd(hwnd).ok_or_else(|| "JAB bridge not available".to_string())?;
 
     unsafe {
-        let target = navigate_to_element(&api, vm_id, root_ac, index_path)?;
+        let target = navigate_to_element(api, vm_id, root_ac, index_path)?;
         let ac = if target == 0 { root_ac } else { target };
 
         let result = (api.set_caret_position)(vm_id, ac, position as i32);
@@ -760,7 +761,7 @@ pub fn jab_read_text(hwnd: HWND, index_path: &[usize]) -> Result<Option<String>,
         init_jab_for_hwnd(hwnd).ok_or_else(|| "JAB bridge not available".to_string())?;
 
     unsafe {
-        let target = navigate_to_element(&api, vm_id, root_ac, index_path)?;
+        let target = navigate_to_element(api, vm_id, root_ac, index_path)?;
         let ac = if target == 0 { root_ac } else { target };
 
         let mut info: AccessibleContextInfo = std::mem::zeroed();

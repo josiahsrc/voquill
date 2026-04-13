@@ -317,7 +317,7 @@ fn try_gather_accessibility_dump() -> Result<AccessibilityDumpResult, windows::c
 
         // Recursively dump the full tree
         dump_children(
-            &automation,
+            automation,
             &window_element,
             1,
             &mut lines,
@@ -907,10 +907,8 @@ unsafe fn find_matching_child(
     for i in 0..count {
         if let Ok(child) = children.GetElement(i) {
             let s = score_element_match(&child, fingerprint, i as usize);
-            if s > 0 {
-                if best_match.as_ref().map_or(true, |(_, bs)| s > *bs) {
-                    best_match = Some((child, s));
-                }
+            if s > 0 && best_match.as_ref().is_none_or(|(_, bs)| s > *bs) {
+                best_match = Some((child, s));
             }
         }
     }
@@ -1310,10 +1308,6 @@ fn resolve_element_by_path(
     index_path: &[usize],
 ) -> Result<IUIAutomationElement, String> {
     unsafe {
-        let tree_walker = automation
-            .ControlViewWalker()
-            .map_err(|e| format!("Failed to get tree walker: {e}"))?;
-
         let root = automation
             .GetRootElement()
             .map_err(|e| format!("Failed to get root element: {e}"))?;
