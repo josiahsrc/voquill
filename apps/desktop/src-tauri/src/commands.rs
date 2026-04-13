@@ -51,6 +51,107 @@ pub struct ScreenContextInfo {
     pub screen_context: Option<String>,
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AccessibilityDumpResult {
+    pub dump: Option<String>,
+    pub window_title: Option<String>,
+    pub process_name: Option<String>,
+    pub element_count: usize,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ElementFingerprint {
+    pub automation_id: Option<String>,
+    pub class_name: Option<String>,
+    pub control_type: i32,
+    pub name: Option<String>,
+    pub framework_id: Option<String>,
+    pub child_index: usize,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AccessibilityFieldInfo {
+    pub role: Option<String>,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub value: Option<String>,
+    pub placeholder: Option<String>,
+    pub app_pid: Option<i32>,
+    pub app_name: Option<String>,
+    pub window_title: Option<String>,
+    pub is_settable: bool,
+    pub element_index_path: Vec<usize>,
+    pub fingerprint_chain: Vec<ElementFingerprint>,
+    pub can_paste: bool,
+    #[serde(default)]
+    pub backend: Option<String>,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AccessibilityFocusTarget {
+    pub app_pid: i32,
+    pub element_index_path: Vec<usize>,
+    pub fingerprint_chain: Option<Vec<ElementFingerprint>>,
+    #[serde(default)]
+    pub backend: Option<String>,
+}
+
+#[derive(serde::Deserialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum JabWriteMethod {
+    /// JAB `setTextContents` API — replaces entire field contents directly.
+    SetTextContents,
+    /// Focus element → Ctrl+A → Ctrl+V (clipboard paste). Default.
+    #[default]
+    ClipboardPaste,
+    /// Focus element → Ctrl+A → type each character via SendInput.
+    KeystrokeSimulation,
+    /// Read current text, compute diff, apply minimal edits via cursor + keystrokes.
+    KeystrokeSimulationSmart,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AccessibilityWriteEntry {
+    pub app_pid: i32,
+    pub element_index_path: Vec<usize>,
+    pub fingerprint_chain: Option<Vec<ElementFingerprint>>,
+    pub value: String,
+    #[serde(default)]
+    pub backend: Option<String>,
+    #[serde(default)]
+    pub jab_write_method: JabWriteMethod,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AccessibilityWriteResult {
+    pub succeeded: usize,
+    pub failed: usize,
+    pub errors: Vec<String>,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FieldValueRequest {
+    pub app_pid: i32,
+    pub element_index_path: Vec<usize>,
+    pub fingerprint_chain: Option<Vec<ElementFingerprint>>,
+    #[serde(default)]
+    pub backend: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FieldValueResult {
+    pub value: Option<String>,
+    pub error: Option<String>,
+}
+
 #[derive(Debug, Clone, Copy, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PasteTargetState {
@@ -1303,8 +1404,8 @@ pub async fn paste(text: String, keybind: Option<String>) -> Result<PasteOutcome
 
     if matches!(target, PasteTargetState::NotEditable) {
         let copy_result = tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
-            let mut clipboard = arboard::Clipboard::new()
-                .map_err(|e| format!("clipboard unavailable: {e}"))?;
+            let mut clipboard =
+                arboard::Clipboard::new().map_err(|e| format!("clipboard unavailable: {e}"))?;
             clipboard
                 .set_text(text)
                 .map_err(|e| format!("failed to set clipboard: {e}"))
@@ -1487,6 +1588,80 @@ pub async fn get_selected_text() -> Result<Option<String>, String> {
     )
     .await
     .map_err(|_| "get_selected_text timed out".to_string())?
+    .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn gather_accessibility_dump() -> Result<AccessibilityDumpResult, String> {
+    tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        tauri::async_runtime::spawn_blocking(
+            crate::platform::accessibility::gather_accessibility_dump,
+        ),
+    )
+    .await
+    .map_err(|_| "gather_accessibility_dump timed out".to_string())?
+    .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn get_focused_field_info() -> Result<Option<AccessibilityFieldInfo>, String> {
+    tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        tauri::async_runtime::spawn_blocking(
+            crate::platform::accessibility::get_focused_field_info,
+        ),
+    )
+    .await
+    .map_err(|_| "get_focused_field_info timed out".to_string())?
+    .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn write_accessibility_fields(
+    entries: Vec<AccessibilityWriteEntry>,
+) -> Result<AccessibilityWriteResult, String> {
+    tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        tauri::async_runtime::spawn_blocking(move || {
+            crate::platform::accessibility::write_accessibility_fields(entries)
+        }),
+    )
+    .await
+    .map_err(|_| "write_accessibility_fields timed out".to_string())?
+    .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn focus_accessibility_field(target: AccessibilityFocusTarget) -> Result<(), String> {
+    tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        tauri::async_runtime::spawn_blocking(move || {
+            crate::platform::accessibility::focus_accessibility_field(
+                target.app_pid,
+                &target.element_index_path,
+                target.fingerprint_chain.as_deref(),
+                target.backend.as_deref(),
+            )
+        }),
+    )
+    .await
+    .map_err(|_| "focus_accessibility_field timed out".to_string())?
+    .map_err(|err| err.to_string())?
+}
+
+#[tauri::command]
+pub async fn read_accessibility_field_values(
+    fields: Vec<FieldValueRequest>,
+) -> Result<Vec<FieldValueResult>, String> {
+    tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        tauri::async_runtime::spawn_blocking(move || {
+            crate::platform::accessibility::read_field_values(fields)
+        }),
+    )
+    .await
+    .map_err(|_| "read_accessibility_field_values timed out".to_string())?
     .map_err(|err| err.to_string())
 }
 

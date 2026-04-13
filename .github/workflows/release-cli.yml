@@ -1,0 +1,602 @@
+name: Release CLI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "cli/**"
+      - ".github/workflows/release-cli.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Release environment (prod promotes the most recent dev tag)"
+        type: choice
+        required: true
+        default: prod
+        options:
+          - prod
+          - dev
+      version:
+        description: "Semver version to promote (prod only, defaults to latest dev tag)"
+        required: false
+        type: string
+
+jobs:
+  metadata:
+    name: Determine release metadata
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tag_name: ${{ steps.meta.outputs.tag_name }}
+      commit_sha: ${{ steps.meta.outputs.commit_sha }}
+      release_env: ${{ steps.meta.outputs.release_env }}
+      release_suffix: ${{ steps.meta.outputs.release_suffix }}
+      binary_name: ${{ steps.meta.outputs.binary_name }}
+      dev_tag_name: ${{ steps.meta.outputs.dev_tag_name }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute release metadata
+        id: meta
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_ENVIRONMENT: ${{ github.event.inputs.environment || '' }}
+          INPUT_VERSION: ${{ github.event.inputs.version || '' }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          if [[ "${EVENT_NAME}" == "push" ]]; then
+            RELEASE_ENV="dev"
+          else
+            case "${INPUT_ENVIRONMENT:-prod}" in
+              dev|prod)
+                RELEASE_ENV="${INPUT_ENVIRONMENT:-prod}"
+                ;;
+              *)
+                echo "Unsupported environment '${INPUT_ENVIRONMENT}'" >&2
+                exit 1
+                ;;
+            esac
+          fi
+
+          SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+$'
+          INPUT_VERSION="${INPUT_VERSION:-}"
+
+          mapfile -t DEV_TAGS < <(git tag --list 'cli-dev-v*' --sort=-v:refname)
+          mapfile -t PROD_TAGS < <(git tag --list 'cli-v*' --sort=-v:refname)
+          LAST_DEV_TAG="${DEV_TAGS[0]:-}"
+          LAST_PROD_TAG="${PROD_TAGS[0]:-}"
+
+          if [[ "${RELEASE_ENV}" == "dev" ]]; then
+            if [[ -n "${INPUT_VERSION}" ]]; then
+              echo "Ignoring manual version '${INPUT_VERSION}' for dev release (automatic patch bump used)." >&2
+            fi
+
+            if [[ -z "${LAST_DEV_TAG}" ]]; then
+              VERSION_BASE="0.0.0"
+            else
+              VERSION_BASE="${LAST_DEV_TAG#cli-dev-v}"
+            fi
+
+            if [[ ! "${VERSION_BASE}" =~ ${SEMVER_REGEX} ]]; then
+              echo "Last dev tag (${LAST_DEV_TAG:-none}) is not in x.y.z format." >&2
+              exit 1
+            fi
+
+            IFS='.' read -r MAJOR MINOR PATCH <<< "${VERSION_BASE}"
+            PATCH=$((PATCH + 1))
+            VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            TAG_NAME="cli-dev-v${VERSION}"
+            COMMIT_SHA="${GITHUB_SHA}"
+            DEV_TAG_NAME="${TAG_NAME}"
+            BINARY_NAME="voquill-dev"
+            RELEASE_SUFFIX="-dev"
+          else
+            if [[ -n "${INPUT_VERSION}" ]]; then
+              TARGET_VERSION="${INPUT_VERSION}"
+              if [[ ! "${TARGET_VERSION}" =~ ${SEMVER_REGEX} ]]; then
+                echo "Provided version '${TARGET_VERSION}' is not in x.y.z format." >&2
+                exit 1
+              fi
+              TARGET_DEV_TAG="cli-dev-v${TARGET_VERSION}"
+              if ! git rev-parse -q --verify "refs/tags/${TARGET_DEV_TAG}" >/dev/null; then
+                echo "Dev tag ${TARGET_DEV_TAG} not found for promotion." >&2
+                exit 1
+              fi
+            else
+              if [[ -z "${LAST_DEV_TAG}" ]]; then
+                echo "No dev tag found to promote to prod." >&2
+                exit 1
+              fi
+              TARGET_DEV_TAG="${LAST_DEV_TAG}"
+              TARGET_VERSION="${TARGET_DEV_TAG#cli-dev-v}"
+              if [[ ! "${TARGET_VERSION}" =~ ${SEMVER_REGEX} ]]; then
+                echo "Dev tag ${TARGET_DEV_TAG} is not in x.y.z format." >&2
+                exit 1
+              fi
+            fi
+
+            VERSION="${TARGET_VERSION}"
+            TAG_NAME="cli-v${VERSION}"
+            COMMIT_SHA="$(git rev-parse "${TARGET_DEV_TAG}^{commit}")"
+            DEV_TAG_NAME="${TARGET_DEV_TAG}"
+            BINARY_NAME="voquill"
+            RELEASE_SUFFIX=""
+          fi
+
+          if git rev-parse -q --verify "refs/tags/${TAG_NAME}" >/dev/null; then
+            echo "Tag ${TAG_NAME} already exists. Aborting." >&2
+            exit 1
+          fi
+
+          {
+            echo "release_env=${RELEASE_ENV}"
+            echo "release_suffix=${RELEASE_SUFFIX}"
+            echo "version=${VERSION}"
+            echo "tag_name=${TAG_NAME}"
+            echo "commit_sha=${COMMIT_SHA}"
+            echo "dev_tag_name=${DEV_TAG_NAME}"
+            echo "binary_name=${BINARY_NAME}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ steps.meta.outputs.tag_name }}
+          COMMIT_SHA: ${{ steps.meta.outputs.commit_sha }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          RELEASE_SUFFIX: ${{ steps.meta.outputs.release_suffix }}
+          RELEASE_ENV: ${{ steps.meta.outputs.release_env }}
+        run: |
+          set -euo pipefail
+          prerelease_flag=""
+          if [[ "${RELEASE_ENV}" != "prod" ]]; then
+            prerelease_flag="--prerelease"
+          fi
+          gh release create "${TAG_NAME}" \
+            --target "${COMMIT_SHA}" \
+            --title "cli${RELEASE_SUFFIX} v${VERSION}" \
+            --notes "Voquill CLI ${RELEASE_SUFFIX:+(dev) }release ${VERSION}" \
+            ${prerelease_flag}
+
+  build:
+    name: Build ${{ matrix.label }}
+    needs: metadata
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: macOS x86_64
+            os: macos-14
+            target: x86_64-apple-darwin
+            archive_ext: tar.gz
+          - label: macOS arm64
+            os: macos-14
+            target: aarch64-apple-darwin
+            archive_ext: tar.gz
+          - label: Linux x86_64
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            archive_ext: tar.gz
+            build_packages: true
+            deb_arch: amd64
+            rpm_arch: x86_64
+          - label: Linux arm64
+            os: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+            archive_ext: tar.gz
+            build_packages: true
+            deb_arch: arm64
+            rpm_arch: aarch64
+          - label: Windows x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive_ext: zip
+    env:
+      VERSION: ${{ needs.metadata.outputs.version }}
+      TAG_NAME: ${{ needs.metadata.outputs.tag_name }}
+      RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+      BINARY_NAME: ${{ needs.metadata.outputs.binary_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.metadata.outputs.commit_sha }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: cli -> target
+          key: cli-${{ matrix.target }}
+
+      - name: Pin crate version (unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        working-directory: cli
+        run: |
+          set -euo pipefail
+          perl -i -pe 's/^version = "[^"]*"$/version = "'"${VERSION}"'"/ if $. < 20' Cargo.toml
+          grep -m1 '^version' Cargo.toml
+
+      - name: Pin crate version (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: cli
+        run: |
+          $content = Get-Content Cargo.toml -Raw
+          $content = [regex]::Replace($content, '(?m)^version = "[^"]*"$', "version = `"$env:VERSION`"", 1)
+          Set-Content -Path Cargo.toml -Value $content -NoNewline
+          Get-Content Cargo.toml | Select-Object -First 10
+
+      - name: Build release binary
+        shell: bash
+        working-directory: cli
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          cargo build --release --target "${TARGET}" --bin "${BINARY_NAME}"
+
+      - name: Package tarball (unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          staging="dist/${BINARY_NAME}-${TARGET}"
+          mkdir -p "${staging}"
+          cp "cli/target/${TARGET}/release/${BINARY_NAME}" "${staging}/${BINARY_NAME}"
+          cp cli/README.md "${staging}/README.md"
+          [[ -f LICENCE ]] && cp LICENCE "${staging}/LICENSE" || true
+          tar czf "dist/${BINARY_NAME}-${TARGET}.tar.gz" -C dist "${BINARY_NAME}-${TARGET}"
+          rm -rf "${staging}"
+          ls -la dist
+
+      - name: Package zip (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $staging = "dist/$env:BINARY_NAME-$env:TARGET"
+          New-Item -ItemType Directory -Force -Path $staging | Out-Null
+          Copy-Item "cli/target/$env:TARGET/release/$env:BINARY_NAME.exe" "$staging/$env:BINARY_NAME.exe"
+          Copy-Item "cli/README.md" "$staging/README.md"
+          if (Test-Path "LICENCE") { Copy-Item "LICENCE" "$staging/LICENSE" }
+          Compress-Archive -Path $staging -DestinationPath "dist/$env:BINARY_NAME-$env:TARGET.zip" -Force
+          Remove-Item -Recurse -Force $staging
+          Get-ChildItem dist
+
+      - name: Build .deb and .rpm packages
+        if: matrix.build_packages
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          DEB_ARCH: ${{ matrix.deb_arch }}
+          RPM_ARCH: ${{ matrix.rpm_arch }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev rpm build-essential
+          sudo gem install --no-document fpm
+
+          desc="Voquill CLI"
+          if [[ "${BINARY_NAME}" == "voquill-dev" ]]; then
+            desc="Voquill CLI (dev build, targets dev Firebase backend)"
+          fi
+
+          fpm \
+            -s dir \
+            -t deb \
+            -n "${BINARY_NAME}" \
+            -v "${VERSION}" \
+            -a "${DEB_ARCH}" \
+            --description "${desc}" \
+            --license "MIT" \
+            --url "https://voquill.com" \
+            --maintainer "Voquill <hello@voquill.com>" \
+            --deb-no-default-config-files \
+            -p "dist/${BINARY_NAME}_${VERSION}_${DEB_ARCH}.deb" \
+            "cli/target/${TARGET}/release/${BINARY_NAME}=/usr/bin/${BINARY_NAME}"
+
+          fpm \
+            -s dir \
+            -t rpm \
+            -n "${BINARY_NAME}" \
+            -v "${VERSION}" \
+            -a "${RPM_ARCH}" \
+            --description "${desc}" \
+            --license "MIT" \
+            --url "https://voquill.com" \
+            --maintainer "Voquill <hello@voquill.com>" \
+            --rpm-summary "${desc}" \
+            -p "dist/${BINARY_NAME}-${VERSION}-1.${RPM_ARCH}.rpm" \
+            "cli/target/${TARGET}/release/${BINARY_NAME}=/usr/bin/${BINARY_NAME}"
+
+          ls -la dist
+
+      - name: Upload assets to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd dist
+          shopt -s nullglob
+          for f in *.tar.gz *.zip *.deb *.rpm; do
+            echo "Uploading $f"
+            gh release upload "$TAG_NAME" "$f" --clobber
+          done
+
+  publish-apt:
+    name: Publish to APT repository
+    needs: [metadata, build]
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+      RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+      BINARY_NAME: ${{ needs.metadata.outputs.binary_name }}
+    steps:
+      - name: Download .deb files from release
+        run: |
+          set -euo pipefail
+          mkdir -p debs
+          gh release download "$RELEASE_TAG" --pattern "*.deb" --dir debs --repo "$GITHUB_REPOSITORY"
+          ls -la debs
+          if [[ -z "$(ls -A debs)" ]]; then
+            echo "No .deb files found in release ${RELEASE_TAG}" >&2
+            exit 1
+          fi
+
+      - name: Clone APT repository
+        run: |
+          set -euo pipefail
+          git clone "https://x-access-token:${{ secrets.PACKAGE_REPO_TOKEN }}@github.com/voquill/apt.git" apt-repo
+
+      - name: Import GPG key
+        env:
+          PACKAGE_GPG_PRIVATE_KEY: ${{ secrets.PACKAGE_GPG_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          echo "${PACKAGE_GPG_PRIVATE_KEY}" | gpg --batch --import
+
+      - name: Install reprepro
+        run: sudo apt-get update && sudo apt-get install -y reprepro
+
+      - name: Add packages to repository
+        run: |
+          set -euo pipefail
+          cd apt-repo
+
+          if [[ "${RELEASE_ENV}" == "prod" ]]; then
+            codename="stable"
+          else
+            codename="dev"
+          fi
+
+          for deb in ../debs/*.deb; do
+            # Add Section field if missing (required by reprepro)
+            mkdir -p ../repack
+            dpkg-deb -R "${deb}" ../repack/
+            if ! grep -q "^Section:" ../repack/DEBIAN/control; then
+              echo "Section: utils" >> ../repack/DEBIAN/control
+              dpkg-deb -b ../repack "${deb}"
+            fi
+            rm -rf ../repack
+
+            echo "Adding ${deb} to codename '${codename}'"
+            reprepro --basedir . includedeb "${codename}" "${deb}"
+          done
+
+      - name: Push updated repository
+        run: |
+          set -euo pipefail
+          cd apt-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && { echo "No changes to commit"; exit 0; }
+          git commit -m "Update ${BINARY_NAME} packages from ${RELEASE_TAG}"
+          git push
+
+  publish-rpm:
+    name: Publish to RPM repository
+    needs: [metadata, build]
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+      RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+      BINARY_NAME: ${{ needs.metadata.outputs.binary_name }}
+    steps:
+      - name: Download .rpm files from release
+        run: |
+          set -euo pipefail
+          mkdir -p rpms
+          gh release download "$RELEASE_TAG" --pattern "*.rpm" --dir rpms --repo "$GITHUB_REPOSITORY"
+          ls -la rpms
+          if [[ -z "$(ls -A rpms)" ]]; then
+            echo "No .rpm files found in release ${RELEASE_TAG}" >&2
+            exit 1
+          fi
+
+      - name: Clone RPM repository
+        run: |
+          set -euo pipefail
+          git clone "https://x-access-token:${{ secrets.PACKAGE_REPO_TOKEN }}@github.com/voquill/rpm.git" rpm-repo
+
+      - name: Import GPG key
+        env:
+          PACKAGE_GPG_PRIVATE_KEY: ${{ secrets.PACKAGE_GPG_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          echo "${PACKAGE_GPG_PRIVATE_KEY}" | gpg --batch --import
+
+      - name: Install createrepo and rpm tools
+        run: sudo apt-get update && sudo apt-get install -y createrepo-c rpm
+
+      - name: Add packages to repository
+        run: |
+          set -euo pipefail
+          cd rpm-repo
+
+          if [[ "${RELEASE_ENV}" == "prod" ]]; then
+            channel="stable"
+          else
+            channel="dev"
+          fi
+
+          GPG_KEY_ID="$(gpg --list-keys --with-colons 2>/dev/null | awk -F: '/^pub/{print $5}' | head -1)"
+          echo "%_gpg_name ${GPG_KEY_ID}" > ~/.rpmmacros
+          echo "%__gpg /usr/bin/gpg" >> ~/.rpmmacros
+
+          for rpm in ../rpms/*.rpm; do
+            arch="$(rpm -qp --queryformat '%{ARCH}' "${rpm}")"
+            mkdir -p "packages/${channel}/${arch}"
+            cp "${rpm}" "packages/${channel}/${arch}/"
+            dest="packages/${channel}/${arch}/$(basename "${rpm}")"
+            rpmsign --addsign "${dest}"
+          done
+
+          # Match desktop's layout: metadata only at channel root.
+          # createrepo scans subdirs recursively and picks up all packages
+          # (both CLI and desktop RPMs coexist by filename — voquill-* vs
+          # voquill-desktop-*). Re-signing repomd.xml with the same key is
+          # idempotent.
+          createrepo_c --update "packages/${channel}"
+          gpg --batch --yes --detach-sign --armor "packages/${channel}/repodata/repomd.xml"
+
+      - name: Push updated repository
+        run: |
+          set -euo pipefail
+          cd rpm-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && { echo "No changes to commit"; exit 0; }
+          git commit -m "Update ${BINARY_NAME} packages from ${RELEASE_TAG}"
+          git push
+
+  publish-brew:
+    name: Publish to Homebrew tap
+    needs: [metadata, build]
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+      RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+      BINARY_NAME: ${{ needs.metadata.outputs.binary_name }}
+      VERSION: ${{ needs.metadata.outputs.version }}
+    steps:
+      - name: Download tarballs from release
+        run: |
+          set -euo pipefail
+          mkdir -p tars
+          gh release download "$RELEASE_TAG" --pattern "${BINARY_NAME}-*-apple-darwin.tar.gz" --dir tars --repo "$GITHUB_REPOSITORY"
+          gh release download "$RELEASE_TAG" --pattern "${BINARY_NAME}-*-unknown-linux-gnu.tar.gz" --dir tars --repo "$GITHUB_REPOSITORY"
+          ls -la tars
+
+      - name: Compute sha256s
+        id: shas
+        run: |
+          set -euo pipefail
+          compute_sha() {
+            sha256sum "tars/${BINARY_NAME}-$1.tar.gz" | awk '{print $1}'
+          }
+          echo "darwin_arm64=$(compute_sha aarch64-apple-darwin)" >> "$GITHUB_OUTPUT"
+          echo "darwin_x86_64=$(compute_sha x86_64-apple-darwin)" >> "$GITHUB_OUTPUT"
+          echo "linux_arm64=$(compute_sha aarch64-unknown-linux-gnu)" >> "$GITHUB_OUTPUT"
+          echo "linux_x86_64=$(compute_sha x86_64-unknown-linux-gnu)" >> "$GITHUB_OUTPUT"
+
+      - name: Clone Homebrew tap repository
+        run: |
+          set -euo pipefail
+          git clone "https://x-access-token:${{ secrets.PACKAGE_REPO_TOKEN }}@github.com/voquill/homebrew-voquill.git" brew-tap
+
+      - name: Write formula
+        env:
+          SHA_DARWIN_ARM64: ${{ steps.shas.outputs.darwin_arm64 }}
+          SHA_DARWIN_X86_64: ${{ steps.shas.outputs.darwin_x86_64 }}
+          SHA_LINUX_ARM64: ${{ steps.shas.outputs.linux_arm64 }}
+          SHA_LINUX_X86_64: ${{ steps.shas.outputs.linux_x86_64 }}
+        run: |
+          set -euo pipefail
+          cd brew-tap
+          mkdir -p Formula
+
+          if [[ "${BINARY_NAME}" == "voquill-dev" ]]; then
+            class_name="VoquillDev"
+            desc="Voquill CLI (dev build, targets dev Firebase backend)"
+          else
+            class_name="Voquill"
+            desc="Voquill CLI"
+          fi
+
+          base_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}"
+
+          cat > "Formula/${BINARY_NAME}.rb" <<FORMULA
+          class ${class_name} < Formula
+            desc "${desc}"
+            homepage "https://voquill.com"
+            version "${VERSION}"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "${base_url}/${BINARY_NAME}-aarch64-apple-darwin.tar.gz"
+                sha256 "${SHA_DARWIN_ARM64}"
+              else
+                url "${base_url}/${BINARY_NAME}-x86_64-apple-darwin.tar.gz"
+                sha256 "${SHA_DARWIN_X86_64}"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "${base_url}/${BINARY_NAME}-aarch64-unknown-linux-gnu.tar.gz"
+                sha256 "${SHA_LINUX_ARM64}"
+              else
+                url "${base_url}/${BINARY_NAME}-x86_64-unknown-linux-gnu.tar.gz"
+                sha256 "${SHA_LINUX_X86_64}"
+              end
+            end
+
+            def install
+              bin.install "${BINARY_NAME}"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/${BINARY_NAME} --version")
+            end
+          end
+          FORMULA
+
+      - name: Push updated tap
+        run: |
+          set -euo pipefail
+          cd brew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && { echo "No changes to commit"; exit 0; }
+          git commit -m "Update ${BINARY_NAME} formula to ${VERSION} from ${RELEASE_TAG}"
+          git push

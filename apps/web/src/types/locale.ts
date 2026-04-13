@@ -1,4 +1,15 @@
-export const locales = ['en', 'es', 'de', 'fr', 'it', 'ko', 'pt', 'pt-BR', 'zh-CN', 'zh-TW'] as const;
+export const locales = [
+  "en",
+  "es",
+  "de",
+  "fr",
+  "it",
+  "ko",
+  "pt",
+  "pt-BR",
+  "zh-CN",
+  "zh-TW",
+] as const;
 
 export type Locale = (typeof locales)[number];
 
@@ -125,9 +136,48 @@ export interface TranslationMessages {
   downloadUnavailable: string;
   downloadLoadingOptions: string;
   downloadNoOptions: string;
+  authorizePageTitle: string;
+  authorizePageDescription: string;
+  authorizeTitleSignIn: string;
+  authorizeTitleSignUp: string;
+  authorizeTitleResetPassword: string;
+  authorizeTitleEmailSent: string;
+  authorizeContinueWithGoogle: string;
+  authorizeOr: string;
+  authorizeEmail: string;
+  authorizePassword: string;
+  authorizeConfirmPassword: string;
+  authorizeShowPassword: string;
+  authorizeHidePassword: string;
+  authorizeLogIn: string;
+  authorizeForgot: string;
+  authorizeCreateAccount: string;
+  authorizeHaveAccount: string;
+  authorizeResetDescription: string;
+  authorizeSendResetLink: string;
+  authorizeBack: string;
+  authorizeResetSentDescription: string;
+  authorizeTermsPrefix: string;
+  authorizeTermsLink: string;
+  authorizeAnd: string;
+  authorizePrivacyLink: string;
+  authorizeEnterValidEmail: string;
+  authorizePasswordMinLength: string;
+  authorizePasswordsDoNotMatch: string;
+  authorizeSigningIn: string;
+  authorizeCreatingAccount: string;
+  authorizeSending: string;
+  authorizeErrCliOnly: string;
+  authorizeErrInvalidCredential: string;
+  authorizeErrEmailInUse: string;
+  authorizeErrWeakPassword: string;
+  authorizeErrInvalidEmail: string;
+  authorizeErrCancelled: string;
+  authorizeErrTooManyRequests: string;
+  authorizeErrNetwork: string;
 }
 
 export type TranslationKey = keyof TranslationMessages;
 export type TranslationsByLocale = Record<Locale, TranslationMessages>;
 
-export const defaultLocale: Locale = 'en';
+export const defaultLocale: Locale = "en";

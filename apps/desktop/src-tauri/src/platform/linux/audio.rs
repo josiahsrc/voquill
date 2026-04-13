@@ -61,7 +61,10 @@ impl Recorder for PulseRecorder {
         }
 
         let preferred = {
-            let pref_guard = self.preferred_source.lock().unwrap_or_else(|p| p.into_inner());
+            let pref_guard = self
+                .preferred_source
+                .lock()
+                .unwrap_or_else(|p| p.into_inner());
             pref_guard.clone()
         };
 
@@ -83,7 +86,13 @@ impl Recorder for PulseRecorder {
         let thread = std::thread::Builder::new()
             .name("pulse-recorder".into())
             .spawn(move || {
-                record_loop(source_name.as_deref(), native_rate, stop_signal_clone, level_callback, chunk_callback)
+                record_loop(
+                    source_name.as_deref(),
+                    native_rate,
+                    stop_signal_clone,
+                    level_callback,
+                    chunk_callback,
+                )
             })
             .map_err(|err| RecordingError::StreamBuild(err.to_string()))?;
 
@@ -108,7 +117,10 @@ impl Recorder for PulseRecorder {
             *flag = true;
         }
 
-        let thread = recording.thread.take().ok_or(RecordingError::NotRecording)?;
+        let thread = recording
+            .thread
+            .take()
+            .ok_or(RecordingError::NotRecording)?;
         let result = thread
             .join()
             .map_err(|_| RecordingError::StreamBuild("recording thread panicked".into()))?;
@@ -117,9 +129,7 @@ impl Recorder for PulseRecorder {
     }
 
     fn set_preferred_input_device(&self, name: Option<String>) {
-        let sanitized = name
-            .map(|v| v.trim().to_string())
-            .filter(|v| !v.is_empty());
+        let sanitized = name.map(|v| v.trim().to_string()).filter(|v| !v.is_empty());
         match self.preferred_source.lock() {
             Ok(mut guard) => *guard = sanitized,
             Err(poisoned) => *poisoned.into_inner() = sanitized,
@@ -206,16 +216,18 @@ fn record_loop(
     };
 
     let source_cstr = source_name.and_then(|s| std::ffi::CString::new(s).ok());
-    let source_ref = source_cstr.as_ref().map(|c| c.as_c_str().to_str().unwrap_or_default());
+    let source_ref = source_cstr
+        .as_ref()
+        .map(|c| c.as_c_str().to_str().unwrap_or_default());
 
     let simple = match psimple::Simple::new(
-        None,                          // server (default)
-        "Voquill",                     // app name
+        None,      // server (default)
+        "Voquill", // app name
         pulse::stream::Direction::Record,
-        source_ref,                    // source (None = default)
-        "Recording",                   // stream description
+        source_ref,  // source (None = default)
+        "Recording", // stream description
         &spec,
-        None,                          // channel map (default)
+        None, // channel map (default)
         Some(&attr),
     ) {
         Ok(s) => s,
@@ -376,7 +388,10 @@ fn enumerate_pulse_sources() -> Vec<PulseSource> {
         }
     };
 
-    if ctx.connect(None, pulse::context::FlagSet::NOFLAGS, None).is_err() {
+    if ctx
+        .connect(None, pulse::context::FlagSet::NOFLAGS, None)
+        .is_err()
+    {
         log::error!("failed to connect PulseAudio context");
         return Vec::new();
     }
@@ -446,36 +461,34 @@ fn enumerate_pulse_sources() -> Vec<PulseSource> {
     let list_done = Arc::new(Mutex::new(false));
     let list_done_clone = Arc::clone(&list_done);
 
-    introspect.get_source_info_list(move |result| {
-        match result {
-            pulse::callbacks::ListResult::Item(info) => {
-                let name = info
-                    .name
-                    .as_ref()
-                    .map(|n| n.to_string())
-                    .unwrap_or_default();
-                let description = info
-                    .description
-                    .as_ref()
-                    .map(|d| d.to_string())
-                    .unwrap_or_else(|| name.clone());
-                let is_monitor = info.monitor_of_sink.is_some();
+    introspect.get_source_info_list(move |result| match result {
+        pulse::callbacks::ListResult::Item(info) => {
+            let name = info
+                .name
+                .as_ref()
+                .map(|n| n.to_string())
+                .unwrap_or_default();
+            let description = info
+                .description
+                .as_ref()
+                .map(|d| d.to_string())
+                .unwrap_or_else(|| name.clone());
+            let is_monitor = info.monitor_of_sink.is_some();
 
-                let sample_rate = info.sample_spec.rate;
-                if let Ok(mut guard) = sources_clone.lock() {
-                    guard.push(PulseSource {
-                        is_default: name == default_name_clone,
-                        name,
-                        description,
-                        is_monitor,
-                        sample_rate,
-                    });
-                }
+            let sample_rate = info.sample_spec.rate;
+            if let Ok(mut guard) = sources_clone.lock() {
+                guard.push(PulseSource {
+                    is_default: name == default_name_clone,
+                    name,
+                    description,
+                    is_monitor,
+                    sample_rate,
+                });
             }
-            pulse::callbacks::ListResult::End | pulse::callbacks::ListResult::Error => {
-                if let Ok(mut done) = list_done_clone.lock() {
-                    *done = true;
-                }
+        }
+        pulse::callbacks::ListResult::End | pulse::callbacks::ListResult::Error => {
+            if let Ok(mut done) = list_done_clone.lock() {
+                *done = true;
             }
         }
     });

@@ -174,9 +174,7 @@ pub async fn run_native_setup() -> NativeSetupResult {
 
         log::info!("Running native setup: pkexec sh -c \"{script}\"");
 
-        let status = Command::new("pkexec")
-            .args(["sh", "-c", &script])
-            .status();
+        let status = Command::new("pkexec").args(["sh", "-c", &script]).status();
 
         match status {
             Ok(s) if s.success() => {

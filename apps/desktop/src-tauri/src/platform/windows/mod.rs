@@ -2,6 +2,7 @@ pub mod accessibility;
 pub mod compositor;
 pub mod init;
 pub mod input;
+pub mod jab;
 pub mod keyboard;
 pub mod keyboard_language;
 pub mod monitor;
