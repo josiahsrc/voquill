@@ -135,7 +135,11 @@ class HomePage extends StatelessWidget {
                 children: sessions.values
                     .map(
                       (session) => AppListTile(
-                        leading: const Icon(Icons.computer_rounded),
+                        leading: Icon(
+                          session.type == 'cli'
+                              ? Icons.terminal_rounded
+                              : Icons.computer_rounded,
+                        ),
                         title: Text(session.name),
                         trailing: const Icon(Icons.chevron_right, size: 20),
                         onTap: () => context.push(

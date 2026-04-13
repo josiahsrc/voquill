@@ -58,6 +58,7 @@ class _DashboardPageState extends State<DashboardPage> {
             id: entry.key,
             name: value['name'] as String? ?? 'Unknown',
             lastActive: lastActive,
+            type: value['type'] as String?,
           );
         }
       }
