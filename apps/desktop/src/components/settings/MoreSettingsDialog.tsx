@@ -59,6 +59,7 @@ export const MoreSettingsDialog = () => {
     dictationLimitMinutes,
     disablePillRewards,
     accurateDictationEnabled,
+    disableAutoStyleLoading,
     isCloudUser,
     menuBarIconHidden,
   ] = useAppStore((state) => {
@@ -77,6 +78,7 @@ export const MoreSettingsDialog = () => {
       getEffectiveDictationLimitMinutes(prefs),
       state.local.disablePillRewards,
       state.local.accurateDictationEnabled,
+      state.local.disableAutoStyleLoading ?? false,
       getIsVoquillCloudUser(state),
       prefs?.menuBarIconHidden ?? false,
     ] as const;
@@ -172,6 +174,13 @@ export const MoreSettingsDialog = () => {
 
   const handleToggleMenuBarIcon = (event: ChangeEvent<HTMLInputElement>) => {
     void setMenuBarIconHidden(!event.target.checked);
+    
+  const handleToggleAutoStyleLoading = (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    produceAppState((draft) => {
+      draft.local.disableAutoStyleLoading = !event.target.checked;
+    });
   };
 
   const handleDictationLimitChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -361,6 +370,24 @@ export const MoreSettingsDialog = () => {
                     step: 1,
                     inputMode: "numeric",
                   }}
+                />
+              }
+            />
+          )}
+
+          {stylingMode === "manual" && (
+            <SettingSection
+              title={
+                <FormattedMessage defaultMessage="Automatic style loading" />
+              }
+              description={
+                <FormattedMessage defaultMessage="Automatically load the manual style configured for the current app when starting dictation." />
+              }
+              action={
+                <Switch
+                  edge="end"
+                  checked={!disableAutoStyleLoading}
+                  onChange={handleToggleAutoStyleLoading}
                 />
               }
             />

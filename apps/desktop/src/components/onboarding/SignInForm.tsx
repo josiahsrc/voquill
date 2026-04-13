@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
+import walkingImage from "../../assets/1-walking.png";
 import { signOut } from "../../actions/login.actions";
 import {
   goToOnboardingPage,
@@ -93,7 +94,7 @@ export const SignInForm = () => {
   const rightContent = (
     <Box
       component="img"
-      src="https://illustrations.popsy.co/amber/student-going-to-school.svg"
+      src={walkingImage}
       alt="Illustration"
       sx={{ maxWidth: 400, maxHeight: 400 }}
     />

@@ -3,14 +3,14 @@ import type {
   RouteTranscriptOutputArgs,
   RouteTranscriptOutputResult,
 } from "@voquill/types";
-import { showToast } from "../actions/toast.actions";
 import { getIntl } from "../i18n/intl";
 import { getAppState } from "../store";
 import { getLogger } from "./log.utils";
+import { sendPillFlashMessage } from "./overlay.utils";
 import { sanitizeIndentation } from "./string.utils";
 import { getMyUserPreferences } from "./user.utils";
 
-type PasteMethod = "accessibility" | "clipboard" | "noTarget";
+type PasteOutcome = "pasted" | "copied_to_clipboard";
 
 export const routeTranscriptOutput = async (
   args: RouteTranscriptOutputArgs,
@@ -61,30 +61,20 @@ export const insertLocalTranscriptOutput = async (
   keybind: string | null,
 ): Promise<void> => {
   const sanitized = sanitizeIndentation(text);
-  if (!sanitized.trim()) return;
 
-  let method: PasteMethod;
-  try {
-    method = await invoke<PasteMethod>("paste", {
-      text: sanitized,
-      keybind,
-    });
-  } catch (error) {
-    getLogger().error(`Paste command failed: ${error}`);
-    method = "noTarget";
-  }
+  const outcome = await invoke<PasteOutcome>("paste", {
+    text: sanitized,
+    keybind,
+  });
 
-  if (method !== "noTarget") return;
-
-  try {
-    await invoke<void>("copy_to_clipboard", { text: sanitized });
-    await showToast({
-      message: getIntl().formatMessage({
-        defaultMessage: "Text copied to clipboard",
+  if (outcome === "copied_to_clipboard") {
+    getLogger().info(
+      "Focused element was not editable, transcription copied to clipboard",
+    );
+    sendPillFlashMessage(
+      getIntl().formatMessage({
+        defaultMessage: "Transcript copied to clipboard",
       }),
-      toastType: "info",
-    });
-  } catch (error) {
-    getLogger().error(`Clipboard fallback failed: ${error}`);
+    );
   }
 };

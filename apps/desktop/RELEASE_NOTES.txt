@@ -1,6 +1,3 @@
-- Fix issue where Windows wouldn't paste into certain text fields
-- Fix issue where Windows hotkeys and pill weren't working on some machines
-- Improve login UI
-- Copy text to clipboard if paste fails (Windows/MacOS)
-- Add "Auto" language detection option to settings
-- Fix ElevenLabs provider STT
+- Fix issue with MacOS pasting on Arc browser and Discord
+- Update onboarding flow to use fun watercolor images
+- Bug fixes and improvements

@@ -11,6 +11,7 @@ on:
 permissions:
   checks: write
   pull-requests: write
+  id-token: write
 
 jobs:
   build:
@@ -39,11 +40,12 @@ jobs:
           PUBLIC_MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN_DEV }}
         run: pnpm exec turbo run build --filter=web...
 
-      - name: Deploy preview channel
-        uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_VOQUILL_PROD }}
-          projectId: voquill-prod
-          expires: 7d
-          entryPoint: apps/web
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Deploy preview channel
+        working-directory: apps/web
+        run: npx firebase-tools@latest hosting:channel:deploy pr-${{ github.event.pull_request.number }} --expires 7d --project voquill-prod --non-interactive --config firebase.json

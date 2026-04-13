@@ -4,6 +4,7 @@ import { FormattedMessage } from "react-intl";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
 import { useAppStore } from "../../store";
 import { trackButtonClick } from "../../utils/analytics.utils";
+import remoteImage from "../../assets/2-remote.png";
 import { AITranscriptionConfiguration } from "../settings/AITranscriptionConfiguration";
 import {
   BackButton,
@@ -55,7 +56,7 @@ export const ChooseTranscriptionForm = () => {
   const rightContent = (
     <Box
       component="img"
-      src="https://illustrations.popsy.co/amber/remote-work.svg"
+      src={remoteImage}
       alt="Illustration"
       sx={{ maxWidth: 400, maxHeight: 400 }}
     />

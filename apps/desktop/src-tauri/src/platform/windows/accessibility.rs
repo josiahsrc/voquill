@@ -10,7 +10,7 @@ use windows::Win32::UI::Accessibility::{
     UIA_AppBarControlTypeId, UIA_ButtonControlTypeId, UIA_CalendarControlTypeId,
     UIA_CheckBoxControlTypeId, UIA_ComboBoxControlTypeId, UIA_ControlTypePropertyId,
     UIA_CustomControlTypeId, UIA_DataGridControlTypeId, UIA_DataItemControlTypeId,
-    UIA_DocumentControlTypeId, UIA_EditControlTypeId, UIA_GroupControlTypeId,
+    UIA_DocumentControlTypeId, UIA_GroupControlTypeId,
     UIA_HeaderControlTypeId, UIA_HeaderItemControlTypeId, UIA_HelpTextPropertyId,
     UIA_HyperlinkControlTypeId, UIA_ImageControlTypeId, UIA_ListControlTypeId,
     UIA_ListItemControlTypeId, UIA_MenuBarControlTypeId, UIA_MenuControlTypeId,
@@ -456,6 +456,15 @@ pub fn get_selected_text() -> Option<String> {
     }
 
     get_selected_text_clipboard()
+}
+
+pub fn check_focused_paste_target() -> crate::commands::PasteTargetState {
+    use crate::commands::PasteTargetState;
+    match try_is_text_input_focused() {
+        Ok(true) => PasteTargetState::Editable,
+        Ok(false) => PasteTargetState::NotEditable,
+        Err(_) => PasteTargetState::Unknown,
+    }
 }
 
 fn try_get_selected_text_uia() -> Result<Option<String>, windows::core::Error> {

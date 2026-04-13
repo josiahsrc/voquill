@@ -1,6 +1,7 @@
 import { ArrowForward } from "@mui/icons-material";
 import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import { FormattedMessage, useIntl } from "react-intl";
+import rocketImage from "../../assets/4-rocket.png";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
 import { produceAppState, useAppStore } from "../../store";
 import { trackButtonClick } from "../../utils/analytics.utils";
@@ -158,7 +159,7 @@ export const UserDetailsForm = () => {
   const rightContent = (
     <Box
       component="img"
-      src="https://illustrations.popsy.co/amber/man-riding-a-rocket.svg"
+      src={rocketImage}
       alt="Illustration"
       sx={{ maxWidth: 400, maxHeight: 400 }}
     />

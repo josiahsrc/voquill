@@ -800,7 +800,7 @@ unsafe fn gather_screen_context(element: CFTypeRef, depth: usize) -> String {
     texts.join("\n")
 }
 
-pub(crate) fn insert_text_at_cursor(text: &str) -> Result<TextInsertOutcome, String> {
+pub fn insert_text_at_cursor(text: &str) -> Result<(), String> {
     let text = text.to_string();
     run_on_main_thread(move || {
         catch_unwind(AssertUnwindSafe(move || unsafe {
@@ -810,18 +810,10 @@ pub(crate) fn insert_text_at_cursor(text: &str) -> Result<TextInsertOutcome, Str
     })
 }
 
-#[derive(Debug)]
-pub(crate) enum TextInsertOutcome {
-    Inserted,
-    RequiresClipboardPaste(String),
-    NoTarget(String),
-}
-
-unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<TextInsertOutcome, String> {
+unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {
     let ax_focused_ui_element = CFString::new("AXFocusedUIElement");
     let ax_selected_text = CFString::new("AXSelectedText");
     let ax_value = CFString::new("AXValue");
-    let ax_role = CFString::new("AXRole");
 
     let system_wide = AXUIElementCreateSystemWide();
     if system_wide.is_null() {
@@ -838,26 +830,12 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<TextInsertOutcome, St
     CFRelease(system_wide);
 
     if result != AX_ERROR_SUCCESS || focused_element.is_null() {
-        return Ok(TextInsertOutcome::NoTarget("no focused element".to_string()));
-    }
-
-    let role = get_string_attribute(focused_element, ax_role.as_concrete_TypeRef());
-    if !matches!(
-        role.as_deref(),
-        Some("AXTextField" | "AXTextArea" | "AXSearchField" | "AXComboBox")
-    ) {
-        CFRelease(focused_element);
-        return Ok(TextInsertOutcome::NoTarget(format!(
-            "focused element role is not text-input capable: {}",
-            role.unwrap_or_else(|| "unknown".to_string())
-        )));
+        return Err("no focused element".to_string());
     }
 
     if is_element_inside_web_area(focused_element) {
         CFRelease(focused_element);
-        return Ok(TextInsertOutcome::RequiresClipboardPaste(
-            "focused text input is inside AXWebArea".to_string(),
-        ));
+        return Err("focused element is inside AXWebArea".to_string());
     }
 
     // Check if the focused element actually supports setting AXSelectedText
@@ -870,9 +848,7 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<TextInsertOutcome, St
 
     if settable_result != AX_ERROR_SUCCESS || !settable {
         CFRelease(focused_element);
-        return Ok(TextInsertOutcome::RequiresClipboardPaste(
-            "AXSelectedText is not settable on focused element".to_string(),
-        ));
+        return Err("AXSelectedText is not settable on focused element".to_string());
     }
 
     // Snapshot the field value before inserting so we can verify
@@ -887,9 +863,7 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<TextInsertOutcome, St
 
     if set_result != AX_ERROR_SUCCESS {
         CFRelease(focused_element);
-        return Ok(TextInsertOutcome::RequiresClipboardPaste(format!(
-            "AXUIElementSetAttributeValue failed: {set_result}"
-        )));
+        return Err(format!("AXUIElementSetAttributeValue failed: {set_result}"));
     }
 
     // Verify: if we can read the value and it didn't change, the insert silently failed
@@ -898,13 +872,91 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<TextInsertOutcome, St
 
     if let (Some(before), Some(after)) = (&value_before, &value_after) {
         if before == after {
-            return Ok(TextInsertOutcome::RequiresClipboardPaste(
-                "AXSelectedText accepted but field value unchanged".to_string(),
-            ));
+            return Err("AXSelectedText accepted but field value unchanged".to_string());
         }
     }
 
-    Ok(TextInsertOutcome::Inserted)
+    Ok(())
+}
+
+pub fn check_focused_paste_target() -> crate::commands::PasteTargetState {
+    use crate::commands::PasteTargetState;
+    catch_unwind(AssertUnwindSafe(|| unsafe { check_focused_paste_target_impl() }))
+        .unwrap_or(PasteTargetState::Unknown)
+}
+
+unsafe fn check_focused_paste_target_impl() -> crate::commands::PasteTargetState {
+    use crate::commands::PasteTargetState;
+
+    let ax_focused_ui_element = CFString::new("AXFocusedUIElement");
+    let ax_role = CFString::new("AXRole");
+    let ax_value = CFString::new("AXValue");
+    let ax_selected_text = CFString::new("AXSelectedText");
+
+    let system_wide = AXUIElementCreateSystemWide();
+    if system_wide.is_null() {
+        return PasteTargetState::Unknown;
+    }
+
+    let mut focused: CFTypeRef = ptr::null();
+    let result = AXUIElementCopyAttributeValue(
+        system_wide,
+        ax_focused_ui_element.as_concrete_TypeRef(),
+        &mut focused,
+    );
+    CFRelease(system_wide);
+
+    if result != AX_ERROR_SUCCESS {
+        return PasteTargetState::Unknown;
+    }
+    if focused.is_null() {
+        return PasteTargetState::NotEditable;
+    }
+
+    let role = get_string_attribute(focused, ax_role.as_concrete_TypeRef());
+
+    let editable_roles = [
+        "AXTextField",
+        "AXTextArea",
+        "AXComboBox",
+        "AXSearchField",
+    ];
+    if let Some(ref r) = role {
+        if editable_roles.iter().any(|er| er == r) {
+            CFRelease(focused);
+            return PasteTargetState::Editable;
+        }
+    }
+
+    if is_element_inside_web_area(focused) {
+        CFRelease(focused);
+        return PasteTargetState::Unknown;
+    }
+
+    let mut settable = false;
+    let settable_result = AXUIElementIsAttributeSettable(
+        focused,
+        ax_selected_text.as_concrete_TypeRef(),
+        &mut settable,
+    );
+    if settable_result == AX_ERROR_SUCCESS && settable {
+        CFRelease(focused);
+        return PasteTargetState::Editable;
+    }
+
+    settable = false;
+    let value_settable_result = AXUIElementIsAttributeSettable(
+        focused,
+        ax_value.as_concrete_TypeRef(),
+        &mut settable,
+    );
+    CFRelease(focused);
+
+    if value_settable_result == AX_ERROR_SUCCESS && settable {
+        return PasteTargetState::Editable;
+    }
+
+    PasteTargetState::NotEditable
 }
 
 pub fn get_selected_text() -> Option<String> {
@@ -929,3 +981,4 @@ pub fn get_selected_text() -> Option<String> {
 
     selected.filter(|s| !s.is_empty())
 }
+

@@ -175,6 +175,10 @@ pub(crate) struct PillState {
     pub(crate) flame_active: Cell<bool>,
     pub(crate) flame_elapsed: Cell<f64>,
     pub(crate) flame_tongues: RefCell<Vec<FlameTongue>>,
+
+    // Dirty flag — when false, the rendered output is identical to the previous
+    // frame so we can skip draw + UpdateLayeredWindow entirely.
+    pub(crate) dirty: Cell<bool>,
 }
 
 impl PillState {
@@ -182,5 +186,32 @@ impl PillState {
         let dw = self.draw_width.get();
         let dh = self.draw_height.get();
         ((WINDOW_W_TYPING as f64 - dw) / 2.0, WINDOW_H_TYPING as f64 - dh)
+    }
+
+    pub(crate) fn needs_redraw(&self) -> bool {
+        if self.dirty.get() { return true; }
+
+        // Continuous animations driven by phase
+        if self.phase.get() != Phase::Idle { return true; }
+
+        // Spring animations still in motion
+        if self.expand_velocity.get() != 0.0 { return true; }
+        if self.tooltip_velocity.get() != 0.0 { return true; }
+        if self.panel_open_velocity.get() != 0.0 { return true; }
+        if self.kb_button_velocity.get() != 0.0 { return true; }
+        if self.draw_w_velocity.get() != 0.0 { return true; }
+        if self.draw_h_velocity.get() != 0.0 { return true; }
+        if self.flash_velocity.get() != 0.0 { return true; }
+        if self.cancel_velocity.get() != 0.0 { return true; }
+
+        // Active visual effects
+        if self.fireworks_active.get() { return true; }
+        if self.flame_active.get() { return true; }
+        if self.flash_visible.get() { return true; }
+
+        // Assistant panel has shimmer and streaming content
+        if self.assistant_active.get() { return true; }
+
+        false
     }
 }

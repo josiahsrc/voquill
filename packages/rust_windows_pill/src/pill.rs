@@ -132,6 +132,7 @@ pub fn run(receiver: Receiver<InMessage>) {
         flame_active: Cell::new(false),
         flame_elapsed: Cell::new(0.0),
         flame_tongues: RefCell::new(Vec::new()),
+        dirty: Cell::new(true),
     };
 
     STATE.with(|s| *s.borrow_mut() = Some(state));
@@ -151,7 +152,7 @@ pub fn run(receiver: Receiver<InMessage>) {
 
     unsafe {
         let mut msg = MSG::default();
-        let frame_interval = Duration::from_micros(8333); // ~120fps
+        let frame_interval = Duration::from_micros(16667); // ~60fps
         loop {
             while PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
                 if msg.message == WM_QUIT {
@@ -330,8 +331,11 @@ fn on_anim_tick(hwnd: HWND) {
     GFX.with(|g| {
         STATE.with(|s| {
             if let (Some(ref mut gfx), Some(ref state)) = (&mut *g.borrow_mut(), &*s.borrow()) {
-                draw::draw_all(gfx, state);
-                update_layered(hwnd, gfx);
+                if state.needs_redraw() {
+                    state.dirty.set(false);
+                    draw::draw_all(gfx, state);
+                    update_layered(hwnd, gfx);
+                }
                 update_edit_overlay(hwnd, state);
             }
         });
@@ -348,6 +352,7 @@ fn on_cursor_tick(hwnd: HWND) {
 }
 
 fn process_message(msg: InMessage, state: &PillState, _hwnd: HWND) {
+    state.dirty.set(true);
     match msg {
         InMessage::Phase { phase } => {
             let prev = state.phase.get();
@@ -750,6 +755,7 @@ fn check_hover(hwnd: HWND, state: &PillState) {
 
     if new_hovered != was_hovered {
         state.hovered.set(new_hovered);
+        state.dirty.set(true);
         ipc::send(&OutMessage::Hover { hovered: new_hovered });
     }
     if !new_hovered {

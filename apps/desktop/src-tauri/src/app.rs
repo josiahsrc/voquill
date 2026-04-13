@@ -279,6 +279,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_text_field_info,
             crate::commands::get_screen_context,
             crate::commands::get_selected_text,
+            crate::commands::check_focused_paste_target,
             crate::commands::read_enterprise_target,
             crate::commands::run_terminal_command,
             crate::commands::get_hotkey_strategy,
