@@ -707,9 +707,7 @@ export const setRemoteReceiverAutoStart = async (
   }, "Failed to save receiver auto-start preference. Please try again.");
 };
 
-export const setMenuBarIconHidden = async (
-  hidden: boolean,
-): Promise<void> => {
+export const setMenuBarIconHidden = async (hidden: boolean): Promise<void> => {
   await updateUserPreferences((preferences) => {
     preferences.menuBarIconHidden = hidden;
   }, "Failed to save menu bar icon preference. Please try again.");

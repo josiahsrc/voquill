@@ -174,7 +174,8 @@ export const MoreSettingsDialog = () => {
 
   const handleToggleMenuBarIcon = (event: ChangeEvent<HTMLInputElement>) => {
     void setMenuBarIconHidden(!event.target.checked);
-    
+  };
+
   const handleToggleAutoStyleLoading = (
     event: ChangeEvent<HTMLInputElement>,
   ) => {
@@ -262,9 +263,7 @@ export const MoreSettingsDialog = () => {
           />
 
           <SettingSection
-            title={
-              <FormattedMessage defaultMessage="Show menu bar icon" />
-            }
+            title={<FormattedMessage defaultMessage="Show menu bar icon" />}
             description={
               <FormattedMessage defaultMessage="Show the Voquill icon in the menu bar." />
             }
