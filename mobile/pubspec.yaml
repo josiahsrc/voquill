@@ -48,6 +48,7 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   record: ^6.2.0
   smooth_page_indicator: ^1.2.0+3
+  flutter_card_swiper: ^7.0.2
 
 dev_dependencies:
   flutter_test:

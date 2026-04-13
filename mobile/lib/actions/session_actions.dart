@@ -5,6 +5,23 @@ import 'package:firebase_database/firebase_database.dart';
 
 final _logger = createNamedLogger('session_actions');
 
+Future<void> updateHistoryEntry({
+  required String sessionId,
+  required SessionHistoryEntry entry,
+}) async {
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  if (uid == null) return;
+  final id = entry.id;
+  if (id == null) return;
+
+  final ref = FirebaseDatabase.instance.ref(
+    'session/$uid/$sessionId/history/$id',
+  );
+  await ref.set(entry.encode());
+
+  _logger.i('Updated history entry $sessionId/$id');
+}
+
 Future<void> sendPasteText(String sessionId, String text) async {
   final uid = FirebaseAuth.instance.currentUser?.uid;
   if (uid == null) return;

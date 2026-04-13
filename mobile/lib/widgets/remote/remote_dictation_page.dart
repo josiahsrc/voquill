@@ -17,6 +17,7 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
   late PageController _controller;
   int _currentIndex = 0;
   bool _initialized = false;
+  final Map<String, bool> _pendingBySession = {};
 
   @override
   void dispose() {
@@ -58,6 +59,8 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
 
     final safeIndex = _currentIndex.clamp(0, sessions.length - 1);
     final currentName = sessions[safeIndex].name;
+    final currentHasPending =
+        _pendingBySession[sessions[safeIndex].id] ?? false;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -69,11 +72,20 @@ class _RemoteDictationPageState extends State<RemoteDictationPage> {
               child: PageView.builder(
                 controller: _controller,
                 itemCount: sessions.length,
+                physics: currentHasPending
+                    ? const NeverScrollableScrollPhysics()
+                    : null,
                 onPageChanged: (index) =>
                     setState(() => _currentIndex = index),
                 itemBuilder: (context, index) => RemoteDictationView(
                   key: ValueKey(sessions[index].id),
                   sessionId: sessions[index].id,
+                  onPendingReviewsChanged: (hasPending) {
+                    if (!mounted) return;
+                    final id = sessions[index].id;
+                    if ((_pendingBySession[id] ?? false) == hasPending) return;
+                    setState(() => _pendingBySession[id] = hasPending);
+                  },
                 ),
               ),
             ),
