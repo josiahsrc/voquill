@@ -223,6 +223,7 @@ class _LocalContentState extends State<_LocalContent> {
   List<LocalTranscriptionModel> _models = [];
   bool _loading = true;
   bool _refreshing = false;
+  bool _unavailable = false;
 
   @override
   void initState() {
@@ -241,10 +242,31 @@ class _LocalContentState extends State<_LocalContent> {
       });
     }
 
+    if (!isLocalTranscriptionBridgeAvailable()) {
+      if (mounted) {
+        setState(() {
+          _models = [];
+          _unavailable = true;
+          _loading = false;
+          _refreshing = false;
+        });
+      }
+      return;
+    }
+
     try {
       final models = await listLocalTranscriptionModels();
       if (!mounted) return;
-      setState(() => _models = models);
+      setState(() {
+        _models = models;
+        _unavailable = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _models = [];
+        _unavailable = true;
+      });
     } finally {
       if (mounted) {
         setState(() {
@@ -255,11 +277,11 @@ class _LocalContentState extends State<_LocalContent> {
     }
   }
 
-  Future<void> _runAndRefresh(Future<void> Function() action) async {
-    if (!mounted) return;
+  Future<T> _runAndRefresh<T>(Future<T> Function() action) async {
+    if (!mounted) return action();
     setState(() => _refreshing = true);
     try {
-      await action();
+      return await action();
     } finally {
       await _loadModels(showSpinner: false);
     }
@@ -309,7 +331,9 @@ class _LocalContentState extends State<_LocalContent> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Text(
-              'No local models available right now.',
+              _unavailable
+                  ? 'Local models are unavailable on this device right now.'
+                  : 'No local models available right now.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withAlpha(153),
               ),
@@ -323,8 +347,17 @@ class _LocalContentState extends State<_LocalContent> {
                 _runAndRefresh(() => downloadLocalTranscriptionModel(slug)),
             onDelete: (slug) =>
                 _runAndRefresh(() => deleteLocalTranscriptionModel(slug)),
-            onSelect: (slug) =>
-                _runAndRefresh(() => selectLocalTranscriptionModel(slug)),
+            onSelect: (slug) async {
+              final selected = await _runAndRefresh(
+                () => selectLocalTranscriptionModel(slug),
+              );
+              if (!mounted || selected) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Could not select this model. Try again.'),
+                ),
+              );
+            },
           ),
       ],
     );

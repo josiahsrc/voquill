@@ -18,6 +18,7 @@ const _sharedChannel = MethodChannel('com.voquill.mobile/shared');
 bool? _canSyncOverrideForTesting;
 
 bool get _canSync => _canSyncOverrideForTesting ?? (Platform.isIOS || Platform.isAndroid);
+bool get canSyncKeyboardBridge => _canSync;
 
 @visibleForTesting
 void debugSetCanSyncOverride(bool? value) {
@@ -287,9 +288,13 @@ Future<bool> selectLocalTranscriptionModel(String slug) async {
   if (!_canSync) return false;
 
   try {
-    await _sharedChannel.invokeMethod('selectLocalTranscriptionModel', {
+    final result = await _sharedChannel.invokeMethod<dynamic>(
+      'selectLocalTranscriptionModel',
+      {
       'slug': slug,
-    });
+      },
+    );
+    if (result is bool) return result;
     return true;
   } catch (e) {
     _logger.w('Failed to select local transcription model', e);

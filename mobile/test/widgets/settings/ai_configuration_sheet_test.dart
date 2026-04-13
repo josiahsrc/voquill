@@ -320,6 +320,73 @@ void main() {
     },
   );
 
+  testWidgets(
+    'local settings show unavailable state when native model lookup fails',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'ai_transcription_mode': AiMode.local.name,
+      });
+      channel_utils.debugSetCanSyncOverride(false);
+
+      await pumpSheet(tester, AiConfigContext.transcription);
+
+      expect(
+        find.text('Local models are unavailable on this device right now.'),
+        findsOneWidget,
+      );
+      expect(find.text('No local models available right now.'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'failed local model selection shows explicit error',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'ai_transcription_mode': AiMode.local.name,
+      });
+      channel_utils.debugSetCanSyncOverride(true);
+
+      final calls = <MethodCall>[];
+      final models = <Map<String, Object?>>[
+        localModel(
+          slug: 'tiny',
+          label: 'Whisper Tiny',
+          helper: 'Fastest, lowest accuracy',
+          sizeBytes: 77000000,
+          languageSupport: 'multilingual',
+          downloaded: true,
+          valid: true,
+          selected: false,
+        ),
+      ];
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            calls.add(call);
+            if (call.method == 'listLocalTranscriptionModels') {
+              return models;
+            }
+            if (call.method == 'selectLocalTranscriptionModel') {
+              return false;
+            }
+            return null;
+          });
+
+      await pumpSheet(tester, AiConfigContext.transcription);
+
+      final selectButton = find.widgetWithText(FilledButton, 'Select');
+      tester.widget<FilledButton>(selectButton).onPressed!.call();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Could not select this model. Try again.'), findsOneWidget);
+      expect(
+        calls.where((call) => call.method == 'selectLocalTranscriptionModel'),
+        hasLength(1),
+      );
+    },
+  );
+
   testWidgets('post-processing settings keep cloud and api key modes only', (
     tester,
   ) async {

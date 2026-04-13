@@ -235,6 +235,10 @@ Future<List<LocalTranscriptionModel>> listLocalTranscriptionModels() {
   });
 }
 
+bool isLocalTranscriptionBridgeAvailable() {
+  return channel_utils.canSyncKeyboardBridge;
+}
+
 Future<void> downloadLocalTranscriptionModel(String slug) {
   return channel_utils.downloadLocalTranscriptionModel(slug);
 }
@@ -268,12 +272,13 @@ Future<void> deleteLocalTranscriptionModel(String slug) async {
   await syncKeyboardAiSettings();
 }
 
-Future<void> selectLocalTranscriptionModel(String slug) async {
+Future<bool> selectLocalTranscriptionModel(String slug) async {
   final didSelect = await channel_utils.selectLocalTranscriptionModel(slug);
-  if (!didSelect) return;
+  if (!didSelect) return false;
 
   await _persistTranscriptionMode(AiMode.local);
   await syncKeyboardAiSettings();
+  return true;
 }
 
 bool shouldClearTranscriptionModelForSync({
