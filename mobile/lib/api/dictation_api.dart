@@ -127,7 +127,7 @@ class CloudDictationSession implements DictationSession {
         'type': 'config',
         'sampleRate': sampleRate,
         'glossary': glossary,
-        if (language != null) 'language': language,
+        'language': ?language,
       }),
     );
 
@@ -170,8 +170,8 @@ class CloudDictationSession implements DictationSession {
     _ws!.add(
       jsonEncode({
         'type': 'finalize',
-        if (prompt != null) 'prompt': prompt,
-        if (systemPrompt != null) 'systemPrompt': systemPrompt,
+        'prompt': ?prompt,
+        'systemPrompt': ?systemPrompt,
       }),
     );
 

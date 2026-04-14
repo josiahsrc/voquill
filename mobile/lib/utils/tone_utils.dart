@@ -29,7 +29,7 @@ List<Tone> getDefaultSystemTones() => const [
 - SYMBOLS: Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - LISTS: Format bulletted/numbered lists when the user speaks items in a list format
 - PARAGRAPHS: Split up the text into paragraphs where appropriate based on natural breaks in the speaker's thoughts and where they would naturally break when writing (double newline separated).
-- CODE: Put backticks around code terms like filenames, function names, and code snippets (e.g. foo dot cpp becomes \`foo.cpp\`)
+- CODE: Put backticks around code terms like filenames, function names, and code snippets (e.g. foo dot cpp becomes `foo.cpp`)
 - SELF CORRECTIONS: (CRITICAL!) When the speaker says something and then corrects themselves, ONLY keep the corrected version and remove the earlier one.
 - EMOJIS: Convert spoken emoji descriptions into actual emoji characters (e.g. "smiley face" becomes "😊", "thumbs up" becomes "👍", etc.)
 - DATES, TIMES, NUMBERS: Convert spoken dates, times, and numbers into their proper written numerical forms
@@ -61,7 +61,7 @@ List<Tone> getDefaultSystemTones() => const [
 - SYMBOLS: Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - LISTS: Format bulletted/numbered lists when the user speaks items in a list format
 - PARAGRAPHS: Split up the text into paragraphs where appropriate based on natural breaks in the speaker's thoughts and where they would naturally break when writing (double newline separated).
-- CODE: Put backticks around code terms like filenames, function names, and code snippets (e.g. foo dot cpp becomes \`foo.cpp\`)
+- CODE: Put backticks around code terms like filenames, function names, and code snippets (e.g. foo dot cpp becomes `foo.cpp`)
 - SELF CORRECTIONS: (CRITICAL!) When the speaker says something and then corrects themselves, ONLY keep the corrected version and remove the earlier one.
 - EMOJIS: Convert spoken emoji descriptions into actual emoji characters (e.g. "smiley face" becomes "😊", "thumbs up" becomes "👍", etc.)
 - DATES, TIMES, NUMBERS: Convert spoken dates, times, and numbers into their proper written numerical forms

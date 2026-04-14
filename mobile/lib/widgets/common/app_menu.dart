@@ -63,7 +63,7 @@ class _AppMenuContainerState extends State<AppMenuContainer> {
     }
 
     final children = <Widget>[
-      if (top != null) top,
+      ?top,
       const SizedBox(height: 8),
       ...widget.items,
       const SizedBox(height: 8),

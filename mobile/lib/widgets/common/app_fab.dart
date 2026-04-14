@@ -399,8 +399,8 @@ class _ActionRendState extends State<_ActionRend> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (innerIcon != null) innerIcon,
-                  if (innerLabel != null) innerLabel,
+                  ?innerIcon,
+                  ?innerLabel,
                 ],
               ),
             ),
@@ -411,7 +411,7 @@ class _ActionRendState extends State<_ActionRend> {
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
-      children: [if (outerLabel != null) outerLabel, fab],
+      children: [?outerLabel, fab],
     );
   }
 }

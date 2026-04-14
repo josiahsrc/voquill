@@ -192,7 +192,7 @@ class AppListTile extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (effectiveTitle != null) effectiveTitle,
+              ?effectiveTitle,
               if (effectiveSubtitle != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 2),

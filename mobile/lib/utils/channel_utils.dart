@@ -206,15 +206,15 @@ Future<void> syncKeyboardAiConfig({
     await _sharedChannel.invokeMethod('setKeyboardAiConfig', {
       'transcriptionMode': transcriptionMode,
       'postProcessingMode': postProcessingMode,
-      if (transcriptionProvider != null) 'transcriptionProvider': transcriptionProvider,
-      if (transcriptionApiKey != null) 'transcriptionApiKey': transcriptionApiKey,
-      if (transcriptionBaseUrl != null) 'transcriptionBaseUrl': transcriptionBaseUrl,
-      if (transcriptionModel != null) 'transcriptionModel': transcriptionModel,
-      if (transcriptionAzureRegion != null) 'transcriptionAzureRegion': transcriptionAzureRegion,
-      if (postProcessingProvider != null) 'postProcessingProvider': postProcessingProvider,
-      if (postProcessingApiKey != null) 'postProcessingApiKey': postProcessingApiKey,
-      if (postProcessingBaseUrl != null) 'postProcessingBaseUrl': postProcessingBaseUrl,
-      if (postProcessingModel != null) 'postProcessingModel': postProcessingModel,
+      'transcriptionProvider': ?transcriptionProvider,
+      'transcriptionApiKey': ?transcriptionApiKey,
+      'transcriptionBaseUrl': ?transcriptionBaseUrl,
+      'transcriptionModel': ?transcriptionModel,
+      'transcriptionAzureRegion': ?transcriptionAzureRegion,
+      'postProcessingProvider': ?postProcessingProvider,
+      'postProcessingApiKey': ?postProcessingApiKey,
+      'postProcessingBaseUrl': ?postProcessingBaseUrl,
+      'postProcessingModel': ?postProcessingModel,
     });
   } catch (e) {
     _logger.w('Failed to sync keyboard AI config', e);
