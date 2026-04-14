@@ -6,7 +6,8 @@ export type LocalWhisperModel =
   | "small"
   | "medium"
   | "large"
-  | "turbo";
+  | "turbo"
+  | "hindi2hinglish";
 
 export const DEFAULT_LOCAL_WHISPER_MODEL: LocalWhisperModel = "tiny";
 export const LOCAL_WHISPER_MODELS: LocalWhisperModel[] = [
@@ -16,6 +17,7 @@ export const LOCAL_WHISPER_MODELS: LocalWhisperModel[] = [
   "medium",
   "turbo",
   "large",
+  "hindi2hinglish",
 ];
 
 export const normalizeLocalWhisperModel = (
@@ -50,6 +52,15 @@ export const normalizeLocalWhisperModel = (
     normalized === "large-v3-turbo"
   ) {
     return "turbo";
+  }
+
+  if (
+    normalized === "hindi2hinglish" ||
+    normalized === "hindi-hinglish" ||
+    normalized === "hindi2hinglish-apex" ||
+    normalized === "whisper-hindi2hinglish-apex"
+  ) {
+    return "hindi2hinglish";
   }
 
   return DEFAULT_LOCAL_WHISPER_MODEL;

@@ -14,6 +14,13 @@ pub enum WhisperModel {
         alias = "large-v3-turbo"
     )]
     Turbo,
+    #[serde(
+        rename = "hindi2hinglish",
+        alias = "hindi-hinglish",
+        alias = "hindi2hinglish-apex",
+        alias = "whisper-hindi2hinglish-apex"
+    )]
+    Hindi2Hinglish,
 }
 
 impl WhisperModel {
@@ -25,6 +32,10 @@ impl WhisperModel {
             "medium" => Some(Self::Medium),
             "large" => Some(Self::Large),
             "turbo" | "large-turbo" | "large_v3_turbo" | "large-v3-turbo" => Some(Self::Turbo),
+            "hindi2hinglish"
+            | "hindi-hinglish"
+            | "hindi2hinglish-apex"
+            | "whisper-hindi2hinglish-apex" => Some(Self::Hindi2Hinglish),
             _ => None,
         }
     }
@@ -37,6 +48,7 @@ impl WhisperModel {
             Self::Medium => "medium",
             Self::Large => "large",
             Self::Turbo => "turbo",
+            Self::Hindi2Hinglish => "hindi2hinglish",
         }
     }
 
@@ -48,6 +60,7 @@ impl WhisperModel {
             Self::Medium => "ggml-medium.bin",
             Self::Large => "ggml-large-v3.bin",
             Self::Turbo => "ggml-large-v3-turbo.bin",
+            Self::Hindi2Hinglish => "ggml-hindi2hinglish-apex-q5_1.bin",
         }
     }
 
@@ -79,11 +92,22 @@ impl WhisperModel {
             Self::Turbo => {
                 "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin"
             }
+            Self::Hindi2Hinglish => {
+                "https://huggingface.co/voquill/whisper-hindi2hinglish-apex-ggml/resolve/main/ggml-hindi2hinglish-apex-q5_1.bin"
+            }
         }
         .to_string()
     }
 
     pub fn supported() -> &'static [&'static str] {
-        &["tiny", "base", "small", "medium", "large", "turbo"]
+        &[
+            "tiny",
+            "base",
+            "small",
+            "medium",
+            "large",
+            "turbo",
+            "hindi2hinglish",
+        ]
     }
 }
