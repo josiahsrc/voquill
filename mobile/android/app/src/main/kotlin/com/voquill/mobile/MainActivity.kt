@@ -126,8 +126,7 @@ class MainActivity : FlutterFragmentActivity() {
     private fun handleSetKeyboardUser(arguments: Any?, result: MethodChannel.Result) {
         val args = arguments as? Map<*, *>
         val userName = args?.get("userName") as? String
-        val dictationLanguage = args?.get("dictationLanguage") as? String
-        if (userName.isNullOrBlank() || dictationLanguage.isNullOrBlank()) {
+        if (userName.isNullOrBlank()) {
             result.error("INVALID_ARGS", "Missing required arguments", null)
             return
         }
@@ -135,7 +134,6 @@ class MainActivity : FlutterFragmentActivity() {
         keyboardPrefs
             .edit()
             .putString(VoquillIME.KEY_USER_NAME, userName)
-            .putString(VoquillIME.KEY_DICTATION_LANGUAGE, dictationLanguage)
             .apply()
         result.success(null)
     }

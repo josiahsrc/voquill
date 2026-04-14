@@ -48,10 +48,7 @@ Future<void> syncUserToKeyboard() async {
   final state = getAppState();
   final user = state.user;
   if (user != null) {
-    await syncKeyboardUser(
-      userName: user.name,
-      dictationLanguage: getMyActiveDictationLanguage(state),
-    );
+    await syncKeyboardUser(userName: user.name);
     await _incrementAppCounter();
   }
 }

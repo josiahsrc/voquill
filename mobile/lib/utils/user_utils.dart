@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:app/model/user_model.dart';
 import 'package:app/state/app_state.dart';
+import 'package:app/utils/language_utils.dart';
 import 'package:intl/intl.dart';
 
 String getDetectedSystemLocale() {
@@ -9,7 +10,9 @@ String getDetectedSystemLocale() {
 }
 
 String getMyActiveDictationLanguage(AppState state) {
-  return state.activeDictationLanguage ?? getDetectedSystemLocale();
+  return state.activeDictationLanguage ??
+      normalizeDictationLanguage(getDetectedSystemLocale()) ??
+      'en';
 }
 
 int getEffectiveStreak(User? user) {

@@ -185,9 +185,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
       ),
       useAppStore().listen(
         (context, state) => syncUserToKeyboard(),
-        condition: (a, b) =>
-            a.user?.name != b.user?.name ||
-            a.user?.preferredLanguage != b.user?.preferredLanguage,
+        condition: (a, b) => a.user?.name != b.user?.name,
       ),
       useAppStore().listen(
         (context, state) => syncDictionaryToKeyboard(),

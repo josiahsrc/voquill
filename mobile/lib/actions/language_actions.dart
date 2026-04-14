@@ -1,28 +1,55 @@
 import 'package:app/api/counter_api.dart';
 import 'package:app/api/language_api.dart';
 import 'package:app/store/store.dart';
+import 'package:app/utils/language_utils.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:app/utils/user_utils.dart';
 
 final _logger = createNamedLogger('language_actions');
 
+List<String> _normalizeLanguageList(List<String> input) {
+  final seen = <String>{};
+  final out = <String>[];
+  for (final raw in input) {
+    final normalized = normalizeDictationLanguage(raw);
+    if (normalized == null) continue;
+    if (seen.add(normalized)) out.add(normalized);
+  }
+  return out;
+}
+
 Future<void> loadDictationLanguages() async {
   try {
-    var languages = await GetDictationLanguagesApi().call(null);
-    String? active = await GetActiveDictationLanguageApi().call(null);
+    final storedLanguages = await GetDictationLanguagesApi().call(null);
+    final storedActive = await GetActiveDictationLanguageApi().call(null);
+
+    var languages = _normalizeLanguageList(storedLanguages);
+    var active = normalizeDictationLanguage(storedActive);
 
     if (languages.isEmpty) {
       final state = getAppState();
-      final preferred = state.user?.preferredLanguage;
-      final seed = preferred ?? getDetectedSystemLocale();
+      final seed =
+          normalizeDictationLanguage(state.user?.preferredLanguage) ??
+          normalizeDictationLanguage(getDetectedSystemLocale()) ??
+          'en';
       languages = [seed];
       active = seed;
-      await SetDictationLanguagesApi().call(languages);
-      await SetActiveDictationLanguageApi().call(active);
     }
 
     if (active == null || !languages.contains(active)) {
       active = languages.first;
+    }
+
+    final languagesChanged =
+        storedLanguages.length != languages.length ||
+        !List.generate(
+          languages.length,
+          (i) => storedLanguages[i] == languages[i],
+        ).every((ok) => ok);
+    if (languagesChanged) {
+      await SetDictationLanguagesApi().call(languages);
+    }
+    if (storedActive != active) {
       await SetActiveDictationLanguageApi().call(active);
     }
 
@@ -36,20 +63,21 @@ Future<void> loadDictationLanguages() async {
 }
 
 Future<void> setDictationLanguages(List<String> languages) async {
-  if (languages.isEmpty) return;
+  final normalized = _normalizeLanguageList(languages);
+  if (normalized.isEmpty) return;
 
   try {
-    await SetDictationLanguagesApi().call(languages);
+    await SetDictationLanguagesApi().call(normalized);
 
     final state = getAppState();
     var active = getMyActiveDictationLanguage(state);
-    if (!languages.contains(active)) {
-      active = languages.first;
+    if (!normalized.contains(active)) {
+      active = normalized.first;
       await SetActiveDictationLanguageApi().call(active);
     }
 
     produceAppState((draft) {
-      draft.dictationLanguages = languages;
+      draft.dictationLanguages = normalized;
       draft.activeDictationLanguage = active;
     });
 

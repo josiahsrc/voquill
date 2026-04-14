@@ -101,10 +101,7 @@ Future<void> setSelectedToneId(String toneId) async {
   }
 }
 
-Future<void> syncKeyboardUser({
-  required String userName,
-  required String dictationLanguage,
-}) async {
+Future<void> syncKeyboardUser({required String userName}) async {
   if (!_canSync) {
     return;
   }
@@ -112,7 +109,6 @@ Future<void> syncKeyboardUser({
   try {
     await _sharedChannel.invokeMethod('setKeyboardUser', {
       'userName': userName,
-      'dictationLanguage': dictationLanguage,
     });
   } catch (e) {
     _logger.w('Failed to sync keyboard user', e);
