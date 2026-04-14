@@ -1025,12 +1025,12 @@ jobs:
           mkdir -p Casks
 
           if [[ "${RELEASE_ENV}" == "prod" ]]; then
-            cask_name="voquill"
+            cask_name="voquill-desktop"
             app_name="Voquill"
             tag_prefix="desktop-v"
             dmg_name="Voquill_#{version}_universal.dmg"
           else
-            cask_name="voquill-dev"
+            cask_name="voquill-desktop-dev"
             app_name="Voquill (dev)"
             tag_prefix="desktop-dev-v"
             dmg_name="VoquillDev_#{version}_universal.dmg"

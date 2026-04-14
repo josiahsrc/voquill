@@ -18,17 +18,17 @@ You can also install Voquill via [Homebrew](https://brew.sh):
 
 ```bash
 brew tap voquill/voquill
-brew install --cask voquill
+brew install --cask voquill-desktop
 ```
 
 Upgrade with:
 
 ```bash
-brew upgrade --cask voquill
+brew upgrade --cask voquill-desktop
 ```
 
 To install the development channel instead:
 
 ```bash
-brew install --cask voquill-dev
+brew install --cask voquill-desktop-dev
 ```
