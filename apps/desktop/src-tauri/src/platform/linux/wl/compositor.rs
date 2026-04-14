@@ -326,6 +326,19 @@ fn has_non_modifier_key(keys: &[String]) -> bool {
     keys.iter().any(|k| classify_key(k).is_none())
 }
 
+fn sanitize_action_for_path(action_name: &str) -> String {
+    action_name
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '-'
+            }
+        })
+        .collect()
+}
+
 fn sync_gnome(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), String> {
     let existing_list = read_gsettings_string_list(GNOME_KEYBINDING_BASE, "custom-keybindings")?;
 
@@ -349,7 +362,7 @@ fn sync_gnome(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), 
         }
         let dconf_path = format!(
             "{GNOME_CUSTOM_PREFIX}/{VOQUILL_KEYBINDING_TAG}{}/",
-            binding.action_name
+            sanitize_action_for_path(&binding.action_name)
         );
         let gnome_binding = keys_to_gnome_binding(&binding.keys);
         let command = format!("{} {}", script_path.display(), binding.action_name);
@@ -578,7 +591,10 @@ fn sync_kde(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), St
         }
 
         let kde_shortcut = keys_to_kde_binding(&binding.keys);
-        let desktop_name = format!("{KDE_DESKTOP_PREFIX}{}.desktop", binding.action_name);
+        let desktop_name = format!(
+            "{KDE_DESKTOP_PREFIX}{}.desktop",
+            sanitize_action_for_path(&binding.action_name)
+        );
         let friendly = format!("Voquill {}", binding.action_name);
 
         // Write .desktop file with X-KDE-Shortcuts so KDE recognises it
