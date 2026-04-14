@@ -1,3 +1,4 @@
-- Fix issue with some Groq models not working
-- Fix issue with windows not pasting in Terminus and Warp
-- Ability to hide voquill status bar icon
+- Add support for local hinglish model
+- Support swapping between styles using left/right arrow keys
+- Fix issue where wayland didn't support all hotkeys
+- Various bug fixes and improvements
