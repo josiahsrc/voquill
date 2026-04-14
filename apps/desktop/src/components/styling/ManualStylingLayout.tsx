@@ -5,7 +5,8 @@ import { useAsyncEffect } from "../../hooks/async.hooks";
 import { produceAppState, useAppStore } from "../../store";
 import {
   getHotkeyCombosForAction,
-  SWITCH_WRITING_STYLE_HOTKEY,
+  SWITCH_WRITING_STYLE_BACKWARD_HOTKEY,
+  SWITCH_WRITING_STYLE_FORWARD_HOTKEY,
 } from "../../utils/keyboard.utils";
 import { getActiveManualToneIds } from "../../utils/tone.utils";
 import { HotkeyBadge } from "../common/HotkeyBadge";
@@ -14,8 +15,11 @@ import { ManualAddStyle } from "./ManualAddStyle";
 import { ManualStylingRow } from "./ManualStylingRow";
 
 function StylingSubtitle() {
-  const combos = useAppStore((state) =>
-    getHotkeyCombosForAction(state, SWITCH_WRITING_STYLE_HOTKEY),
+  const forwardCombos = useAppStore((state) =>
+    getHotkeyCombosForAction(state, SWITCH_WRITING_STYLE_FORWARD_HOTKEY),
+  );
+  const backwardCombos = useAppStore((state) =>
+    getHotkeyCombosForAction(state, SWITCH_WRITING_STYLE_BACKWARD_HOTKEY),
   );
 
   const openShortcuts = () =>
@@ -23,10 +27,10 @@ function StylingSubtitle() {
       draft.settings.shortcutsDialogOpen = true;
     });
 
-  if (combos.length === 0) {
+  if (forwardCombos.length === 0 && backwardCombos.length === 0) {
     return (
       <FormattedMessage
-        defaultMessage="Choose different writing styles to change how you sound. You can also <link>set up a hotkey</link> to switch between them faster."
+        defaultMessage="Choose different writing styles to change how you sound. You can also <link>set up hotkeys</link> to cycle between them while dictating."
         values={{
           link: (chunks: React.ReactNode) => (
             <Link
@@ -42,13 +46,34 @@ function StylingSubtitle() {
     );
   }
 
-  const hotkey = (
-    <HotkeyBadge keys={combos[0]} onClick={openShortcuts} sx={{ mx: 0.25 }} />
-  );
+  const backwardHotkey = backwardCombos[0] ? (
+    <HotkeyBadge
+      keys={backwardCombos[0]}
+      onClick={openShortcuts}
+      sx={{ mx: 0.25 }}
+    />
+  ) : null;
+  const forwardHotkey = forwardCombos[0] ? (
+    <HotkeyBadge
+      keys={forwardCombos[0]}
+      onClick={openShortcuts}
+      sx={{ mx: 0.25 }}
+    />
+  ) : null;
 
+  if (backwardHotkey && forwardHotkey) {
+    return (
+      <FormattedMessage
+        defaultMessage="Choose different writing styles to change how you sound. While dictating, press {backwardHotkey} or {forwardHotkey} to cycle between them."
+        values={{ backwardHotkey, forwardHotkey }}
+      />
+    );
+  }
+
+  const hotkey = forwardHotkey ?? backwardHotkey;
   return (
     <FormattedMessage
-      defaultMessage="Choose different writing styles to change how you sound. Switch between them using the {hotkey} hotkey."
+      defaultMessage="Choose different writing styles to change how you sound. While dictating, press {hotkey} to cycle between them."
       values={{ hotkey }}
     />
   );

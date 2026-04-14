@@ -1,7 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { AppTarget } from "@voquill/types";
 import { delayed } from "@voquill/utilities";
-import { secondsToMilliseconds } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import {
@@ -71,7 +70,8 @@ import {
   DICTATE_HOTKEY,
   getAdditionalLanguageEntries,
   OPEN_CHAT_HOTKEY,
-  SWITCH_WRITING_STYLE_HOTKEY,
+  SWITCH_WRITING_STYLE_BACKWARD_HOTKEY,
+  SWITCH_WRITING_STYLE_FORWARD_HOTKEY,
   syncHotkeyCombosToNative,
 } from "../../utils/keyboard.utils";
 import { getLogger } from "../../utils/log.utils";
@@ -114,7 +114,6 @@ export const DictationSideEffects = () => {
   const preDictationVolumeRef = useRef<number | null>(null);
   const recordingWarningTimerRef = useRef<NodeJS.Timeout | null>(null);
   const recordingAutoStopTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const lastStyleSwitchRef = useRef(0);
   const cancelPromptTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isStoppingRef = useRef(false);
   const [isStopping, setIsStopping] = useState(false);
@@ -661,16 +660,15 @@ export const DictationSideEffects = () => {
     await stopRecording();
   }, [stopRecording]);
 
-  const handleSwitchWritingStyle = useCallback(() => {
-    const now = Date.now();
-    const elapsed = now - lastStyleSwitchRef.current;
-    lastStyleSwitchRef.current = now;
-    if (elapsed > secondsToMilliseconds(3)) {
-      return;
-    }
+  const handleSwitchWritingStyleForward = useCallback(
+    () => switchWritingStyleForward(),
+    [],
+  );
 
-    void switchWritingStyleForward();
-  }, []);
+  const handleSwitchWritingStyleBackward = useCallback(
+    () => switchWritingStyleBackward(),
+    [],
+  );
 
   const promptCancelTranscription = useCallback(() => {
     if (cancelPromptTimerRef.current) {
@@ -698,9 +696,15 @@ export const DictationSideEffects = () => {
   }, [intl]);
 
   useHotkeyFire({
-    actionName: SWITCH_WRITING_STYLE_HOTKEY,
-    isDisabled: !isManualStyling,
-    onFire: handleSwitchWritingStyle,
+    actionName: SWITCH_WRITING_STYLE_FORWARD_HOTKEY,
+    isDisabled: !isActiveSession || !isManualStyling,
+    onFire: handleSwitchWritingStyleForward,
+  });
+
+  useHotkeyFire({
+    actionName: SWITCH_WRITING_STYLE_BACKWARD_HOTKEY,
+    isDisabled: !isActiveSession || !isManualStyling,
+    onFire: handleSwitchWritingStyleBackward,
   });
 
   useHotkeyHold({

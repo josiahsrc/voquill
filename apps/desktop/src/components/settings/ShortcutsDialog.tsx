@@ -18,7 +18,8 @@ import {
   CANCEL_TRANSCRIPTION_HOTKEY,
   DICTATE_HOTKEY,
   OPEN_CHAT_HOTKEY,
-  SWITCH_WRITING_STYLE_HOTKEY,
+  SWITCH_WRITING_STYLE_BACKWARD_HOTKEY,
+  SWITCH_WRITING_STYLE_FORWARD_HOTKEY,
 } from "../../utils/keyboard.utils";
 import { HotkeySetting } from "./HotkeySetting";
 
@@ -90,13 +91,24 @@ export const ShortcutsDialog = () => {
           actionName={ADD_TO_DICTIONARY_HOTKEY}
         />
         {isManualStyling && (
-          <HotkeySetting
-            title={<FormattedMessage defaultMessage="Switch writing style" />}
-            description={
-              <FormattedMessage defaultMessage="Cycle through your active writing styles." />
-            }
-            actionName={SWITCH_WRITING_STYLE_HOTKEY}
-          />
+          <>
+            <HotkeySetting
+              title={<FormattedMessage defaultMessage="Next writing style" />}
+              description={
+                <FormattedMessage defaultMessage="Cycle forward through your active writing styles while dictating." />
+              }
+              actionName={SWITCH_WRITING_STYLE_FORWARD_HOTKEY}
+            />
+            <HotkeySetting
+              title={
+                <FormattedMessage defaultMessage="Previous writing style" />
+              }
+              description={
+                <FormattedMessage defaultMessage="Cycle backward through your active writing styles while dictating." />
+              }
+              actionName={SWITCH_WRITING_STYLE_BACKWARD_HOTKEY}
+            />
+          </>
         )}
       </Stack>
     );

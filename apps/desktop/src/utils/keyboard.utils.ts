@@ -7,7 +7,10 @@ import { getIsDictationUnlocked } from "./user.utils";
 
 export const DICTATE_HOTKEY = "dictate";
 export const AGENT_DICTATE_HOTKEY = "agent-dictate";
-export const SWITCH_WRITING_STYLE_HOTKEY = "switch-writing-style";
+export const SWITCH_WRITING_STYLE_FORWARD_HOTKEY =
+  "switch-writing-style-forward";
+export const SWITCH_WRITING_STYLE_BACKWARD_HOTKEY =
+  "switch-writing-style-backward";
 export const CANCEL_TRANSCRIPTION_HOTKEY = "cancel-transcription";
 export const OPEN_CHAT_HOTKEY = "open-chat";
 export const ADD_TO_DICTIONARY_HOTKEY = "add-to-dictionary";
@@ -21,7 +24,8 @@ type CompositorBinding = {
 const STATIC_COMPOSITOR_TRIGGER_ACTIONS = [
   DICTATE_HOTKEY,
   AGENT_DICTATE_HOTKEY,
-  SWITCH_WRITING_STYLE_HOTKEY,
+  SWITCH_WRITING_STYLE_FORWARD_HOTKEY,
+  SWITCH_WRITING_STYLE_BACKWARD_HOTKEY,
   CANCEL_TRANSCRIPTION_HOTKEY,
   ADD_TO_DICTIONARY_HOTKEY,
 ];
@@ -94,6 +98,11 @@ export const getPrettyKeyName = (key: string): string => {
     return "Fn";
   }
 
+  if (key === "LeftArrow") return "←";
+  if (key === "RightArrow") return "→";
+  if (key === "UpArrow") return "↑";
+  if (key === "DownArrow") return "↓";
+
   return key;
 };
 
@@ -113,6 +122,16 @@ export const DEFAULT_HOTKEY_COMBOS: Record<string, PlatformHotkeyCombos> = {
     macos: [["Escape"]],
     windows: [["Escape"]],
     linux: [["Escape"]],
+  },
+  [SWITCH_WRITING_STYLE_FORWARD_HOTKEY]: {
+    macos: [["RightArrow"]],
+    windows: [["RightArrow"]],
+    linux: [["RightArrow"]],
+  },
+  [SWITCH_WRITING_STYLE_BACKWARD_HOTKEY]: {
+    macos: [["LeftArrow"]],
+    windows: [["LeftArrow"]],
+    linux: [["LeftArrow"]],
   },
 };
 
@@ -189,8 +208,14 @@ const isActionGrabbable = (state: AppState, actionName: string): boolean => {
     return state.activeRecordingMode !== null;
   }
 
-  if (actionName === SWITCH_WRITING_STYLE_HOTKEY) {
-    return getEffectiveStylingMode(state) === "manual";
+  if (
+    actionName === SWITCH_WRITING_STYLE_FORWARD_HOTKEY ||
+    actionName === SWITCH_WRITING_STYLE_BACKWARD_HOTKEY
+  ) {
+    return (
+      state.activeRecordingMode !== null &&
+      getEffectiveStylingMode(state) === "manual"
+    );
   }
 
   if (actionName === DICTATE_HOTKEY || actionName === AGENT_DICTATE_HOTKEY) {
