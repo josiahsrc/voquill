@@ -224,3 +224,13 @@ String getDisplayNameForLanguage(String code) {
 String getLanguageChipLabel(String code) {
   return code.split('-').first.toUpperCase();
 }
+
+String? normalizeDictationLanguage(String? code) {
+  if (code == null || code.isEmpty) return null;
+  if (dictationLanguages.containsKey(code)) return code;
+  final lower = code.toLowerCase();
+  if (dictationLanguages.containsKey(lower)) return lower;
+  final base = lower.split(RegExp(r'[-_]')).first;
+  if (dictationLanguages.containsKey(base)) return base;
+  return null;
+}

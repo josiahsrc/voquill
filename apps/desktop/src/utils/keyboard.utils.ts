@@ -18,12 +18,17 @@ type CompositorBinding = {
   keys: string[];
 };
 
-const COMPOSITOR_TRIGGER_ACTIONS = [
+const STATIC_COMPOSITOR_TRIGGER_ACTIONS = [
   DICTATE_HOTKEY,
   AGENT_DICTATE_HOTKEY,
   SWITCH_WRITING_STYLE_HOTKEY,
   CANCEL_TRANSCRIPTION_HOTKEY,
+  ADD_TO_DICTIONARY_HOTKEY,
 ];
+
+const isCompositorTriggerAction = (actionName: string): boolean =>
+  STATIC_COMPOSITOR_TRIGGER_ACTIONS.includes(actionName) ||
+  actionName.startsWith(ADDITIONAL_LANGUAGE_HOTKEY_PREFIX);
 
 export const getAdditionalLanguageActionName = (language: string): string =>
   `${ADDITIONAL_LANGUAGE_HOTKEY_PREFIX}${language}`;
@@ -230,7 +235,7 @@ export const syncHotkeyCombosToNative = async (): Promise<void> => {
     }
 
     if (
-      COMPOSITOR_TRIGGER_ACTIONS.includes(actionName) &&
+      isCompositorTriggerAction(actionName) &&
       isActionGrabbable(state, actionName) &&
       actionCombos.length > 0 &&
       actionCombos[0].length > 0 &&
