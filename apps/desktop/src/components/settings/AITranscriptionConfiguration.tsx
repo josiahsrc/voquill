@@ -85,6 +85,11 @@ const MODEL_OPTIONS: ModelOption[] = [
     label: "Whisper Large v3 (3.1 GB)",
     helper: "Highest accuracy, requires GPU",
   },
+  {
+    value: "hindi2hinglish",
+    label: "Whisper Hindi2Hinglish Apex (595 MB)",
+    helper: "Hindi speech transcribed as Hinglish (Latin script)",
+  },
 ];
 
 const formatDownloadProgress = (
