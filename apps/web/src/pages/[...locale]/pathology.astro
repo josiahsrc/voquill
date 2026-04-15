@@ -30,25 +30,14 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
       <div class="placeholder placeholder-video">Product video</div>
     </section>
 
-    <section class="logos">
-      <p class="logos-label">Trusted by pathology teams at</p>
-      <div class="logo-row">
-        <div class="placeholder placeholder-logo">Logo</div>
-        <div class="placeholder placeholder-logo">Logo</div>
-        <div class="placeholder placeholder-logo">Logo</div>
-        <div class="placeholder placeholder-logo">Logo</div>
-        <div class="placeholder placeholder-logo">Logo</div>
-      </div>
-    </section>
-
-    <section class="feature" id="demo">
+<section class="feature" id="demo">
       <div class="feature-copy">
-        <span class="eyebrow">Dictate while you scan</span>
+        <span class="eyebrow">Describe what you see</span>
         <h2>Talk through the case. The report writes itself.</h2>
         <p>
           Eyes on the slide. Voquill listens in the background and drafts the
-          report as you go. It also knows the difference between you talking to
-          the report and you talking to the person next to you.
+          report as you go. Voquill learns your phrasing, your conventions, and
+          your preferences, so you sign out instead of edit.
         </p>
       </div>
       <img src="/talk-with-slide.png" alt="Dictate while you scan" class="feature-image dark-invert" />
@@ -59,9 +48,9 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
         <span class="eyebrow">Agentic field placement</span>
         <h2>Every word in the right field, automatically.</h2>
         <p>
-          Gross, microscopic, interpretation, diagnosis. Voquill splits what you
-          say across the fields of your report so you stop clicking around to
-          find the right one.
+          Gross, microscopic, interpretation, diagnosis. Voquill routes every
+          finding to the right place in your report so you stop clicking around
+          to find the right one.
         </p>
       </div>
       <img src="/auto-fill-fields.png" alt="Field-aware report fill" class="feature-image dark-invert" />
@@ -73,10 +62,24 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
         <h2>Lives on top of any LIS, IMS, or reporting system.</h2>
         <p>
           Voquill sits on top of the tools you already use. Nothing to migrate,
-          no IT ticket. Open the report you'd open anyway and start talking.
+          no IT ticket. Keep the same workflow you have. Just open the case
+          and start talking.
         </p>
       </div>
       <img src="/works-everywhere.png" alt="Works on top of any LIS or IMS" class="feature-image dark-invert" />
+    </section>
+
+    <section class="feature feature-reverse">
+      <div class="feature-copy">
+        <span class="eyebrow">Your templates, your snippets</span>
+        <h2>Bring the templates you already trust.</h2>
+        <p>
+          GI biopsy, breast excision, prostate core. Whatever you've built
+          over the years, Voquill plugs straight in. Your templates and
+          snippets stay yours. We just make them faster to fill.
+        </p>
+      </div>
+      <div class="placeholder placeholder-feature">Bring your own templates</div>
     </section>
 
     <section class="bento">
@@ -86,13 +89,14 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
       </div>
       <div class="bento-grid">
         <div class="bento-tile tile-wide">
-          <div class="placeholder placeholder-tile">Edit by voice demo</div>
+          <div class="placeholder placeholder-tile">Agentic speech recognition</div>
           <div class="bento-text">
-            <h3>Talk to your report</h3>
+            <h3>Medical-grade agentic speech</h3>
             <p>
-              Done dictating? Tell the report what to change. "Move all that to
-              the first site." "Tighten the diagnosis." It rewrites while you
-              watch.
+              More than transcription. Voquill understands pathology
+              terminology and the commands buried inside your dictation.
+              "Move that to the first site." "Put that under interpretation."
+              It acts in real time.
             </p>
           </div>
         </div>
@@ -113,33 +117,38 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
         <div class="bento-tile tile-wide">
           <div class="placeholder placeholder-tile">Push-to-talk control</div>
           <div class="bento-text">
-            <h3>You're always in control</h3>
+            <h3>Push-to-talk control</h3>
             <p>
-              One key turns dictation on and off (we like the plus on the
-              numpad). It listens only when you want it to.
+              One key turns dictation on and off. It listens only when you
+              want it to.
             </p>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="stats-band">
-      <div class="stats-inner">
-        <div class="stat">
-          <div class="stat-number">1 pass</div>
-          <div class="stat-label">Voice to signed report</div>
-        </div>
-        <div class="stat">
-          <div class="stat-number">Real time</div>
-          <div class="stat-label">Fills as you speak</div>
-        </div>
-        <div class="stat">
-          <div class="stat-number">HIPAA</div>
-          <div class="stat-label">Compliant</div>
-        </div>
-        <div class="stat">
-          <div class="stat-number">SOC 2</div>
-          <div class="stat-label">In progress</div>
+    <section class="compliance">
+      <div class="section-head">
+        <span class="eyebrow">Built for compliance</span>
+        <h2>Locked down for privacy.</h2>
+        <p class="section-sub">
+          Built to meet the security standards your lab requires.
+        </p>
+      </div>
+      <div class="stats-band">
+        <div class="stats-inner">
+          <div class="stat">
+            <div class="stat-number">HIPAA</div>
+            <div class="stat-label">Compliant</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">SOC 2</div>
+            <div class="stat-label">In progress</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">CAP</div>
+            <div class="stat-label">Compliant</div>
+          </div>
         </div>
       </div>
     </section>
@@ -393,9 +402,22 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
     border: 1px solid var(--border);
   }
 
+  .compliance {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+
+  .section-sub {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+    max-width: 56ch;
+  }
+
   .stats-inner {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 32px;
   }
 
