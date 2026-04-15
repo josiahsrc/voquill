@@ -537,6 +537,14 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
       gap: 96px;
     }
 
+    .pathology-page > section {
+      padding: 0 16px;
+    }
+
+    .stats-band {
+      padding: 40px 24px !important;
+    }
+
     .feature,
     .feature-reverse {
       grid-template-columns: 1fr;
@@ -567,6 +575,10 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
   }
 
   @media (max-width: 560px) {
+    .pathology-page > section {
+      padding: 0 12px;
+    }
+
     .bento-grid {
       grid-template-columns: 1fr;
     }
@@ -574,6 +586,5 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
     .tile-wide {
       grid-column: span 1;
     }
-
   }
 </style>
