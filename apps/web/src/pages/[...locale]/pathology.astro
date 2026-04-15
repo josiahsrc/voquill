@@ -63,7 +63,7 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
           the report and you talking to the person next to you.
         </p>
       </div>
-      <div class="placeholder placeholder-feature">Dictate while you scan</div>
+      <img src="/talk-with-slide.png" alt="Dictate while you scan" class="feature-image dark-invert" />
     </section>
 
     <section class="feature feature-reverse">
@@ -76,7 +76,7 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
           find the right one.
         </p>
       </div>
-      <div class="placeholder placeholder-feature">Field-aware report fill</div>
+      <img src="/auto-fill-fields.png" alt="Field-aware report fill" class="feature-image dark-invert" />
     </section>
 
     <section class="feature">
@@ -88,7 +88,7 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
           no IT ticket. Open the report you'd open anyway and start talking.
         </p>
       </div>
-      <div class="placeholder placeholder-feature">LIS / IMS overlay</div>
+      <img src="/works-everywhere.png" alt="Works on top of any LIS or IMS" class="feature-image dark-invert" />
     </section>
 
     <section class="bento">
@@ -351,6 +351,22 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
   .placeholder-feature {
     aspect-ratio: 4 / 3;
     border-radius: 20px;
+  }
+
+  .feature-image {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .dark-invert {
+    filter: none;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .dark-invert {
+      filter: invert(1) hue-rotate(180deg) brightness(1.2);
+    }
   }
 
   /* BENTO */
