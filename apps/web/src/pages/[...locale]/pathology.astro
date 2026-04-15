@@ -1,6 +1,6 @@
 ---
-import Header from "../../components/pathology/Header.astro";
 import Footer from "../../components/pathology/Footer.astro";
+import Header from "../../components/pathology/Header.astro";
 import Hero from "../../components/pathology/Hero.astro";
 import { t } from "../../i18n/translations";
 import Layout from "../../layouts/Layout.astro";
@@ -30,7 +30,7 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
       <div class="placeholder placeholder-video">Product video</div>
     </section>
 
-<section class="feature" id="demo">
+    <section class="feature" id="demo">
       <div class="feature-copy">
         <span class="eyebrow">Describe what you see</span>
         <h2>Talk through the case. The report writes itself.</h2>
@@ -40,7 +40,11 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
           your preferences, so you sign out instead of edit.
         </p>
       </div>
-      <img src="/talk-with-slide.png" alt="Dictate while you scan" class="feature-image dark-invert" />
+      <img
+        src="/talk-with-slide.png"
+        alt="Dictate while you scan"
+        class="feature-image dark-invert"
+      />
     </section>
 
     <section class="feature feature-reverse">
@@ -48,12 +52,16 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
         <span class="eyebrow">Agentic field placement</span>
         <h2>Every word in the right field, automatically.</h2>
         <p>
-          Gross, microscopic, interpretation, diagnosis. Voquill routes every
+          Specimen, microscopic, interpretation, comments. Voquill routes every
           finding to the right place in your report so you stop clicking around
           to find the right one.
         </p>
       </div>
-      <img src="/auto-fill-fields.png" alt="Field-aware report fill" class="feature-image dark-invert" />
+      <img
+        src="/auto-fill-fields.png"
+        alt="Field-aware report fill"
+        class="feature-image dark-invert"
+      />
     </section>
 
     <section class="feature">
@@ -62,11 +70,15 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
         <h2>Lives on top of any LIS, IMS, or reporting system.</h2>
         <p>
           Voquill sits on top of the tools you already use. Nothing to migrate,
-          no IT ticket. Keep the same workflow you have. Just open the case
-          and start talking.
+          no IT ticket. Keep the same workflow you have. Just open the case and
+          start talking.
         </p>
       </div>
-      <img src="/works-everywhere.png" alt="Works on top of any LIS or IMS" class="feature-image dark-invert" />
+      <img
+        src="/works-everywhere.png"
+        alt="Works on top of any LIS or IMS"
+        class="feature-image dark-invert"
+      />
     </section>
 
     <section class="feature feature-reverse">
@@ -74,12 +86,16 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
         <span class="eyebrow">Your templates, your snippets</span>
         <h2>Bring the templates you already trust.</h2>
         <p>
-          GI biopsy, breast excision, prostate core. Whatever you've built
-          over the years, Voquill plugs straight in. Your templates and
-          snippets stay yours. We just make them faster to fill.
+          GI biopsy, breast excision, prostate core. Whatever you've built over
+          the years, Voquill plugs straight in. Your templates and snippets stay
+          yours. We just make them faster to fill.
         </p>
       </div>
-      <div class="placeholder placeholder-feature">Bring your own templates</div>
+      <img
+        src="/snippets.png"
+        alt="Bring your own templates and snippets"
+        class="feature-image dark-invert"
+      />
     </section>
 
     <section class="bento">
@@ -89,14 +105,16 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
       </div>
       <div class="bento-grid">
         <div class="bento-tile tile-wide">
-          <div class="placeholder placeholder-tile">Agentic speech recognition</div>
+          <div class="placeholder placeholder-tile">
+            Agentic speech recognition
+          </div>
           <div class="bento-text">
             <h3>Medical-grade agentic speech</h3>
             <p>
-              More than transcription. Voquill understands pathology
-              terminology and the commands buried inside your dictation.
-              "Move that to the first site." "Put that under interpretation."
-              It acts in real time.
+              More than transcription. Voquill understands pathology terminology
+              and the commands buried inside your dictation. "Move that to the
+              first site." "Put that under interpretation." It acts in real
+              time.
             </p>
           </div>
         </div>
@@ -119,8 +137,8 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
           <div class="bento-text">
             <h3>Push-to-talk control</h3>
             <p>
-              One key turns dictation on and off. It listens only when you
-              want it to.
+              One key turns dictation on and off. It listens only when you want
+              it to.
             </p>
           </div>
         </div>
@@ -135,25 +153,25 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
           Built to meet the security standards your lab requires.
         </p>
       </div>
-      <div class="stats-band">
-        <div class="stats-inner">
-          <div class="stat">
-            <div class="stat-number">HIPAA</div>
-            <div class="stat-label">Compliant</div>
-          </div>
-          <div class="stat">
-            <div class="stat-number">SOC 2</div>
-            <div class="stat-label">In progress</div>
-          </div>
-          <div class="stat">
-            <div class="stat-number">CAP</div>
-            <div class="stat-label">Compliant</div>
-          </div>
+      <!-- <div class="stats-band"> -->
+      <div class="stats-inner">
+        <div class="stat">
+          <div class="stat-number">HIPAA</div>
+          <div class="stat-label">Compliant</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">SOC 2</div>
+          <div class="stat-label">In progress</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">CAP</div>
+          <div class="stat-label">Compliant</div>
         </div>
       </div>
+      <!-- </div> -->
     </section>
 
-    <section class="steps">
+    <!-- <section class="steps">
       <div class="section-head">
         <span class="eyebrow">How it works</span>
         <h2>Three moves. Done.</h2>
@@ -181,28 +199,28 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
           <p>Read it. Send it.</p>
         </div>
       </div>
-    </section>
+    </section> -->
 
-    <section class="showcase-wide">
+    <!-- <section class="showcase-wide">
       <div class="placeholder placeholder-wide">
         Full workflow visualization
       </div>
-    </section>
+    </section> -->
 
-    <section class="quote">
+    <!-- <section class="quote">
       <figure>
         <blockquote>
-          "I just talk through the case and the report is already there."
+          "Super "
         </blockquote>
         <figcaption>
-          <div class="placeholder placeholder-avatar">PP</div>
+          <div class="placeholder placeholder-avatar">MG</div>
           <div>
-            <div class="quote-name">Dr. Name</div>
-            <div class="quote-role">Pathologist</div>
+            <div class="quote-name">Michael Gibson</div>
+            <div class="quote-role">Founder</div>
           </div>
         </figcaption>
       </figure>
-    </section>
+    </section> -->
   </main>
 
   <Footer locale={locale} />
@@ -361,11 +379,9 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
   .bento-tile {
     display: flex;
     flex-direction: column;
-    padding: 24px;
     border: 1px solid var(--border);
     border-radius: 20px;
     background: var(--level0);
-    gap: 16px;
     overflow: hidden;
   }
 
@@ -376,6 +392,13 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
   .bento-tile .placeholder {
     flex: 1;
     min-height: 0;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px dashed var(--border);
+  }
+
+  .bento-text {
+    padding: 20px 24px 24px;
   }
 
   .bento-text h3 {
@@ -391,7 +414,7 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
   }
 
   .placeholder-tile {
-    border-radius: 12px;
+    border-radius: 0;
   }
 
   /* STATS BAND */
