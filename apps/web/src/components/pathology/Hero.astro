@@ -1,0 +1,56 @@
+---
+import BookACall from "./BookACall.astro";
+---
+
+<div class="pathology-hero">
+  <span class="eyebrow">Agentic dictation for pathologists</span>
+  <h1>Ultra fast<br />voice reporting</h1>
+  <p class="subtitle">
+    The pathology reporting solution that turns your voice into a polished,
+    signed-off report in real time.
+  </p>
+  <div class="hero-actions">
+    <BookACall class="btn-primary" />
+    <a href="#demo" class="btn-secondary">See a demo</a>
+  </div>
+</div>
+
+<style>
+  .pathology-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 20px;
+    max-width: 780px;
+  }
+
+  .eyebrow {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .pathology-hero h1 {
+    font-size: clamp(2.75rem, 5vw, 4.25rem);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+  }
+
+  .subtitle {
+    font-size: 1.15rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+    max-width: 56ch;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+</style>

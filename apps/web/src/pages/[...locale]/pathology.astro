@@ -1,7 +1,7 @@
 ---
 import Header from "../../components/pathology/Header.astro";
 import Footer from "../../components/pathology/Footer.astro";
-import BookACall from "../../components/pathology/BookACall.astro";
+import Hero from "../../components/pathology/Hero.astro";
 import { t } from "../../i18n/translations";
 import Layout from "../../layouts/Layout.astro";
 import { defaultLocale, type Locale } from "../../types/locale";
@@ -22,24 +22,12 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
   <Header locale={locale} />
 
   <main class="pathology-page">
-    <section class="hero">
-      <div class="hero-copy">
-        <span class="eyebrow">Agentic dictation for pathologists</span>
-        <h1>Ultra fast voice reporting</h1>
-        <p class="subtitle">
-          The pathology reporting solution that turns your voice into a
-          polished, signed-off report in real time.
-        </p>
-        <div class="hero-actions">
-          <BookACall class="btn-primary" />
-          <a href="#demo" class="btn-secondary">See a demo</a>
-        </div>
-      </div>
-      <div class="hero-showcase">
-        <div class="placeholder placeholder-showcase">
-          Hero product showcase
-        </div>
-      </div>
+    <section class="hero-section">
+      <Hero />
+    </section>
+
+    <section class="hero-video">
+      <div class="placeholder placeholder-video">Product video</div>
     </section>
 
     <section class="logos">
@@ -235,49 +223,11 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
   }
 
   /* HERO */
-  .hero {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 56px;
+  .hero-section {
     padding-top: 40px !important;
   }
 
-  .hero-copy {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 20px;
-    max-width: 780px;
-  }
-
-  .hero h1 {
-    font-size: clamp(2.75rem, 5vw, 4.25rem);
-    line-height: 1.02;
-    letter-spacing: -0.04em;
-  }
-
-  .subtitle {
-    font-size: 1.15rem;
-    line-height: 1.6;
-    color: var(--text-muted);
-    max-width: 56ch;
-  }
-
-  .hero-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-top: 4px;
-  }
-
-  .hero-showcase {
-    width: 100%;
-  }
-
-  .placeholder-showcase {
+  .placeholder-video {
     aspect-ratio: 16 / 9;
     border-radius: 24px;
   }
