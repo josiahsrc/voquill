@@ -1,12 +1,12 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import Header from '../../components/Header.astro';
-import Hero from '../../components/Hero.astro';
-import SiteFooter from '../../components/SiteFooter.astro';
-import { defaultLocale, type Locale } from '../../types/locale';
-import { t } from '../../i18n/translations';
-import { buildSoftwareApplicationStructuredData } from '../../utils/seo';
-export { getLocaleStaticPaths as getStaticPaths } from '../../utils/paths';
+import Header from "../../components/pathology/Header.astro";
+import Footer from "../../components/pathology/Footer.astro";
+import BookACall from "../../components/pathology/BookACall.astro";
+import { t } from "../../i18n/translations";
+import Layout from "../../layouts/Layout.astro";
+import { defaultLocale, type Locale } from "../../types/locale";
+import { buildSoftwareApplicationStructuredData } from "../../utils/seo";
+export { getLocaleStaticPaths as getStaticPaths } from "../../utils/paths";
 
 const locale = (Astro.params.locale ?? defaultLocale) as Locale;
 const i18n = t(locale);
@@ -14,342 +14,566 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
 ---
 
 <Layout
-	title={i18n.siteTitle}
-	description={i18n.siteDescription}
-	lang={locale}
-	structuredData={structuredData}
+  title={i18n.siteTitle}
+  description={i18n.siteDescription}
+  lang={locale}
+  structuredData={structuredData}
 >
-	<Header locale={locale} />
-	<Hero locale={locale} />
-	<SiteFooter locale={locale} />
+  <Header locale={locale} />
 
-	<style is:global>
-		body {
-			overflow: clip;
-		}
-	</style>
+  <main class="pathology-page">
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">For pathology teams</span>
+        <h1>Dictation built for pathologists</h1>
+        <p class="subtitle">
+          Sign out reports faster with voice dictation tuned for pathology
+          terminology, synoptic templates, and your workflow.
+        </p>
+        <div class="hero-actions">
+          <BookACall class="btn-primary" />
+          <a href="#demo" class="btn-secondary">See a demo</a>
+        </div>
+      </div>
+      <div class="hero-showcase">
+        <div class="placeholder placeholder-showcase">Hero product showcase</div>
+      </div>
+    </section>
 
-	<script>
-		(function () {
-			function bezierPoint(
-				curve: {
-					sx: number;
-					sy: number;
-					c1x: number;
-					c1y: number;
-					c2x: number;
-					c2y: number;
-					ex: number;
-					ey: number;
-				},
-				t: number,
-			) {
-				var mt = 1 - t,
-					mt2 = mt * mt,
-					mt3 = mt2 * mt,
-					t2 = t * t,
-					t3 = t2 * t;
+    <section class="logos">
+      <p class="logos-label">Trusted by pathology teams at</p>
+      <div class="logo-row">
+        <div class="placeholder placeholder-logo">Logo</div>
+        <div class="placeholder placeholder-logo">Logo</div>
+        <div class="placeholder placeholder-logo">Logo</div>
+        <div class="placeholder placeholder-logo">Logo</div>
+        <div class="placeholder placeholder-logo">Logo</div>
+      </div>
+    </section>
 
-				var x =
-					mt3 * curve.sx +
-					3 * mt2 * t * curve.c1x +
-					3 * mt * t2 * curve.c2x +
-					t3 * curve.ex;
-				var y =
-					mt3 * curve.sy +
-					3 * mt2 * t * curve.c1y +
-					3 * mt * t2 * curve.c2y +
-					t3 * curve.ey;
+    <section class="feature" id="demo">
+      <div class="feature-copy">
+        <span class="eyebrow">Dictation</span>
+        <h2>From dictation to signed-out report</h2>
+        <p>
+          Speak naturally. Voquill recognizes pathology terminology, drops
+          findings into the right fields, and structures the synoptic diagnosis
+          for you.
+        </p>
+      </div>
+      <div class="placeholder placeholder-feature">Dictation demo</div>
+    </section>
 
-				var dx =
-					3 * mt2 * (curve.c1x - curve.sx) +
-					6 * mt * t * (curve.c2x - curve.c1x) +
-					3 * t2 * (curve.ex - curve.c2x);
-				var dy =
-					3 * mt2 * (curve.c1y - curve.sy) +
-					6 * mt * t * (curve.c2y - curve.c1y) +
-					3 * t2 * (curve.ey - curve.c2y);
+    <section class="feature feature-reverse">
+      <div class="feature-copy">
+        <span class="eyebrow">Accuracy</span>
+        <h2>Accurate on the terms that matter</h2>
+        <p>
+          Trained for medical vocabulary, grading systems, and staging — so you
+          spend less time correcting and more time signing out cases.
+        </p>
+      </div>
+      <div class="placeholder placeholder-feature">Terminology preview</div>
+    </section>
 
-				return { x: x, y: y, angle: Math.atan2(dy, dx) };
-			}
+    <section class="bento">
+      <div class="section-head">
+        <span class="eyebrow">What you get</span>
+        <h2>Everything you need, nothing you don't</h2>
+      </div>
+      <div class="bento-grid">
+        <div class="bento-tile tile-wide">
+          <div class="placeholder placeholder-tile">LIS integration visual</div>
+          <div class="bento-text">
+            <h3>LIS integration</h3>
+            <p>Drops into your existing lab information system.</p>
+          </div>
+        </div>
+        <div class="bento-tile">
+          <div class="placeholder placeholder-tile">Macros</div>
+          <div class="bento-text">
+            <h3>Custom macros</h3>
+            <p>Personal shortcuts for phrases you use every day.</p>
+          </div>
+        </div>
+        <div class="bento-tile">
+          <div class="placeholder placeholder-tile">Synoptic</div>
+          <div class="bento-text">
+            <h3>Synoptic templates</h3>
+            <p>CAP-aligned structured reporting, ready to go.</p>
+          </div>
+        </div>
+        <div class="bento-tile tile-wide">
+          <div class="placeholder placeholder-tile">Privacy diagram</div>
+          <div class="bento-text">
+            <h3>Private by design</h3>
+            <p>On-device processing keeps PHI on your machine.</p>
+          </div>
+        </div>
+      </div>
+    </section>
 
-			function generateWavePath(
-				curve: {
-					sx: number;
-					sy: number;
-					c1x: number;
-					c1y: number;
-					c2x: number;
-					c2y: number;
-					ex: number;
-					ey: number;
-				},
-				frequency: number,
-				amplitude: number,
-				timeOffset: number,
-			) {
-				var segments = 100;
-				var parts = [];
-				for (var i = 0; i <= segments; i++) {
-					var t = i / segments;
-					var p = bezierPoint(curve, t);
-					var perpX = -Math.sin(p.angle);
-					var perpY = Math.cos(p.angle);
-					var phase = t * frequency * Math.PI * 2 - timeOffset;
-					var sineValue = Math.sin(phase) * amplitude;
-					var fadeIn = Math.min(1, t * 5);
-					var fadeOut = Math.min(1, (1 - t) * 5);
-					var fade = fadeIn * fadeOut;
-					var px = p.x + perpX * sineValue * fade;
-					var py = p.y + perpY * sineValue * fade;
-					parts.push(
-						(i === 0 ? 'M ' : 'L ') +
-							px.toFixed(2) +
-							' ' +
-							py.toFixed(2),
-					);
-				}
-				return parts.join(' ');
-			}
+    <section class="stats-band">
+      <div class="stats-inner">
+        <div class="stat">
+          <div class="stat-number">3x</div>
+          <div class="stat-label">Faster sign-out</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">99%</div>
+          <div class="stat-label">Term accuracy</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">40+</div>
+          <div class="stat-label">Synoptic templates</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">HIPAA</div>
+          <div class="stat-label">Secure by default</div>
+        </div>
+      </div>
+    </section>
 
-			function seededRandom(seed: number) {
-				var x =
-					Math.sin(seed * 12.9898 + seed * 78.233) * 43758.5453;
-				return x - Math.floor(x);
-			}
+    <section class="steps">
+      <div class="section-head">
+        <span class="eyebrow">How it works</span>
+        <h2>Three steps to a signed report</h2>
+      </div>
+      <div class="steps-row">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="placeholder placeholder-step">Dictate</div>
+          <h3>Dictate</h3>
+          <p>Speak your findings in natural language.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="placeholder placeholder-step">Structure</div>
+          <h3>Structure</h3>
+          <p>Fields populate automatically into the template.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="placeholder placeholder-step">Sign out</div>
+          <h3>Sign out</h3>
+          <p>Review, edit if needed, and finalize.</p>
+        </div>
+      </div>
+    </section>
 
-			var WAVE_CONFIGS = [
-				{
-					frequency: 16 / 3,
-					amplitude: 14,
-					duration: 1.5,
-					opacity: 0.5,
-				},
-				{
-					frequency: 24 / 3,
-					amplitude: 10,
-					duration: 1.2,
-					opacity: 0.35,
-				},
-				{
-					frequency: 36 / 3,
-					amplitude: 6,
-					duration: 1,
-					opacity: 0.25,
-				},
-			];
+    <section class="showcase-wide">
+      <div class="placeholder placeholder-wide">Full workflow visualization</div>
+    </section>
 
-			var WAVE_FRAMES = 20;
+    <section class="quote">
+      <figure>
+        <blockquote>"Testimonial placeholder — a short, punchy quote from a pathologist goes here."</blockquote>
+        <figcaption>
+          <div class="placeholder placeholder-avatar">PP</div>
+          <div>
+            <div class="quote-name">Dr. Name</div>
+            <div class="quote-role">Pathologist, Hospital</div>
+          </div>
+        </figcaption>
+      </figure>
+    </section>
 
-			var BASE_TEXT =
-				'So I\u2019ve been working on this really cool flower garden project lately. I\u2019m growing sunflowers, lavender, and these amazing dahlias that just started blooming. The colors are incredible and I can\u2019t wait to show you the photos. ';
-			var REPEATED_TEXT = '';
-			for (var r = 0; r < 10; r++) REPEATED_TEXT += BASE_TEXT;
+  </main>
 
-			var SPARKS: Array<{
-				tx: number;
-				ty: number;
-				delay: number;
-				dur: number;
-			}> = [];
-			for (var i = 0; i < 6; i++) {
-				var angle = seededRandom(i * 3.3) * Math.PI * 2;
-				var distance = 80 + seededRandom(i * 4.4) * 60;
-				SPARKS.push({
-					tx: Math.cos(angle) * distance,
-					ty: Math.sin(angle) * distance,
-					delay: seededRandom(i * 1.1) * 2,
-					dur: 0.6 + seededRandom(i * 2.2) * 0.5,
-				});
-			}
-
-			function buildGraphic() {
-				var NS = 'http://www.w3.org/2000/svg';
-				var vw = 1000,
-					vh = 750;
-				var cx = vw,
-					cy = vh;
-				var iconX = cx,
-					iconY = cy;
-
-				var inputCurve = {
-					sx: cx - vw * 0.1,
-					sy: -50,
-					c1x: cx + vw * 0.2,
-					c1y: cy - vh * 0.8,
-					c2x: cx - vw * 0.5,
-					c2y: cy - vh * 0.1,
-					ex: iconX - 28,
-					ey: iconY - 5,
-				};
-
-				var outputCurve = {
-					sx: iconX + 28,
-					sy: iconY + 8,
-					c1x: cx + vw * 0.4,
-					c1y: cy + vh * 0.1,
-					c2x: cx,
-					c2y: cy + vh * 0.4,
-					ex: cx + vw * 0.7,
-					ey: cy + vh * 0.5,
-				};
-
-				var outputCurvePath =
-					'M ' +
-					outputCurve.sx +
-					' ' +
-					outputCurve.sy +
-					' C ' +
-					outputCurve.c1x +
-					' ' +
-					outputCurve.c1y +
-					', ' +
-					outputCurve.c2x +
-					' ' +
-					outputCurve.c2y +
-					', ' +
-					outputCurve.ex +
-					' ' +
-					outputCurve.ey;
-
-				var wavesData = WAVE_CONFIGS.map(function (cfg) {
-					var frames = [];
-					for (var f = 0; f < WAVE_FRAMES; f++) {
-						var timeOffset = (f / WAVE_FRAMES) * Math.PI * 2;
-						frames.push(
-							generateWavePath(
-								inputCurve,
-								cfg.frequency,
-								cfg.amplitude,
-								timeOffset,
-							),
-						);
-					}
-					frames.push(frames[0]);
-					return {
-						frames: frames.join(';'),
-						opacity: cfg.opacity,
-						duration: cfg.duration,
-					};
-				});
-
-				var svg = document.createElementNS(NS, 'svg');
-				svg.setAttribute('class', 'hero-svg');
-				svg.setAttribute(
-					'viewBox',
-					'0 0 ' + vw * 2 + ' ' + vh * 2,
-				);
-				svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
-
-				var defs = document.createElementNS(NS, 'defs');
-				var defPath = document.createElementNS(NS, 'path');
-				defPath.setAttribute('id', 'outputTextPath');
-				defPath.setAttribute('d', outputCurvePath);
-				defPath.setAttribute('fill', 'none');
-				defs.appendChild(defPath);
-				svg.appendChild(defs);
-
-				wavesData.forEach(function (w) {
-					var path = document.createElementNS(NS, 'path');
-					path.setAttribute('fill', 'none');
-					path.setAttribute('class', 'hero-wave-path');
-					path.setAttribute('style', 'opacity:' + w.opacity);
-					var anim = document.createElementNS(NS, 'animate');
-					anim.setAttribute('attributeName', 'd');
-					anim.setAttribute('values', w.frames);
-					anim.setAttribute('dur', w.duration + 's');
-					anim.setAttribute('repeatCount', 'indefinite');
-					path.appendChild(anim);
-					svg.appendChild(path);
-				});
-
-				var text = document.createElementNS(NS, 'text');
-				text.setAttribute('class', 'hero-path-text');
-				var textPath = document.createElementNS(NS, 'textPath');
-				textPath.setAttribute('href', '#outputTextPath');
-				textPath.textContent = REPEATED_TEXT;
-				var textAnim = document.createElementNS(NS, 'animate');
-				textAnim.setAttribute('attributeName', 'startOffset');
-				textAnim.setAttribute('from', '-1300');
-				textAnim.setAttribute('to', '0');
-				textAnim.setAttribute('dur', '15.5s');
-				textAnim.setAttribute('calcMode', 'linear');
-				textAnim.setAttribute('repeatCount', 'indefinite');
-				textPath.appendChild(textAnim);
-				text.appendChild(textPath);
-				svg.appendChild(text);
-
-				SPARKS.forEach(function (s) {
-					var c = document.createElementNS(NS, 'circle');
-					c.setAttribute('cx', String(iconX));
-					c.setAttribute('cy', String(iconY));
-					c.setAttribute('r', '3');
-					c.setAttribute('class', 'hero-spark');
-
-					function addAnim(
-						attr: string,
-						vals: string,
-						dur: number,
-						begin: number,
-					) {
-						var a = document.createElementNS(NS, 'animate');
-						a.setAttribute('attributeName', attr);
-						a.setAttribute('values', vals);
-						a.setAttribute('dur', dur + 's');
-						a.setAttribute('begin', begin + 's');
-						a.setAttribute('repeatCount', 'indefinite');
-						c.appendChild(a);
-					}
-
-					addAnim(
-						'cx',
-						iconX + ';' + (iconX + s.tx),
-						s.dur,
-						s.delay,
-					);
-					addAnim(
-						'cy',
-						iconY + ';' + (iconY + s.ty),
-						s.dur,
-						s.delay,
-					);
-					addAnim('opacity', '0.6;0', s.dur, s.delay);
-					addAnim('r', '3;1', s.dur, s.delay);
-					svg.appendChild(c);
-				});
-
-				var glow = document.createElementNS(NS, 'circle');
-				glow.setAttribute('cx', String(iconX));
-				glow.setAttribute('cy', String(iconY));
-				glow.setAttribute('r', '38');
-				glow.setAttribute('class', 'hero-icon-glow');
-				svg.appendChild(glow);
-
-				var circle = document.createElementNS(NS, 'circle');
-				circle.setAttribute('cx', String(iconX));
-				circle.setAttribute('cy', String(iconY));
-				circle.setAttribute('r', '30');
-				circle.setAttribute('class', 'hero-icon-circle');
-				svg.appendChild(circle);
-
-				var img = document.createElementNS(NS, 'image');
-				img.setAttribute('href', '/app-logo.svg');
-				img.setAttribute('x', String(iconX - 20));
-				img.setAttribute('y', String(iconY - 20));
-				img.setAttribute('width', '40');
-				img.setAttribute('height', '40');
-				img.setAttribute('class', 'hero-icon-logo');
-				svg.appendChild(img);
-
-				return svg;
-			}
-
-			document.addEventListener('DOMContentLoaded', function () {
-				var containers = document.querySelectorAll('.hero-graphic');
-				containers.forEach(function (el) {
-					el.appendChild(buildGraphic());
-				});
-			});
-		})();
-	</script>
+  <Footer locale={locale} />
 </Layout>
+
+<style>
+  .pathology-page {
+    display: flex;
+    flex-direction: column;
+    gap: 140px;
+    padding-bottom: 40px;
+  }
+
+  .pathology-page > section {
+    width: min(1120px, 100%);
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .eyebrow {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* HERO */
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 56px;
+    padding-top: 40px !important;
+  }
+
+  .hero-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+    max-width: 780px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.75rem, 5vw, 4.25rem);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+  }
+
+  .subtitle {
+    font-size: 1.15rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+    max-width: 56ch;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  .hero-showcase {
+    width: 100%;
+  }
+
+  .placeholder-showcase {
+    aspect-ratio: 16 / 9;
+    border-radius: 24px;
+  }
+
+  /* LOGOS */
+  .logos {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .logos-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+
+  .logo-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 32px;
+    width: 100%;
+    max-width: 880px;
+  }
+
+  .placeholder-logo {
+    flex: 1 1 140px;
+    max-width: 160px;
+    aspect-ratio: 4 / 1;
+    border-radius: 8px;
+    opacity: 0.6;
+  }
+
+  /* FEATURE ROWS */
+  .feature {
+    display: grid;
+    grid-template-columns: 5fr 7fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .feature-reverse {
+    grid-template-columns: 7fr 5fr;
+  }
+
+  .feature-reverse .feature-copy {
+    order: 2;
+  }
+
+  .feature-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .feature-copy h2 {
+    font-size: clamp(1.9rem, 3vw, 2.5rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+
+  .feature-copy p {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+    max-width: 48ch;
+  }
+
+  .placeholder-feature {
+    aspect-ratio: 4 / 3;
+    border-radius: 20px;
+  }
+
+  /* BENTO */
+  .bento {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .section-head h2 {
+    font-size: clamp(1.9rem, 3vw, 2.5rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 280px;
+    gap: 20px;
+  }
+
+  .bento-tile {
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--level0);
+    gap: 16px;
+    overflow: hidden;
+  }
+
+  .tile-wide {
+    grid-column: span 2;
+  }
+
+  .bento-tile .placeholder {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .bento-text h3 {
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+  }
+
+  .bento-text p {
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+
+  .placeholder-tile {
+    border-radius: 12px;
+  }
+
+  /* STATS BAND */
+  .stats-band {
+    background: var(--level1);
+    border-radius: 28px;
+    padding: 56px 40px !important;
+    border: 1px solid var(--border);
+  }
+
+  .stats-inner {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .stat-number {
+    font-size: clamp(2.5rem, 4vw, 3.25rem);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+  }
+
+  /* STEPS */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+
+  .steps-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .step-num {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+  }
+
+  .placeholder-step {
+    aspect-ratio: 1 / 1;
+    border-radius: 16px;
+  }
+
+  .step h3 {
+    font-size: 1.2rem;
+    letter-spacing: -0.01em;
+  }
+
+  .step p {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* SHOWCASE WIDE */
+  .placeholder-wide {
+    aspect-ratio: 21 / 9;
+    border-radius: 24px;
+  }
+
+  /* QUOTE */
+  .quote figure {
+    max-width: 820px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    text-align: center;
+    align-items: center;
+  }
+
+  .quote blockquote {
+    font-size: clamp(1.35rem, 2.2vw, 1.7rem);
+    line-height: 1.4;
+    letter-spacing: -0.015em;
+    color: var(--text-strong);
+  }
+
+  .quote figcaption {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+  }
+
+  .placeholder-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+    font-size: 0.75rem;
+  }
+
+  .quote-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .quote-role {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+
+  /* PLACEHOLDER BASE */
+  .placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    background: var(--level1);
+    text-align: center;
+    padding: 12px;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 960px) {
+    .pathology-page {
+      gap: 96px;
+    }
+
+    .feature,
+    .feature-reverse {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+
+    .feature-reverse .feature-copy {
+      order: 0;
+    }
+
+    .bento-grid {
+      grid-template-columns: repeat(2, 1fr);
+      grid-auto-rows: 240px;
+    }
+
+    .tile-wide {
+      grid-column: span 2;
+    }
+
+    .stats-inner {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .steps-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .bento-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .tile-wide {
+      grid-column: span 1;
+    }
+
+  }
+</style>
