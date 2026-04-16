@@ -14,22 +14,18 @@ const i18n = t(locale);
 
 <div class="site-header-wrapper">
 	<header class="site-header">
-		<a href={localePath(locale, '/')} class="logo">
+		<a href="#" class="logo">
 			<span class="logo-mark" aria-hidden="true"></span>
 			<span>Voquill</span>
 		</a>
 		<nav aria-label="Primary navigation">
-			<a href={localePath(locale, '/#overview')}>{i18n.navDemo}</a>
-			<a href={localePath(locale, '/#privacy')}>{i18n.navSecurity}</a>
-			<a href={localePath(locale, '/blog')}>{i18n.navBlog}</a>
-			<a
-				href="https://docs.voquill.com"
-				target="_blank"
-				rel="noopener noreferrer">{i18n.navDocs}</a
-			>
-			<a href={localePath(locale, '/business')}>{i18n.navBusiness}</a>
+			<a href="#demo">Demo</a>
+			<a href="#solution">Solution</a>
+			<a href="#features">Features</a>
+			<a href="#compliance">Compliance</a>
 		</nav>
 		<div class="header-actions">
+			<a href="mailto:hello@voquill.com" class="btn-secondary btn-small">Contact us</a>
 			<BookACall class="btn-primary btn-small" />
 		</div>
 		<button class="mobile-menu-btn" aria-label="Open menu">

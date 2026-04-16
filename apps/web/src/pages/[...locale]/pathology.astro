@@ -26,17 +26,16 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
       <Hero />
     </section>
 
-    <section class="hero-video">
+    <section class="hero-video" id="demo">
       <div class="hero-video-wrapper">
         <iframe
           src="https://streamable.com/e/oqmsiz?loop=0"
           allow="fullscreen"
-          allowfullscreen
-        ></iframe>
+          allowfullscreen></iframe>
       </div>
     </section>
 
-    <section class="feature" id="demo">
+    <section class="feature" id="solution">
       <div class="feature-copy">
         <span class="eyebrow">Describe what you see</span>
         <h2>Talk through the case. The report writes itself.</h2>
@@ -104,10 +103,10 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
       />
     </section>
 
-    <section class="bento">
+    <section class="bento" id="features">
       <div class="section-head">
         <span class="eyebrow">Why it works</span>
-        <h2>Voice to sign-out, in one pass.</h2>
+        <h2>Voice to sign-out, in real time.</h2>
       </div>
       <div class="bento-grid">
         <div class="bento-tile tile-wide">
@@ -175,7 +174,7 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
       </div>
     </section>
 
-    <section class="compliance">
+    <section class="compliance" id="compliance">
       <div class="section-head">
         <span class="eyebrow">Built for compliance</span>
         <h2>Locked down for privacy.</h2>
@@ -295,6 +294,14 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
     padding-bottom: 58.19%;
     border-radius: 24px;
     overflow: hidden;
+    cursor: pointer;
+    transition: box-shadow 0.25s ease;
+  }
+
+  .hero-video-wrapper:hover {
+    box-shadow:
+      inset 0 0 0 2px var(--primary-button-bg),
+      0 20px 60px -16px rgba(0, 0, 0, 0.35);
   }
 
   .hero-video-wrapper iframe {
