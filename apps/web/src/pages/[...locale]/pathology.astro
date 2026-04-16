@@ -27,7 +27,13 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
     </section>
 
     <section class="hero-video">
-      <div class="placeholder placeholder-video">Product video</div>
+      <div class="hero-video-wrapper">
+        <iframe
+          src="https://streamable.com/e/oqmsiz?loop=0"
+          allow="fullscreen"
+          allowfullscreen
+        ></iframe>
+      </div>
     </section>
 
     <section class="feature" id="demo">
@@ -105,35 +111,59 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
       </div>
       <div class="bento-grid">
         <div class="bento-tile tile-wide">
-          <div class="placeholder placeholder-tile">
-            Agentic speech recognition
-          </div>
+          <video
+            class="bento-media bento-media-plain"
+            src="/agentic-dictation.mp4"
+            style="object-position: 50% 25%"
+            loop
+            muted
+            playsinline
+            preload="auto"></video>
           <div class="bento-text">
             <h3>Medical-grade agentic speech</h3>
             <p>
-              More than transcription. Voquill understands pathology terminology
-              and the commands buried inside your dictation. "Move that to the
-              first site." "Put that under interpretation." It acts in real
-              time.
+              Speak naturally like you would to a co-worker. Voquill drops each
+              finding into the right field of your synoptic report.
             </p>
           </div>
         </div>
         <div class="bento-tile">
-          <div class="placeholder placeholder-tile">Style match</div>
+          <video
+            class="bento-media bento-media-plain"
+            src="/auto-format.mp4"
+            style="object-position: 50% 0%"
+            loop
+            muted
+            playsinline
+            preload="auto"></video>
           <div class="bento-text">
             <h3>Learns your style</h3>
             <p>Voquill reads your old reports and writes the way you do.</p>
           </div>
         </div>
         <div class="bento-tile">
-          <div class="placeholder placeholder-tile">Snippets</div>
+          <video
+            id="auto-snippets-video"
+            class="bento-media bento-media-plain"
+            src="/auto-snippets.mp4"
+            loop
+            muted
+            playsinline
+            preload="auto"></video>
           <div class="bento-text">
             <h3>Snippets that snap in</h3>
             <p>Reusable blocks for the phrases you say every day.</p>
           </div>
         </div>
         <div class="bento-tile tile-wide">
-          <div class="placeholder placeholder-tile">Push-to-talk control</div>
+          <video
+            id="push-to-talk-video"
+            class="bento-media"
+            src="/push-to-talk.mp4"
+            loop
+            muted
+            playsinline
+            preload="auto"></video>
           <div class="bento-text">
             <h3>Push-to-talk control</h3>
             <p>
@@ -257,6 +287,23 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
   .placeholder-video {
     aspect-ratio: 16 / 9;
     border-radius: 24px;
+  }
+
+  .hero-video-wrapper {
+    position: relative;
+    width: 100%;
+    padding-bottom: 58.19%;
+    border-radius: 24px;
+    overflow: hidden;
+  }
+
+  .hero-video-wrapper iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
   }
 
   /* LOGOS */
@@ -383,6 +430,16 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
     border-radius: 20px;
     background: var(--level0);
     overflow: hidden;
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  .bento-tile:hover {
+    transform: scale(1.02);
+    box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.25);
+    border-color: var(--text-muted);
   }
 
   .tile-wide {
@@ -415,6 +472,19 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
 
   .placeholder-tile {
     border-radius: 0;
+  }
+
+  .bento-media {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    object-fit: cover;
+    border-bottom: 1px dashed var(--border);
+    filter: sepia(0.2) saturate(1.2) hue-rotate(-6deg) brightness(1.01);
+  }
+
+  .bento-media-plain {
+    filter: none;
   }
 
   /* STATS BAND */
@@ -626,3 +696,48 @@ const structuredData = [buildSoftwareApplicationStructuredData(locale)];
     }
   }
 </style>
+
+<script>
+  const smoothstep = (x: number) => x * x * (3 - 2 * x);
+
+  const animate = (id: string, compute: (t: number) => number): void => {
+    const video = document.getElementById(id) as HTMLVideoElement | null;
+    if (!video) return;
+    const tick = () => {
+      const duration = video.duration;
+      if (duration && !Number.isNaN(duration)) {
+        const t = video.currentTime / duration;
+        video.style.objectPosition = `50% ${compute(t)}%`;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+
+  animate("push-to-talk-video", (t) =>
+    t < 0.6
+      ? 50 - 50 * smoothstep(t / 0.6)
+      : t < 0.9
+        ? 100 * smoothstep((t - 0.6) / 0.3)
+        : 100,
+  );
+
+  animate("auto-snippets-video", (t) =>
+    t < 0.5 ? 100 : t < 0.7 ? 100 - 50 * smoothstep((t - 0.5) / 0.2) : 50,
+  );
+
+  document
+    .querySelectorAll<HTMLVideoElement>(".bento-media")
+    .forEach((video) => {
+      const tile = video.closest<HTMLElement>(".bento-tile");
+      if (!tile) return;
+      tile.addEventListener("mouseenter", () => {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      });
+      tile.addEventListener("mouseleave", () => {
+        video.pause();
+        video.currentTime = 0;
+      });
+    });
+</script>
