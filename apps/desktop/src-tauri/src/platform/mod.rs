@@ -123,6 +123,18 @@ pub use macos::volume;
 #[cfg(target_os = "windows")]
 pub use windows::volume;
 
+pub fn find_pid_by_window_title(title_substring: &str) -> Option<i32> {
+    #[cfg(target_os = "windows")]
+    {
+        windows::window::find_pid_by_window_title(title_substring)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = title_substring;
+        None
+    }
+}
+
 pub mod app_info;
 
 pub mod audio;

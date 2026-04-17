@@ -116,3 +116,43 @@ pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
     rx.recv()
         .map_err(|_| "failed to surface window on main thread".to_string())?
 }
+
+pub fn find_pid_by_window_title(title_substring: &str) -> Option<i32> {
+    use windows::Win32::UI::WindowsAndMessaging::{
+        FindWindowExW, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId,
+        IsWindowVisible,
+    };
+
+    let needle = title_substring.to_lowercase();
+
+    unsafe {
+        let mut hwnd = match FindWindowExW(None, None, None, None) {
+            Ok(h) => h,
+            Err(_) => return None,
+        };
+        loop {
+            if IsWindowVisible(hwnd).as_bool() {
+                let len = GetWindowTextLengthW(hwnd);
+                if len > 0 {
+                    let mut buf = vec![0u16; (len + 1) as usize];
+                    let got = GetWindowTextW(hwnd, &mut buf);
+                    if got > 0 {
+                        let title = String::from_utf16_lossy(&buf[..got as usize]);
+                        if title.to_lowercase().contains(&needle) {
+                            let mut pid: u32 = 0;
+                            GetWindowThreadProcessId(hwnd, Some(&mut pid));
+                            if pid > 0 {
+                                return Some(pid as i32);
+                            }
+                        }
+                    }
+                }
+            }
+            match FindWindowExW(None, Some(hwnd), None, None) {
+                Ok(next) => hwnd = next,
+                Err(_) => break,
+            }
+        }
+    }
+    None
+}

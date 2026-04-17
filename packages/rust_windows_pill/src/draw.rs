@@ -29,6 +29,10 @@ pub(crate) fn draw_all(gfx: &mut Gfx, state: &PillState) {
 
     draw_pill(gfx, state, ww, wh);
 
+    if state.flash_blue_active.get() {
+        draw_flash_blue(gfx, state, ww, wh);
+    }
+
     if state.assistant_active.get() {
         draw_keyboard_button(gfx, state, ww, wh);
     }
@@ -40,6 +44,10 @@ pub(crate) fn draw_all(gfx: &mut Gfx, state: &PillState) {
 
         if state.flash_t.get() > 0.01 {
             draw_flash_message(gfx, state, ww, wh);
+        }
+
+        if state.transcript_opacity.get() > 0.001 {
+            draw_broadcast_transcript(gfx, state, ww, wh);
         }
 
         draw_cancel_button(gfx, state, ww, wh);
@@ -403,6 +411,81 @@ fn draw_flame(gfx: &Gfx, state: &PillState, ww: f64, wh: f64) {
             ],
         );
     }
+}
+
+// ── Flash blue border ────────────────────────────────────────────
+
+fn draw_flash_blue(gfx: &mut Gfx, state: &PillState, ww: f64, wh: f64) {
+    let elapsed = state.flash_blue_elapsed.get();
+    if elapsed <= 0.0 || elapsed >= FLASH_BLUE_DURATION {
+        return;
+    }
+    let t = elapsed / FLASH_BLUE_DURATION;
+    let alpha = (t * std::f64::consts::PI).sin().max(0.0);
+    if alpha < 0.01 {
+        return;
+    }
+
+    let (px, py, pw, ph) = pill_position(state, ww, wh);
+    let inset = -FLASH_BLUE_INSET;
+    let rx = px + inset;
+    let ry = py + inset;
+    let rw = pw - inset * 2.0;
+    let rh = ph - inset * 2.0;
+
+    let expand_t = state.expand_t.get();
+    let radius = lerp(COLLAPSED_RADIUS, EXPANDED_RADIUS, expand_t) + FLASH_BLUE_INSET;
+
+    let (gr, gg, gb) = FLASH_BLUE_GLOW_COLOR;
+    gfx.stroke_rounded_rect(
+        rx - 1.5, ry - 1.5, rw + 3.0, rh + 3.0, radius + 1.5,
+        [gr, gg, gb, 0.35 * alpha],
+        FLASH_BLUE_BORDER_WIDTH + 2.0,
+    );
+
+    let (r, g, b) = FLASH_BLUE_COLOR;
+    gfx.stroke_rounded_rect(
+        rx, ry, rw, rh, radius,
+        [r, g, b, alpha],
+        FLASH_BLUE_BORDER_WIDTH,
+    );
+}
+
+// ── Broadcast transcript ─────────────────────────────────────────
+
+fn draw_broadcast_transcript(gfx: &mut Gfx, state: &PillState, ww: f64, wh: f64) {
+    let alpha = state.transcript_opacity.get();
+    if alpha < 0.01 {
+        return;
+    }
+    let text = state.transcript_text.borrow();
+    if text.is_empty() {
+        return;
+    }
+
+    let (text_w, _) = gfx.measure_text(&text, TRANSCRIPT_FONT_SIZE, false);
+    let box_w = (text_w + TRANSCRIPT_PADDING_H * 2.0).min(TRANSCRIPT_MAX_WIDTH);
+
+    let (_, pill_y, _, _) = pill_position(state, ww, wh);
+    let box_x = (ww - box_w) / 2.0;
+    let rise = (1.0 - alpha) * 6.0;
+    let box_y = pill_y - TRANSCRIPT_GAP - TRANSCRIPT_HEIGHT + rise;
+
+    gfx.fill_rounded_rect(
+        box_x, box_y, box_w, TRANSCRIPT_HEIGHT, TRANSCRIPT_RADIUS,
+        [0.0, 0.0, 0.0, alpha],
+    );
+    gfx.stroke_rounded_rect(
+        box_x + 0.5, box_y + 0.5, box_w - 1.0, TRANSCRIPT_HEIGHT - 1.0, TRANSCRIPT_RADIUS - 0.5,
+        [0.45, 0.75, 1.0, 0.35 * alpha],
+        1.0,
+    );
+
+    gfx.draw_text_centered(
+        &text, box_x, box_y, box_w, TRANSCRIPT_HEIGHT,
+        TRANSCRIPT_FONT_SIZE, false,
+        [1.0, 1.0, 1.0, 0.95 * alpha],
+    );
 }
 
 // ── Fireworks ────────────────────────────────────────────────────

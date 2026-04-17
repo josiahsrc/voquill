@@ -283,6 +283,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::play_audio,
             crate::commands::get_text_field_info,
             crate::commands::get_screen_context,
+            crate::commands::find_pid_by_window_title,
             crate::commands::get_selected_text,
             crate::commands::gather_accessibility_dump,
             crate::commands::get_focused_field_info,

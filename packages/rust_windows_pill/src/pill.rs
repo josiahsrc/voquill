@@ -132,6 +132,12 @@ pub fn run(receiver: Receiver<InMessage>) {
         flame_active: Cell::new(false),
         flame_elapsed: Cell::new(0.0),
         flame_tongues: RefCell::new(Vec::new()),
+        flash_blue_active: Cell::new(false),
+        flash_blue_elapsed: Cell::new(0.0),
+        transcript_text: RefCell::new(String::new()),
+        transcript_time_since_update: Cell::new(0.0),
+        transcript_opacity: Cell::new(0.0),
+        transcript_has_message: Cell::new(false),
         dirty: Cell::new(true),
     };
 
@@ -408,6 +414,15 @@ fn process_message(msg: InMessage, state: &PillState, _hwnd: HWND) {
             state.flame_elapsed.set(0.0);
             state.flame_tongues.borrow_mut().clear();
         }
+        InMessage::FlashBlue => {
+            state.flash_blue_active.set(true);
+            state.flash_blue_elapsed.set(0.0);
+        }
+        InMessage::BroadcastTranscript { text } => {
+            *state.transcript_text.borrow_mut() = text;
+            state.transcript_time_since_update.set(0.0);
+            state.transcript_has_message.set(true);
+        }
         InMessage::Visibility { visibility } => {
             state.visibility.set(visibility);
         }
@@ -517,6 +532,8 @@ fn tick(state: &PillState, dt: f64) {
 
     tick_fireworks(state, dt);
     tick_flame(state, dt);
+    tick_flash_blue(state, dt);
+    tick_transcript(state, dt);
 
     if state.flash_visible.get() {
         let remaining = state.flash_timer.get() - dt;
@@ -674,6 +691,45 @@ fn tick_flame(state: &PillState, dt: f64) {
     if elapsed >= FLAME_TOTAL_DURATION {
         state.flame_active.set(false);
         tongues.clear();
+    }
+}
+
+fn tick_flash_blue(state: &PillState, dt: f64) {
+    if !state.flash_blue_active.get() {
+        return;
+    }
+    let elapsed = state.flash_blue_elapsed.get() + dt;
+    if elapsed >= FLASH_BLUE_DURATION {
+        state.flash_blue_active.set(false);
+        state.flash_blue_elapsed.set(0.0);
+    } else {
+        state.flash_blue_elapsed.set(elapsed);
+    }
+}
+
+fn tick_transcript(state: &PillState, dt: f64) {
+    if !state.transcript_has_message.get() && state.transcript_opacity.get() < 0.001 {
+        return;
+    }
+    let since = state.transcript_time_since_update.get() + dt;
+    state.transcript_time_since_update.set(since);
+
+    let target = if state.transcript_has_message.get() && since < TRANSCRIPT_FADE_DELAY {
+        1.0
+    } else {
+        0.0
+    };
+
+    let speed = if target > 0.5 { TRANSCRIPT_RISE_SPEED } else { TRANSCRIPT_FADE_SPEED };
+    let opacity = state.transcript_opacity.get();
+    let blend = 1.0 - (-speed * dt).exp();
+    let next = opacity + (target - opacity) * blend;
+    state.transcript_opacity.set(next);
+
+    if target == 0.0 && next < 0.002 {
+        state.transcript_opacity.set(0.0);
+        state.transcript_has_message.set(false);
+        state.transcript_text.borrow_mut().clear();
     }
 }
 

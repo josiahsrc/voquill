@@ -176,6 +176,16 @@ pub(crate) struct PillState {
     pub(crate) flame_elapsed: Cell<f64>,
     pub(crate) flame_tongues: RefCell<Vec<FlameTongue>>,
 
+    // Flash blue border
+    pub(crate) flash_blue_active: Cell<bool>,
+    pub(crate) flash_blue_elapsed: Cell<f64>,
+
+    // Broadcast transcript (live text above the pill)
+    pub(crate) transcript_text: RefCell<String>,
+    pub(crate) transcript_time_since_update: Cell<f64>,
+    pub(crate) transcript_opacity: Cell<f64>,
+    pub(crate) transcript_has_message: Cell<bool>,
+
     // Dirty flag — when false, the rendered output is identical to the previous
     // frame so we can skip draw + UpdateLayeredWindow entirely.
     pub(crate) dirty: Cell<bool>,
@@ -208,6 +218,9 @@ impl PillState {
         if self.fireworks_active.get() { return true; }
         if self.flame_active.get() { return true; }
         if self.flash_visible.get() { return true; }
+        if self.flash_blue_active.get() { return true; }
+        if self.transcript_has_message.get() { return true; }
+        if self.transcript_opacity.get() > 0.001 { return true; }
 
         // Assistant panel has shimmer and streaming content
         if self.assistant_active.get() { return true; }
