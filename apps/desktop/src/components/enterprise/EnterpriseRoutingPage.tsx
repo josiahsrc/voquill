@@ -12,9 +12,7 @@ import { signOut } from "../../actions/login.actions";
 
 const ROUTING_TIMEOUT_MS = 15000;
 
-type RoutingState =
-  | { phase: "loading" }
-  | { phase: "notFound" };
+type RoutingState = { phase: "loading" } | { phase: "notFound" };
 
 export default function EnterpriseRoutingPage() {
   const [state, setState] = useState<RoutingState>({ phase: "loading" });
@@ -30,10 +28,7 @@ export default function EnterpriseRoutingPage() {
 
     const load = async () => {
       try {
-        const { url } = await invokeHandler(
-          "enterprise/loadRoutingConfig",
-          {},
-        );
+        const { url } = await invokeHandler("enterprise/loadRoutingConfig", {});
         if (cancelled) {
           return;
         }
