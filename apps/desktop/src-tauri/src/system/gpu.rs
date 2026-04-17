@@ -4,7 +4,7 @@ use std::panic;
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GpuAdapterInfo {
     pub name: String,

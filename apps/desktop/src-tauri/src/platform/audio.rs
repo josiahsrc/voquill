@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use crate::platform::Recorder;
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, specta::Type)]
 pub struct InputDeviceDescriptor {
     pub label: String,
     pub is_default: bool,

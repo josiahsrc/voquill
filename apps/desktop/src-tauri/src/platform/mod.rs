@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "kebab-case")]
 pub enum NativeSetupResult {
     Success,
@@ -8,7 +8,7 @@ pub enum NativeSetupResult {
     Failed,
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "kebab-case")]
 pub enum NativeSetupStatus {
     Ready,
@@ -16,7 +16,7 @@ pub enum NativeSetupStatus {
     NeedsRestart,
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "kebab-case")]
 pub enum PasteKeybindSupport {
     Disabled,

@@ -7,7 +7,8 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "gen:bindings": "pnpm --filter @voquill/desktop-native-apis gen:bindings"
   },
   "devDependencies": {
     "prettier": "^3.8.1",

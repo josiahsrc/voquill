@@ -22,7 +22,7 @@ const TRAY_ICON_UPDATE: &[u8] = include_bytes!(concat!(
     "/icons/tray/update-win-linux-36.png"
 ));
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum MenuIconVariant {
     Default,

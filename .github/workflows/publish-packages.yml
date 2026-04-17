@@ -14,6 +14,7 @@ on:
       - "packages/voice-ai/**"
       - "packages/typescript-config/**"
       - "packages/eslint-config/**"
+      - "packages/desktop-native-apis/**"
       - ".github/workflows/publish-packages.yml"
   workflow_dispatch:
 
@@ -51,7 +52,8 @@ jobs:
             --filter='@voquill/functions...' \
             --filter='@voquill/firemix...' \
             --filter='@voquill/pricing...' \
-            --filter='@voquill/voice-ai...'
+            --filter='@voquill/voice-ai...' \
+            --filter='@voquill/desktop-native-apis...'
 
       - name: Publish packages
         run: |
@@ -82,3 +84,4 @@ jobs:
           publish_pkg functions         "@voquill/functions"
           publish_pkg voice-ai          "@voquill/voice-ai"
           publish_pkg firemix           "@voquill/firemix"
+          publish_pkg desktop-native-apis "@voquill/desktop-native-apis"

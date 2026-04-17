@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiKey {
     pub id: String,
@@ -26,7 +26,7 @@ pub struct ApiKey {
     pub include_v1_path: Option<bool>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiKeyCreateRequest {
     pub id: String,
@@ -41,7 +41,7 @@ pub struct ApiKeyCreateRequest {
     pub include_v1_path: Option<bool>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiKeyUpdateRequest {
     pub id: String,
@@ -63,7 +63,7 @@ pub struct ApiKeyUpdateRequest {
     pub include_v1_path: Option<bool>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiKeyView {
     pub id: String,

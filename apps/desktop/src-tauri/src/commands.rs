@@ -17,27 +17,27 @@ use sqlx::Row;
 
 use crate::platform::input::paste_text_into_focused_field as platform_paste_text;
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct StopRecordingResponse {
     pub samples: Vec<f32>,
     pub sample_rate: u32,
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct StartRecordingResponse {
     pub sample_rate: u32,
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct CurrentAppInfoResponse {
     pub app_name: String,
     pub icon_base64: String,
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TextFieldInfo {
     pub cursor_position: Option<usize>,
@@ -45,13 +45,13 @@ pub struct TextFieldInfo {
     pub text_content: Option<String>,
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ScreenContextInfo {
     pub screen_context: Option<String>,
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AccessibilityDumpResult {
     pub dump: Option<String>,
@@ -60,7 +60,7 @@ pub struct AccessibilityDumpResult {
     pub element_count: usize,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ElementFingerprint {
     pub automation_id: Option<String>,
@@ -71,7 +71,7 @@ pub struct ElementFingerprint {
     pub child_index: usize,
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AccessibilityFieldInfo {
     pub role: Option<String>,
@@ -86,11 +86,12 @@ pub struct AccessibilityFieldInfo {
     pub element_index_path: Vec<usize>,
     pub fingerprint_chain: Vec<ElementFingerprint>,
     pub can_paste: bool,
+    /// "jab" for Java Access Bridge fields, None for UIAutomation
     #[serde(default)]
     pub backend: Option<String>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AccessibilityFocusTarget {
     pub app_pid: i32,
@@ -100,7 +101,7 @@ pub struct AccessibilityFocusTarget {
     pub backend: Option<String>,
 }
 
-#[derive(serde::Deserialize, Clone, Debug, Default)]
+#[derive(serde::Deserialize, Clone, Debug, Default, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum JabWriteMethod {
     /// JAB `setTextContents` API — replaces entire field contents directly.
@@ -114,7 +115,7 @@ pub enum JabWriteMethod {
     KeystrokeSimulationSmart,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AccessibilityWriteEntry {
     pub app_pid: i32,
@@ -127,7 +128,7 @@ pub struct AccessibilityWriteEntry {
     pub jab_write_method: JabWriteMethod,
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AccessibilityWriteResult {
     pub succeeded: usize,
@@ -135,7 +136,7 @@ pub struct AccessibilityWriteResult {
     pub errors: Vec<String>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FieldValueRequest {
     pub app_pid: i32,
@@ -145,14 +146,14 @@ pub struct FieldValueRequest {
     pub backend: Option<String>,
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FieldValueResult {
     pub value: Option<String>,
     pub error: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum PasteTargetState {
     Editable,
@@ -160,14 +161,14 @@ pub enum PasteTargetState {
     Unknown,
 }
 
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum PasteOutcome {
     Pasted,
     CopiedToClipboard,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AppTargetUpsertArgs {
     pub id: String,
@@ -180,7 +181,7 @@ pub struct AppTargetUpsertArgs {
     pub paste_keybind: Option<String>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PairedRemoteDeviceUpsertArgs {
     pub id: String,
@@ -197,20 +198,20 @@ pub struct PairedRemoteDeviceUpsertArgs {
     pub trusted: bool,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PairedRemoteDeviceDeleteArgs {
     pub id: String,
 }
 
-#[derive(serde::Deserialize, Default)]
+#[derive(serde::Deserialize, Default, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct StartRemoteReceiverArgs {
     #[serde(default)]
     pub port: Option<u16>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoteSenderDeliverArgs {
     pub target_device_id: String,
@@ -218,7 +219,7 @@ pub struct RemoteSenderDeliverArgs {
     pub mode: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoteSenderPairArgs {
     pub receiver_device_id: String,
@@ -228,7 +229,7 @@ pub struct RemoteSenderPairArgs {
     pub pairing_code: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, specta::Type)]
 pub enum AudioClip {
     #[serde(rename = "start_recording_clip")]
     StartRecordingClip,
@@ -244,13 +245,13 @@ pub enum AudioClip {
     AlertWindows11Clip,
 }
 
-#[derive(serde::Deserialize, Default)]
+#[derive(serde::Deserialize, Default, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct StartRecordingArgs {
     pub preferred_microphone: Option<String>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct UserPreferencesGetArgs {
     pub user_id: String,
@@ -258,7 +259,7 @@ pub struct UserPreferencesGetArgs {
 
 const MAX_RETAINED_TRANSCRIPTION_AUDIO: usize = 20;
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TranscriptionAudioData {
     pub samples: Vec<f32>,
@@ -289,6 +290,7 @@ async fn delete_audio_entries(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn user_set_one(
     user: crate::domain::User,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -299,6 +301,7 @@ pub async fn user_set_one(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn user_get_one(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<Option<crate::domain::User>, String> {
@@ -308,6 +311,7 @@ pub async fn user_get_one(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn user_preferences_set(
     preferences: crate::domain::UserPreferences,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -318,6 +322,7 @@ pub async fn user_preferences_set(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn user_preferences_get(
     args: UserPreferencesGetArgs,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -328,6 +333,7 @@ pub async fn user_preferences_get(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn start_google_sign_in(
     app_handle: AppHandle,
     config: State<'_, crate::state::GoogleOAuthState>,
@@ -351,6 +357,7 @@ pub async fn start_google_sign_in(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn start_enterprise_oidc_sign_in(
     app_handle: AppHandle,
     gateway_url: String,
@@ -375,46 +382,55 @@ pub async fn start_enterprise_oidc_sign_in(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn list_microphones() -> Vec<crate::platform::audio::InputDeviceDescriptor> {
     crate::platform::audio::list_input_devices()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn list_gpus() -> Vec<crate::system::gpu::GpuAdapterInfo> {
     crate::system::gpu::list_available_gpus()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn get_monitor_at_cursor() -> Option<crate::domain::MonitorAtCursor> {
     crate::platform::monitor::get_monitor_at_cursor()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn get_screen_visible_area() -> crate::domain::ScreenVisibleArea {
     crate::platform::monitor::get_screen_visible_area()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn check_microphone_permission() -> Result<crate::domain::PermissionStatus, String> {
     crate::platform::permissions::check_microphone_permission()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn request_microphone_permission() -> Result<crate::domain::PermissionStatus, String> {
     crate::platform::permissions::request_microphone_permission()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn check_accessibility_permission() -> Result<crate::domain::PermissionStatus, String> {
     crate::platform::permissions::check_accessibility_permission()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn request_accessibility_permission() -> Result<crate::domain::PermissionStatus, String> {
     crate::platform::permissions::request_accessibility_permission()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_current_app_info() -> Result<CurrentAppInfoResponse, String> {
     tokio::time::timeout(
         std::time::Duration::from_secs(2),
@@ -432,6 +448,7 @@ pub async fn get_current_app_info() -> Result<CurrentAppInfoResponse, String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn app_target_upsert(
     args: AppTargetUpsertArgs,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -449,6 +466,7 @@ pub async fn app_target_upsert(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn app_target_list(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<Vec<crate::domain::AppTarget>, String> {
@@ -458,6 +476,7 @@ pub async fn app_target_list(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn paired_remote_device_upsert(
     args: PairedRemoteDeviceUpsertArgs,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -480,6 +499,7 @@ pub async fn paired_remote_device_upsert(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn paired_remote_device_list(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<Vec<crate::domain::PairedRemoteDevice>, String> {
@@ -489,6 +509,7 @@ pub async fn paired_remote_device_list(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn paired_remote_device_delete(
     args: PairedRemoteDeviceDeleteArgs,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -499,6 +520,7 @@ pub async fn paired_remote_device_delete(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn remote_receiver_start(
     args: StartRemoteReceiverArgs,
     app: AppHandle,
@@ -515,6 +537,7 @@ pub async fn remote_receiver_start(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn remote_receiver_stop(
     receiver_state: State<'_, crate::state::RemoteReceiverState>,
 ) -> Result<(), String> {
@@ -523,6 +546,7 @@ pub fn remote_receiver_stop(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn remote_receiver_status(
     receiver_state: State<'_, crate::state::RemoteReceiverState>,
 ) -> Result<crate::state::RemoteReceiverStatus, String> {
@@ -530,6 +554,7 @@ pub fn remote_receiver_status(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn remote_sender_deliver_final_text(
     args: RemoteSenderDeliverArgs,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -546,6 +571,7 @@ pub async fn remote_sender_deliver_final_text(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn remote_sender_pair_with_receiver(
     args: RemoteSenderPairArgs,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -564,6 +590,7 @@ pub async fn remote_sender_pair_with_receiver(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn transcription_create(
     transcription: crate::domain::Transcription,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -574,6 +601,7 @@ pub async fn transcription_create(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn transcription_list(
     limit: Option<u32>,
     offset: Option<u32>,
@@ -588,6 +616,7 @@ pub async fn transcription_list(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn transcription_delete(
     app: AppHandle,
     id: String,
@@ -615,6 +644,7 @@ pub async fn transcription_delete(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn transcription_update(
     transcription: crate::domain::Transcription,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -625,6 +655,7 @@ pub async fn transcription_update(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn transcription_audio_load(
     app: AppHandle,
     id: String,
@@ -666,6 +697,7 @@ pub async fn transcription_audio_load(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn export_transcription(
     app: AppHandle,
     id: String,
@@ -745,6 +777,7 @@ pub async fn export_transcription(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn export_diagnostics(app: AppHandle, diagnostics_info: String) -> Result<bool, String> {
     let dialog = rfd::AsyncFileDialog::new()
         .set_file_name("voquill-diagnostics.zip")
@@ -808,6 +841,7 @@ pub async fn export_diagnostics(app: AppHandle, diagnostics_info: String) -> Res
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn term_create(
     term: crate::domain::Term,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -818,6 +852,7 @@ pub async fn term_create(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn term_update(
     term: crate::domain::Term,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -828,6 +863,7 @@ pub async fn term_update(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn term_list(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<Vec<crate::domain::Term>, String> {
@@ -837,6 +873,7 @@ pub async fn term_list(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn term_delete(
     id: String,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -847,6 +884,7 @@ pub async fn term_delete(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn hotkey_list(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<Vec<crate::domain::Hotkey>, String> {
@@ -856,6 +894,7 @@ pub async fn hotkey_list(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn hotkey_save(
     hotkey: crate::domain::Hotkey,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -866,6 +905,7 @@ pub async fn hotkey_save(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn hotkey_delete(
     id: String,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -887,6 +927,7 @@ fn current_timestamp_millis() -> Result<i64, String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn api_key_create(
     api_key: ApiKeyCreateRequest,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -928,6 +969,7 @@ pub async fn api_key_create(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn api_key_list(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<Vec<ApiKeyView>, String> {
@@ -951,6 +993,7 @@ pub async fn api_key_list(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn api_key_delete(
     id: String,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -961,6 +1004,7 @@ pub async fn api_key_delete(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn api_key_update(
     request: crate::domain::ApiKeyUpdateRequest,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -1016,6 +1060,7 @@ pub async fn api_key_update(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn tone_upsert(
     tone: crate::domain::Tone,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -1052,6 +1097,7 @@ pub async fn tone_upsert(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn tone_list(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<Vec<crate::domain::Tone>, String> {
@@ -1061,6 +1107,7 @@ pub async fn tone_list(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn tone_get(
     id: String,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -1071,6 +1118,7 @@ pub async fn tone_get(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn tone_delete(
     id: String,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -1081,6 +1129,7 @@ pub async fn tone_delete(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn clear_local_data(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<(), String> {
@@ -1116,6 +1165,7 @@ pub async fn clear_local_data(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn play_audio(clip: AudioClip) -> Result<(), String> {
     match clip {
         AudioClip::StartRecordingClip => crate::system::audio_feedback::play_start_recording_clip(),
@@ -1134,6 +1184,7 @@ pub fn play_audio(clip: AudioClip) -> Result<(), String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn start_recording(
     app: AppHandle,
     recorder: State<'_, Arc<dyn crate::platform::Recorder>>,
@@ -1201,6 +1252,7 @@ pub async fn start_recording(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn stop_recording(
     _app: AppHandle,
     recorder: State<'_, Arc<dyn crate::platform::Recorder>>,
@@ -1238,6 +1290,7 @@ pub async fn stop_recording(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn store_transcription_audio(
     app: AppHandle,
     id: String,
@@ -1277,7 +1330,7 @@ pub async fn store_transcription_audio(
     result
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct StorageUploadArgs {
     pub path: String,
@@ -1285,6 +1338,7 @@ pub struct StorageUploadArgs {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn storage_upload_data(app: AppHandle, args: StorageUploadArgs) -> Result<(), String> {
     let repo = StorageRepo::new(&app).map_err(|err| err.to_string())?;
     repo.upload_data(&args.path, &args.data)
@@ -1292,12 +1346,14 @@ pub fn storage_upload_data(app: AppHandle, args: StorageUploadArgs) -> Result<()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn storage_get_download_url(app: AppHandle, path: String) -> Result<String, String> {
     let repo = StorageRepo::new(&app).map_err(|err| err.to_string())?;
     repo.get_download_url(&path).map_err(|err| err.to_string())
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn purge_stale_transcription_audio(
     app: AppHandle,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -1352,6 +1408,7 @@ pub async fn purge_stale_transcription_audio(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn surface_main_window(app: AppHandle) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
@@ -1361,6 +1418,7 @@ pub fn surface_main_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn set_pill_window_size(
     app: AppHandle,
     size: crate::domain::PillWindowSize,
@@ -1371,11 +1429,13 @@ pub fn set_pill_window_size(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn sync_native_pill_assistant(app: AppHandle, payload: String) {
     crate::platform::overlay::notify_assistant_state(&app, &payload);
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn copy_to_clipboard(text: String) -> Result<(), String> {
     let mut clipboard =
         arboard::Clipboard::new().map_err(|e| format!("clipboard unavailable: {e}"))?;
@@ -1385,6 +1445,7 @@ pub fn copy_to_clipboard(text: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn paste(text: String, keybind: Option<String>) -> Result<PasteOutcome, String> {
     // Probe the focused target first. If it clearly can't accept text, write
     // the transcript to the clipboard and skip the paste keystroke entirely —
@@ -1448,6 +1509,7 @@ pub async fn paste(text: String, keybind: Option<String>) -> Result<PasteOutcome
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn set_phase(
     app: AppHandle,
     phase: String,
@@ -1468,36 +1530,43 @@ pub fn set_phase(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn set_pill_visibility(app: AppHandle, visibility: String) {
     crate::platform::overlay::notify_visibility(&app, &visibility);
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn notify_pill_style_info(app: AppHandle, count: u32, name: String) {
     crate::platform::overlay::notify_style_info(&app, count, &name);
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn start_key_listener(app: AppHandle) -> Result<(), String> {
     crate::platform::keyboard::start_key_listener(&app)
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn stop_key_listener() -> Result<(), String> {
     crate::platform::keyboard::stop_key_listener()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn sync_hotkey_combos(combos: Vec<Vec<String>>) {
     crate::platform::keyboard::sync_combos(combos);
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn reset_key_listener_state() {
     crate::platform::keyboard::reset_pressed_keys();
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn sync_compositor_hotkeys(
     app: AppHandle,
     bindings: Vec<crate::domain::CompositorBinding>,
@@ -1506,31 +1575,37 @@ pub fn sync_compositor_hotkeys(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn get_hotkey_strategy() -> String {
     crate::platform::get_hotkey_strategy().to_string()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn supports_app_detection() -> bool {
     crate::platform::supports_app_detection()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn supports_paste_keybinds() -> crate::platform::PasteKeybindSupport {
     crate::platform::supports_paste_keybinds()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn get_native_setup_status() -> crate::platform::NativeSetupStatus {
     crate::platform::init::get_native_setup_status()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn run_native_setup() -> crate::platform::NativeSetupResult {
     crate::platform::init::run_native_setup().await
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn set_tray_title(app: AppHandle, title: Option<String>) -> Result<(), String> {
     use tauri::tray::TrayIconId;
     if let Some(tray) = app.tray_by_id(&TrayIconId::new("main")) {
@@ -1545,6 +1620,7 @@ pub fn set_tray_title(app: AppHandle, title: Option<String>) -> Result<(), Strin
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn set_menu_icon(
     app: AppHandle,
     variant: crate::system::tray::MenuIconVariant,
@@ -1553,6 +1629,7 @@ pub fn set_menu_icon(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn set_tray_visible(app: AppHandle, visible: bool) -> Result<(), String> {
     use tauri::tray::TrayIconId;
     if let Some(tray) = app.tray_by_id(&TrayIconId::new("main")) {
@@ -1563,6 +1640,7 @@ pub fn set_tray_visible(app: AppHandle, visible: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_text_field_info() -> Result<TextFieldInfo, String> {
     tokio::time::timeout(
         std::time::Duration::from_secs(2),
@@ -1574,6 +1652,7 @@ pub async fn get_text_field_info() -> Result<TextFieldInfo, String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_screen_context() -> Result<ScreenContextInfo, String> {
     tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_screen_context)
         .await
@@ -1581,6 +1660,17 @@ pub async fn get_screen_context() -> Result<ScreenContextInfo, String> {
 }
 
 #[tauri::command]
+#[specta::specta]
+pub async fn find_pid_by_window_title(title_substring: String) -> Result<Option<i32>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::platform::find_pid_by_window_title(&title_substring)
+    })
+    .await
+    .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn get_selected_text() -> Result<Option<String>, String> {
     tokio::time::timeout(
         std::time::Duration::from_secs(2),
@@ -1592,19 +1682,21 @@ pub async fn get_selected_text() -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn gather_accessibility_dump() -> Result<AccessibilityDumpResult, String> {
     tokio::time::timeout(
-        std::time::Duration::from_secs(10),
+        std::time::Duration::from_secs(120),
         tauri::async_runtime::spawn_blocking(
             crate::platform::accessibility::gather_accessibility_dump,
         ),
     )
     .await
-    .map_err(|_| "gather_accessibility_dump timed out".to_string())?
+    .map_err(|_| "gather_accessibility_dump timed out after 120s".to_string())?
     .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_focused_field_info() -> Result<Option<AccessibilityFieldInfo>, String> {
     tokio::time::timeout(
         std::time::Duration::from_secs(5),
@@ -1618,6 +1710,7 @@ pub async fn get_focused_field_info() -> Result<Option<AccessibilityFieldInfo>, 
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn write_accessibility_fields(
     entries: Vec<AccessibilityWriteEntry>,
 ) -> Result<AccessibilityWriteResult, String> {
@@ -1633,6 +1726,7 @@ pub async fn write_accessibility_fields(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn focus_accessibility_field(target: AccessibilityFocusTarget) -> Result<(), String> {
     tokio::time::timeout(
         std::time::Duration::from_secs(2),
@@ -1651,6 +1745,7 @@ pub async fn focus_accessibility_field(target: AccessibilityFocusTarget) -> Resu
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn read_accessibility_field_values(
     fields: Vec<FieldValueRequest>,
 ) -> Result<Vec<FieldValueResult>, String> {
@@ -1666,6 +1761,7 @@ pub async fn read_accessibility_field_values(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn check_focused_paste_target() -> Result<PasteTargetState, String> {
     tokio::time::timeout(
         std::time::Duration::from_secs(1),
@@ -1679,11 +1775,13 @@ pub async fn check_focused_paste_target() -> Result<PasteTargetState, String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn get_keyboard_language() -> Result<String, String> {
     crate::platform::keyboard_language::get_keyboard_language()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn conversation_create(
     conversation: crate::domain::Conversation,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -1694,6 +1792,7 @@ pub async fn conversation_create(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn conversation_list(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<Vec<crate::domain::Conversation>, String> {
@@ -1703,6 +1802,7 @@ pub async fn conversation_list(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn conversation_update(
     conversation: crate::domain::Conversation,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -1713,6 +1813,7 @@ pub async fn conversation_update(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn conversation_delete(
     id: String,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -1723,6 +1824,7 @@ pub async fn conversation_delete(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn chat_message_create(
     message: crate::domain::ChatMessage,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -1733,6 +1835,7 @@ pub async fn chat_message_create(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn chat_message_list(
     conversation_id: String,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -1746,6 +1849,7 @@ pub async fn chat_message_list(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn chat_message_update(
     message: crate::domain::ChatMessage,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -1756,6 +1860,7 @@ pub async fn chat_message_update(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn chat_message_delete_many(
     ids: Vec<String>,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -1768,7 +1873,7 @@ pub async fn chat_message_delete_many(
 /// Reads `enterprise.json` from the app config directory. Returns `None` if the file does not exist.
 ///
 /// Platform paths:
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RunTerminalCommandResponse {
     pub stdout: String,
@@ -1777,6 +1882,7 @@ pub struct RunTerminalCommandResponse {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn run_terminal_command(command: String) -> Result<RunTerminalCommandResponse, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let (shell, flag) = if cfg!(target_os = "windows") {
@@ -1810,6 +1916,7 @@ pub async fn run_terminal_command(command: String) -> Result<RunTerminalCommandR
 ///   - Linux:  ~/.config/com.voquill.desktop/enterprise.json
 ///   - Windows: C:\Users\<User>\AppData\Roaming\com.voquill.desktop\enterprise.json
 #[tauri::command]
+#[specta::specta]
 pub fn read_enterprise_target(app: AppHandle) -> Result<(String, Option<String>), String> {
     let mut path = app.path().app_config_dir().map_err(|err| err.to_string())?;
     path.push("enterprise.json");
@@ -1830,6 +1937,7 @@ pub fn read_enterprise_target(app: AppHandle) -> Result<(String, Option<String>)
 /// contains the `.app` bundle (typically `/Applications`).
 /// Non-macOS platforms always return `true`.
 #[tauri::command]
+#[specta::specta]
 pub fn check_app_location_writable() -> Result<bool, String> {
     #[cfg(not(target_os = "macos"))]
     {
@@ -1863,6 +1971,7 @@ pub fn check_app_location_writable() -> Result<bool, String> {
 /// macOS Installer.app. This is used as a fallback when the normal in-place
 /// updater cannot write to the app's install location.
 #[tauri::command]
+#[specta::specta]
 pub async fn download_and_open_mac_installer(url: String) -> Result<(), String> {
     let file_name = url
         .rsplit('/')
@@ -1890,11 +1999,13 @@ pub async fn download_and_open_mac_installer(url: String) -> Result<(), String> 
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn get_system_volume() -> Result<f64, String> {
     crate::platform::volume::get_system_volume()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn set_system_volume(volume: f64) -> Result<(), String> {
     let clamped = volume.clamp(0.0, 1.0);
     crate::platform::volume::set_system_volume(clamped)

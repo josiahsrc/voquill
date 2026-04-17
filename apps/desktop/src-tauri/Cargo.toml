@@ -57,6 +57,9 @@ rfd = "0.15"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 regex = "1"
 once_cell = "1"
+specta = { version = "=2.0.0-rc.22", features = ["derive"] }
+specta-typescript = "=0.0.9"
+tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-graphics = "0.24"

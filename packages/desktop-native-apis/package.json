@@ -1,0 +1,31 @@
+{
+  "name": "@voquill/desktop-native-apis",
+  "version": "0.1.0",
+  "description": "Type-safe TypeScript wrappers for the Voquill desktop Tauri commands",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voquill/voquill.git",
+    "directory": "packages/desktop-native-apis"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "gen:bindings": "bash ../../scripts/bindings.sh"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "~2.10.1"
+  },
+  "devDependencies": {
+    "@voquill/typescript-config": "workspace:*",
+    "typescript": "5.9.2"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
