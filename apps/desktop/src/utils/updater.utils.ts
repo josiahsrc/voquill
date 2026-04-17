@@ -1,6 +1,30 @@
+import { daysToMilliseconds } from "./time.utils";
+
 const RELEASE_TAG_REGEX = /\/releases\/download\/([^/]+)\//;
 const GITHUB_RELEASE_DOWNLOAD_BASE =
   "https://github.com/voquill/voquill/releases/download";
+
+const BETA_UPDATE_DELAY_MS = daysToMilliseconds(3);
+
+export const shouldSurfaceUpdate = (
+  releaseDate: string | null,
+  optInToBetaUpdates: boolean,
+): boolean => {
+  if (optInToBetaUpdates) {
+    return true;
+  }
+
+  if (!releaseDate) {
+    return true;
+  }
+
+  const parsed = new Date(releaseDate).getTime();
+  if (Number.isNaN(parsed)) {
+    return true;
+  }
+
+  return Date.now() - parsed >= BETA_UPDATE_DELAY_MS;
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
