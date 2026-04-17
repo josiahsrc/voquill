@@ -1,21 +1,11 @@
-import { Box, Button, Stack, Typography, useTheme } from "@mui/material";
-import { useState } from "react";
+import { Box, Stack, Typography, useTheme } from "@mui/material";
 import { FormattedMessage } from "react-intl";
-import { produceAppState } from "../../store";
 import { Logo } from "../common/Logo";
+import { LoginForm } from "../login/LoginForm";
 import { VectorField } from "../welcome/VectorField";
-import { EnterpriseLoginDialog } from "./EnterpriseLoginDialog";
 
 export default function EnterpriseWelcomePage() {
   const theme = useTheme();
-  const [loginOpen, setLoginOpen] = useState(false);
-
-  const handleOpenLogin = () => {
-    produceAppState((draft) => {
-      draft.login.mode = "signIn";
-    });
-    setLoginOpen(true);
-  };
 
   return (
     <Box
@@ -29,30 +19,31 @@ export default function EnterpriseWelcomePage() {
       <VectorField />
       <Stack
         alignItems="center"
-        justifyContent="center"
         sx={{
           position: "relative",
           zIndex: 1,
-          minHeight: "100%",
+          height: "100%",
           width: "100%",
-          px: 3,
-          py: 6,
         }}
       >
         <Stack
-          spacing={6}
-          alignItems="center"
-          textAlign="center"
+          spacing={4}
+          justifyContent="center"
           sx={{
-            maxWidth: 420,
-            position: "relative",
+            width: 520,
+            maxWidth: "100%",
+            height: "100%",
             backgroundColor: theme.vars?.palette.background.default,
-            boxShadow: `0 0 120px 120px ${theme.vars?.palette.background.default}`,
-            borderRadius: 8,
-            p: 4,
+            boxShadow: "0 0 40px rgba(0, 0, 0, 0.15)",
+            ...theme.applyStyles("dark", {
+              boxShadow: "0 0 40px rgba(0, 0, 0, 0.6)",
+            }),
+            px: 7,
+            py: 6,
+            overflowY: "auto",
           }}
         >
-          <Stack spacing={2} alignItems="center">
+          <Stack spacing={2} alignItems="center" textAlign="center">
             <Stack direction="row" alignItems="center" spacing={1}>
               <Logo width="4rem" height="4rem" />
               <Typography variant="h3" fontWeight={700}>
@@ -64,22 +55,9 @@ export default function EnterpriseWelcomePage() {
             </Typography>
           </Stack>
 
-          <Stack width="100%">
-            <Button
-              variant="contained"
-              size="large"
-              fullWidth
-              onClick={handleOpenLogin}
-            >
-              <FormattedMessage defaultMessage="Sign in" />
-            </Button>
-          </Stack>
+          <LoginForm defaultMode="signIn" hideModeSwitch />
         </Stack>
       </Stack>
-      <EnterpriseLoginDialog
-        open={loginOpen}
-        onClose={() => setLoginOpen(false)}
-      />
     </Box>
   );
 }
