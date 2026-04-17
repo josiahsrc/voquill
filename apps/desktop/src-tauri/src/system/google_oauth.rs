@@ -26,7 +26,7 @@ const CERTS_URL: &str = "https://www.googleapis.com/oauth2/v3/certs";
 const CALLBACK_PATH: &str = "/callback";
 const HTTP_SERVER_TIMEOUT: Duration = Duration::from_secs(120);
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GoogleAuthEventPayload {
     pub id_token: String,
@@ -37,7 +37,7 @@ pub struct GoogleAuthEventPayload {
     pub user: GoogleUserInfo,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GoogleUserInfo {
     pub sub: String,

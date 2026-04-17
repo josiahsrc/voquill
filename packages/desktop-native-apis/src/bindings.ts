@@ -29,7 +29,7 @@ async userPreferencesGet(args: UserPreferencesGetArgs) : Promise<Result<UserPref
     else return { status: "error", error: e  as any };
 }
 },
-async startGoogleSignIn() : Promise<Result<null, string>> {
+async startGoogleSignIn() : Promise<Result<GoogleAuthEventPayload, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("start_google_sign_in") };
 } catch (e) {
@@ -780,6 +780,8 @@ export type CurrentAppInfoResponse = { appName: string; iconBase64: string }
 export type ElementFingerprint = { automationId: string | null; className: string | null; controlType: number; name: string | null; frameworkId: string | null; childIndex: number }
 export type FieldValueRequest = { appPid: number; elementIndexPath: number[]; fingerprintChain: ElementFingerprint[] | null; backend?: string | null }
 export type FieldValueResult = { value: string | null; error: string | null }
+export type GoogleAuthEventPayload = { idToken: string; accessToken: string; refreshToken: string | null; expiresIn: number; tokenType: string; user: GoogleUserInfo }
+export type GoogleUserInfo = { sub: string; email: string | null; name: string | null; picture: string | null }
 export type GpuAdapterInfo = { name: string; vendor: number; device: number; deviceType: string; backend: string }
 export type Hotkey = { id: string; actionName: string; keys: string[] }
 export type InputDeviceDescriptor = { label: string; is_default: boolean; caution: boolean }

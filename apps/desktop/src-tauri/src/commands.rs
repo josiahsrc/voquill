@@ -337,7 +337,7 @@ pub async fn user_preferences_get(
 pub async fn start_google_sign_in(
     app_handle: AppHandle,
     config: State<'_, crate::state::GoogleOAuthState>,
-) -> Result<(), String> {
+) -> Result<crate::system::google_oauth::GoogleAuthEventPayload, String> {
     let config = config.config().ok_or_else(|| {
         "Google OAuth client id/secret not configured. Set VOQUILL_GOOGLE_CLIENT_ID and VOQUILL_GOOGLE_CLIENT_SECRET."
             .to_string()
@@ -345,15 +345,19 @@ pub async fn start_google_sign_in(
 
     let result = crate::system::google_oauth::start_google_oauth(&app_handle, config).await?;
 
+    // Keep emitting the event for backward compatibility with existing
+    // listeners (e.g. the Voquill desktop app itself). Callers that invoke
+    // from a webview without the `event.listen` capability can now just use
+    // the returned payload directly.
     app_handle
         .emit_to(
             EventTarget::any(),
             crate::system::google_oauth::GOOGLE_AUTH_EVENT,
-            result.payload,
+            result.payload.clone(),
         )
         .map_err(|err| err.to_string())?;
 
-    Ok(())
+    Ok(result.payload)
 }
 
 #[tauri::command]
