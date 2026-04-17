@@ -410,6 +410,12 @@ type HandlerDefinitions = {
     };
     output: EmptyObject;
   };
+  "enterprise/loadRoutingConfig": {
+    input: EmptyObject;
+    output: {
+      url: string;
+    };
+  };
 
   // oidc providers
   "oidcProvider/list": {

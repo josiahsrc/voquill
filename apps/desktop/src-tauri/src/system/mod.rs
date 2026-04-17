@@ -11,7 +11,6 @@ pub mod oauth_callback_page;
 pub mod paths;
 pub mod remote_receiver;
 pub mod remote_sender;
-pub mod runtime_config;
 pub mod storage_repo;
 pub mod tray;
 

@@ -8,13 +8,14 @@ export const getIsEmulators = (): boolean => {
   );
 };
 
-export type Flavor = "emulators" | "dev" | "prod";
+export type Flavor = "emulators" | "dev" | "prod" | "enterprise";
 export const getFlavor = (): Flavor =>
   (import.meta.env.VITE_FLAVOR ?? "emulators") as Flavor;
 
 export const isEmulators = () => getFlavor() === "emulators";
 export const isDev = () => getFlavor() === "dev";
 export const isProd = () => getFlavor() === "prod";
+export const isEnterpriseFlavor = () => getFlavor() === "enterprise";
 
 export const getStripePublicKey = (): string =>
   import.meta.env.VITE_STRIPE_PUBLIC_KEY ??

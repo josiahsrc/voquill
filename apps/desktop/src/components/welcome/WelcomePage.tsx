@@ -5,11 +5,21 @@ import { useNavigate } from "react-router-dom";
 import { resetOnboarding } from "../../actions/onboarding.actions";
 import { clearGotStartedAt } from "../../actions/user.actions";
 import { useAppStore } from "../../store";
+import { isEnterpriseFlavor } from "../../utils/env.utils";
 import { getShouldGoToOnboarding } from "../../utils/user.utils";
 import { Logo } from "../common/Logo";
+import EnterpriseWelcomePage from "../enterprise/EnterpriseWelcomePage";
 import { VectorField } from "./VectorField";
 
 export default function WelcomePage() {
+  if (isEnterpriseFlavor()) {
+    return <EnterpriseWelcomePage />;
+  }
+
+  return <StandardWelcomePage />;
+}
+
+function StandardWelcomePage() {
   const theme = useTheme();
   const nav = useNavigate();
   const shouldGotoOnboarding = useAppStore(getShouldGoToOnboarding);

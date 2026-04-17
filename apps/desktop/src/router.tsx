@@ -4,6 +4,7 @@ import ChatsPage from "./components/chats/ChatsPage.tsx";
 import { PageLayout } from "./components/common/PageLayout.tsx";
 import DashboardPage from "./components/dashboard/DashboardPage.tsx";
 import DictionaryPage from "./components/dictionary/DictionaryPage.tsx";
+import EnterpriseRoutingPage from "./components/enterprise/EnterpriseRoutingPage.tsx";
 import HomePage from "./components/home/HomePage.tsx";
 import LoginPage from "./components/login/LoginPage.tsx";
 import OnboardingPage from "./components/onboarding/OnboardingPage.tsx";
@@ -45,6 +46,19 @@ export const browserRouter = createBrowserRouter([
           {
             path: "welcome",
             element: <WelcomePage />,
+          },
+        ],
+      },
+      {
+        element: (
+          <Guard node="routing">
+            <Outlet />
+          </Guard>
+        ),
+        children: [
+          {
+            path: "routing",
+            element: <EnterpriseRoutingPage />,
           },
         ],
       },

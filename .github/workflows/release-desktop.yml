@@ -18,6 +18,7 @@ on:
         options:
           - prod
           - dev
+          - enterprise
       version:
         description: "Semver version to promote (prod only, defaults to latest dev tag)"
         required: false
@@ -61,7 +62,7 @@ jobs:
             RELEASE_ENV="dev"
           else
             case "${INPUT_ENVIRONMENT:-prod}" in
-              dev|prod)
+              dev|prod|enterprise)
                 RELEASE_ENV="${INPUT_ENVIRONMENT:-prod}"
                 ;;
               *)
@@ -76,8 +77,10 @@ jobs:
 
           mapfile -t DEV_TAGS < <(git tag --list 'desktop-dev-v*' --sort=-v:refname)
           mapfile -t PROD_TAGS < <(git tag --list 'desktop-v*' --sort=-v:refname)
+          mapfile -t ENTERPRISE_TAGS < <(git tag --list 'desktop-enterprise-v*' --sort=-v:refname)
           LAST_DEV_TAG="${DEV_TAGS[0]:-}"
           LAST_PROD_TAG="${PROD_TAGS[0]:-}"
+          LAST_ENTERPRISE_TAG="${ENTERPRISE_TAGS[0]:-}"
 
           if [[ "${RELEASE_ENV}" == "dev" ]]; then
             if [[ -n "${INPUT_VERSION}" ]]; then
@@ -101,6 +104,28 @@ jobs:
             TAG_NAME="desktop-dev-v${VERSION}"
             COMMIT_SHA="${GITHUB_SHA}"
             DEV_TAG_NAME="${TAG_NAME}"
+          elif [[ "${RELEASE_ENV}" == "enterprise" ]]; then
+            if [[ -n "${INPUT_VERSION}" ]]; then
+              echo "Ignoring manual version '${INPUT_VERSION}' for enterprise release (automatic patch bump used)." >&2
+            fi
+
+            if [[ -z "${LAST_ENTERPRISE_TAG}" ]]; then
+              VERSION_BASE="0.0.0"
+            else
+              VERSION_BASE="${LAST_ENTERPRISE_TAG#desktop-enterprise-v}"
+            fi
+
+            if [[ ! "${VERSION_BASE}" =~ ${SEMVER_REGEX} ]]; then
+              echo "Last enterprise tag (${LAST_ENTERPRISE_TAG:-none}) is not in x.y.z format." >&2
+              exit 1
+            fi
+
+            IFS='.' read -r MAJOR MINOR PATCH <<< "${VERSION_BASE}"
+            PATCH=$((PATCH + 1))
+            VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            TAG_NAME="desktop-enterprise-v${VERSION}"
+            COMMIT_SHA="${GITHUB_SHA}"
+            DEV_TAG_NAME=""
           else
             if [[ -n "${INPUT_VERSION}" ]]; then
               TARGET_VERSION="${INPUT_VERSION}"
@@ -138,21 +163,29 @@ jobs:
           fi
 
           VERSION_PATH="desktop/${RELEASE_ENV}/${VERSION}"
-          if [[ "${RELEASE_ENV}" == "dev" ]]; then
-            PREVIOUS_TAG="${LAST_DEV_TAG}"
-          else
-            PREVIOUS_TAG="${LAST_PROD_TAG}"
-          fi
+          case "${RELEASE_ENV}" in
+            dev)        PREVIOUS_TAG="${LAST_DEV_TAG}" ;;
+            enterprise) PREVIOUS_TAG="${LAST_ENTERPRISE_TAG}" ;;
+            *)          PREVIOUS_TAG="${LAST_PROD_TAG}" ;;
+          esac
 
-          if [[ "${RELEASE_ENV}" == "dev" ]]; then
-            CHANNEL_RELEASE_TAG="desktop-dev"
-            RELEASE_FLAVOR="prod"
-            RELEASE_SUFFIX="-dev"
-          else
-            CHANNEL_RELEASE_TAG="desktop-prod"
-            RELEASE_FLAVOR="prod"
-            RELEASE_SUFFIX=""
-          fi
+          case "${RELEASE_ENV}" in
+            dev)
+              CHANNEL_RELEASE_TAG="desktop-dev"
+              RELEASE_FLAVOR="prod"
+              RELEASE_SUFFIX="-dev"
+              ;;
+            enterprise)
+              CHANNEL_RELEASE_TAG="desktop-enterprise"
+              RELEASE_FLAVOR="enterprise"
+              RELEASE_SUFFIX="-enterprise"
+              ;;
+            *)
+              CHANNEL_RELEASE_TAG="desktop-prod"
+              RELEASE_FLAVOR="prod"
+              RELEASE_SUFFIX=""
+              ;;
+          esac
 
           {
             echo "release_env=${RELEASE_ENV}"
@@ -476,11 +509,11 @@ jobs:
           RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
         run: |
           set -euo pipefail
-          if [[ "${RELEASE_ENV}" == "prod" ]]; then
-            config_file="src-tauri/tauri.prod.conf.json"
-          else
-            config_file="src-tauri/tauri.dev.conf.json"
-          fi
+          case "${RELEASE_ENV}" in
+            prod)       config_file="src-tauri/tauri.prod.conf.json" ;;
+            enterprise) config_file="src-tauri/tauri.enterprise.conf.json" ;;
+            *)          config_file="src-tauri/tauri.dev.conf.json" ;;
+          esac
           config_flag="--config ${config_file}"
           matrix_args="${MATRIX_ARGS}"
           if [[ -z "${matrix_args}" ]]; then
@@ -507,13 +540,20 @@ jobs:
           RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
         run: |
           set -euo pipefail
-          if [[ "${RELEASE_ENV}" == "prod" ]]; then
-            config_file="apps/desktop/src-tauri/tauri.prod.conf.json"
-            pkg_name="voquill-desktop"
-          else
-            config_file="apps/desktop/src-tauri/tauri.dev.conf.json"
-            pkg_name="voquill-desktop-dev"
-          fi
+          case "${RELEASE_ENV}" in
+            prod)
+              config_file="apps/desktop/src-tauri/tauri.prod.conf.json"
+              pkg_name="voquill-desktop"
+              ;;
+            enterprise)
+              config_file="apps/desktop/src-tauri/tauri.enterprise.conf.json"
+              pkg_name="voquill-desktop-enterprise"
+              ;;
+            *)
+              config_file="apps/desktop/src-tauri/tauri.dev.conf.json"
+              pkg_name="voquill-desktop-dev"
+              ;;
+          esac
           tmp=$(mktemp)
           jq --arg name "$pkg_name" '.productName = $name | .mainBinaryName = $name' "$config_file" > "$tmp"
           mv "$tmp" "$config_file"
@@ -577,11 +617,11 @@ jobs:
 
           app_bundle_name="$(basename "${app_bundle_path}")"
           app_name="${app_bundle_name%.app}"
-          if [[ "${RELEASE_ENV}" == "prod" ]]; then
-            dmg_name="${app_name}_${RELEASE_VERSION}_universal.dmg"
-          else
-            dmg_name="VoquillDev_${RELEASE_VERSION}_universal.dmg"
-          fi
+          case "${RELEASE_ENV}" in
+            prod)       dmg_name="${app_name}_${RELEASE_VERSION}_universal.dmg" ;;
+            enterprise) dmg_name="VoquillEnterprise_${RELEASE_VERSION}_universal.dmg" ;;
+            *)          dmg_name="VoquillDev_${RELEASE_VERSION}_universal.dmg" ;;
+          esac
           dmg_path="$(pwd)/${dmg_name}"
           staging_dir="$(mktemp -d)"
           trap 'rm -rf "${staging_dir}"' EXIT
@@ -605,6 +645,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
           RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+          RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
           APPLE_INSTALLER_SIGNING_IDENTITY: ${{ env.APPLE_INSTALLER_SIGNING_IDENTITY }}
         run: |
           set -euo pipefail
@@ -622,13 +663,22 @@ jobs:
             exit 1
           fi
 
-          pkg_name="Voquill_${RELEASE_VERSION}_universal.pkg"
+          case "${RELEASE_ENV}" in
+            enterprise)
+              pkg_name="VoquillEnterprise_${RELEASE_VERSION}_universal.pkg"
+              bundle_identifier="com.voquill.desktop.enterprise"
+              ;;
+            *)
+              pkg_name="Voquill_${RELEASE_VERSION}_universal.pkg"
+              bundle_identifier="com.voquill.desktop"
+              ;;
+          esac
           unsigned_pkg="Voquill_unsigned.pkg"
 
           pkgbuild \
             --component "${app_bundle_path}" \
             --install-location /Applications \
-            --identifier com.voquill.desktop \
+            --identifier "${bundle_identifier}" \
             --version "${RELEASE_VERSION}" \
             "${unsigned_pkg}"
 
@@ -837,7 +887,7 @@ jobs:
     name: Publish to APT repository
     needs: [metadata, build]
     runs-on: ubuntu-latest
-    if: contains(fromJSON('["desktop-linux"]'), 'desktop-linux')
+    if: needs.metadata.outputs.release_env != 'enterprise'
     permissions:
       contents: read
     env:
@@ -912,7 +962,7 @@ jobs:
     name: Publish to RPM repository
     needs: [metadata, build]
     runs-on: ubuntu-latest
-    if: contains(fromJSON('["desktop-linux"]'), 'desktop-linux')
+    if: needs.metadata.outputs.release_env != 'enterprise'
     permissions:
       contents: read
     env:
@@ -990,6 +1040,7 @@ jobs:
     name: Publish to Homebrew tap
     needs: [metadata, build]
     runs-on: ubuntu-latest
+    if: needs.metadata.outputs.release_env != 'enterprise'
     permissions:
       contents: read
     env:

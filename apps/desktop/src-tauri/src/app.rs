@@ -137,27 +137,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             // Write startup diagnostics for debugging
             crate::system::diagnostics::write_startup_diagnostics(app.handle());
 
-            // Apply runtime config from voquill.config.json (if present) — redirects the
-            // main window to a custom openingUrl for enterprise PWA deployments.
-            let runtime_cfg = crate::system::runtime_config::load(app.handle());
-            if let Some(url_str) = runtime_cfg.opening_url.as_deref() {
-                if let Some(main_window) = app.get_webview_window("main") {
-                    match url::Url::parse(url_str) {
-                        Ok(url) => {
-                            log::info!("voquill.config.json: navigating main window to {url_str}");
-                            if let Err(err) = main_window.navigate(url) {
-                                log::error!("Failed to navigate to {url_str}: {err}");
-                            }
-                        }
-                        Err(err) => {
-                            log::error!(
-                                "Invalid openingUrl in voquill.config.json: {url_str} ({err})"
-                            );
-                        }
-                    }
-                }
-            }
-
             let db_url = {
                 let handle = app.handle();
                 crate::system::paths::database_url(handle)
