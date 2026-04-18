@@ -152,7 +152,7 @@ export const groqGenerateTextResponse = async ({
       const response = await client.chat.completions.create({
         messages,
         model,
-        max_completion_tokens: 8192,
+        max_completion_tokens: 1024,
         response_format: jsonResponse
           ? JSON_SCHEMA_SUPPORTED_MODELS.has(model)
             ? {
