@@ -1,5 +1,5 @@
-import { listify } from "@voquill/utilities";
 import { invoke } from "@tauri-apps/api/core";
+import { listify } from "@voquill/utilities";
 import { getAuthRepo, getMemberRepo } from "../repos";
 import type { LoginMode } from "../state/login.state";
 import { getAppState, produceAppState } from "../store";
@@ -9,6 +9,7 @@ import type { GoogleAuthPayload } from "../types/google-auth.types";
 import { GOOGLE_AUTH_COMMAND } from "../types/google-auth.types";
 import { registerMembers } from "../utils/app.utils";
 import { getEnterpriseTarget } from "../utils/enterprise.utils";
+import { isEnterpriseFlavor } from "../utils/env.utils";
 import { validateEmail } from "../utils/login.utils";
 
 const tryInit = async () => {
@@ -195,5 +196,34 @@ export const handleEnterpriseOidcPayload = async (
 };
 
 export const signOut = async (): Promise<void> => {
+  if (isEnterpriseFlavor()) {
+    try {
+      await invoke("auth_sign_out");
+    } catch (err) {
+      console.warn("auth_sign_out failed", err);
+    }
+  }
   await getAuthRepo().signOut();
+};
+
+export const ensureRustSessionSync = async (): Promise<void> => {
+  if (!isEnterpriseFlavor()) {
+    return;
+  }
+
+  let signedIn = false;
+  try {
+    signedIn = await invoke<boolean>("auth_is_signed_in");
+  } catch (err) {
+    console.warn("auth_is_signed_in failed", err);
+    signedIn = false;
+  }
+
+  if (signedIn) {
+    return;
+  }
+
+  if (getAuthRepo().getCurrentUser()) {
+    await getAuthRepo().signOut();
+  }
 };

@@ -114,17 +114,8 @@ type HandlerDefinitions = {
     };
     output: EmptyObject;
   };
-  "auth/createSignInCode": {
+  "auth/mintCustomToken": {
     input: EmptyObject;
-    output: {
-      code: string;
-      expiresAt: number;
-    };
-  };
-  "auth/exchangeSignInCode": {
-    input: {
-      code: string;
-    };
     output: {
       customToken: string;
     };
@@ -672,12 +663,6 @@ export const RefreshApiTokenInputZod = z
     apiRefreshToken: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"auth/refreshApiToken">>;
-
-export const AuthExchangeSignInCodeInputZod = z
-  .object({
-    code: z.string().min(1),
-  })
-  .strict() satisfies z.ZodType<HandlerInput<"auth/exchangeSignInCode">>;
 
 export const FlaggedAudioZod = z
   .object({

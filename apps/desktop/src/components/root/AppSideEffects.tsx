@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
+import { ensureRustSessionSync } from "../../actions/login.actions";
 import { loadPairedRemoteDevices } from "../../actions/paired-remote-device.actions";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import {
@@ -188,6 +189,10 @@ export const AppSideEffects = () => {
     if (consumeSurfaceWindowFlag()) {
       await surfaceMainWindow();
     }
+  }, []);
+
+  useAsyncEffect(async () => {
+    await ensureRustSessionSync();
   }, []);
 
   const onAuthStateChanged = (user: AuthUser | null) => {

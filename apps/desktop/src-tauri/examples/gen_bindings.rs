@@ -104,6 +104,10 @@ fn main() {
         download_and_open_mac_installer,
         get_system_volume,
         set_system_volume,
+        auth_sign_in_with_custom_token,
+        auth_mint_custom_token,
+        auth_sign_out,
+        auth_is_signed_in,
     ]);
 
     let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));

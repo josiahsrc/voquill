@@ -5,6 +5,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { invoke } from "@tauri-apps/api/core";
 import { invokeHandler } from "@voquill/functions";
 import { useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
@@ -28,6 +29,16 @@ export default function EnterpriseRoutingPage() {
 
     const load = async () => {
       try {
+        const { customToken } = await invokeHandler("auth/mintCustomToken", {});
+        if (cancelled) {
+          return;
+        }
+
+        await invoke("auth_sign_in_with_custom_token", { customToken });
+        if (cancelled) {
+          return;
+        }
+
         const { url } = await invokeHandler("enterprise/loadRoutingConfig", {});
         if (cancelled) {
           return;

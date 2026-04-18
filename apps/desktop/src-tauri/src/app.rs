@@ -156,6 +156,15 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             app.manage(crate::state::OverlayState::new());
             app.manage(crate::state::RemoteReceiverState::new());
 
+            match crate::system::auth_session::AuthSession::new(app.handle()) {
+                Ok(session) => {
+                    app.manage(session);
+                }
+                Err(err) => {
+                    log::error!("failed to initialize auth session: {err}");
+                }
+            }
+
             #[cfg(desktop)]
             {
                 if std::env::args().any(|arg| arg == AUTOSTART_HIDDEN_ARG) {
@@ -311,6 +320,10 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::download_and_open_mac_installer,
             crate::commands::get_system_volume,
             crate::commands::set_system_volume,
+            crate::commands::auth_sign_in_with_custom_token,
+            crate::commands::auth_mint_custom_token,
+            crate::commands::auth_sign_out,
+            crate::commands::auth_is_signed_in,
         ])
 }
 

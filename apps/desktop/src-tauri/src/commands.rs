@@ -2014,3 +2014,49 @@ pub fn set_system_volume(volume: f64) -> Result<(), String> {
     let clamped = volume.clamp(0.0, 1.0);
     crate::platform::volume::set_system_volume(clamped)
 }
+
+#[tauri::command]
+#[specta::specta]
+pub async fn auth_sign_in_with_custom_token(
+    custom_token: String,
+    session: State<'_, crate::system::auth_session::AuthSession>,
+) -> Result<(), String> {
+    session
+        .sign_in_with_custom_token(&custom_token)
+        .await
+        .map_err(|err| err.to_user_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn auth_mint_custom_token(
+    session: State<'_, crate::system::auth_session::AuthSession>,
+) -> Result<String, String> {
+    session
+        .mint_custom_token()
+        .await
+        .map_err(|err| err.to_user_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn auth_sign_out(
+    app_handle: AppHandle,
+    session: State<'_, crate::system::auth_session::AuthSession>,
+) -> Result<(), String> {
+    session
+        .sign_out(&app_handle)
+        .await
+        .map_err(|err| err.to_user_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn auth_is_signed_in(
+    session: State<'_, crate::system::auth_session::AuthSession>,
+) -> Result<bool, String> {
+    session
+        .is_signed_in()
+        .await
+        .map_err(|err| err.to_user_string())
+}
