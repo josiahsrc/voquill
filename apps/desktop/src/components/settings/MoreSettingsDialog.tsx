@@ -62,6 +62,7 @@ export const MoreSettingsDialog = () => {
     disableAutoStyleLoading,
     isCloudUser,
     menuBarIconHidden,
+    optInToBetaUpdates,
   ] = useAppStore((state) => {
     const prefs = getMyUserPreferences(state);
     const transcriptionPrefs = getTranscriptionPrefs(state);
@@ -81,6 +82,7 @@ export const MoreSettingsDialog = () => {
       state.local.disableAutoStyleLoading ?? false,
       getIsVoquillCloudUser(state),
       prefs?.menuBarIconHidden ?? false,
+      state.local.optInToBetaUpdates,
     ] as const;
   });
   const [dictationLimitInput, setDictationLimitInput] = useState(
@@ -184,6 +186,12 @@ export const MoreSettingsDialog = () => {
     });
   };
 
+  const handleToggleBetaUpdates = (event: ChangeEvent<HTMLInputElement>) => {
+    produceAppState((draft) => {
+      draft.local.optInToBetaUpdates = event.target.checked;
+    });
+  };
+
   const handleDictationLimitChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setDictationLimitInput(value);
@@ -258,6 +266,20 @@ export const MoreSettingsDialog = () => {
                 edge="end"
                 checked={!ignoreUpdateDialog}
                 onChange={handleToggleShowUpdates}
+              />
+            }
+          />
+
+          <SettingSection
+            title={<FormattedMessage defaultMessage="Beta updates" />}
+            description={
+              <FormattedMessage defaultMessage="Get new updates as soon as they're released. Otherwise, updates are surfaced after a three-day stabilization window." />
+            }
+            action={
+              <Switch
+                edge="end"
+                checked={optInToBetaUpdates}
+                onChange={handleToggleBetaUpdates}
               />
             }
           />

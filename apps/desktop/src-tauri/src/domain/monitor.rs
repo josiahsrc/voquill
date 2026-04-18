@@ -6,7 +6,7 @@ pub enum OverlayAnchor {
     TopLeft,
 }
 
-#[derive(serde::Serialize, Clone, Debug)]
+#[derive(serde::Serialize, Clone, Debug, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MonitorAtCursor {
     pub x: f64,
@@ -22,7 +22,7 @@ pub struct MonitorAtCursor {
     pub cursor_y: f64,
 }
 
-#[derive(serde::Serialize, Clone, Debug, Default)]
+#[derive(serde::Serialize, Clone, Debug, Default, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ScreenVisibleArea {
     pub top_inset: f64,

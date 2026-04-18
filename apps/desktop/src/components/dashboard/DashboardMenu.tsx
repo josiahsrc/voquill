@@ -14,6 +14,7 @@ import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppStore } from "../../store";
 import { getIsAssistantModeEnabled } from "../../utils/assistant-mode.utils";
+import { shouldSurfaceUpdate } from "../../utils/updater.utils";
 import { ListTile } from "../common/ListTile";
 import { DiscordListTile } from "./DiscordListTile";
 import { MobileAppListTile } from "./MobileAppListTile";
@@ -36,7 +37,12 @@ export const DashboardMenu = ({ onChoose }: DashboardMenuProps) => {
   const nav = useNavigate();
   const isEnterprise = useAppStore((state) => state.isEnterprise);
   const isUpdateAvailable = useAppStore(
-    (state) => state.updater.status === "ready",
+    (state) =>
+      state.updater.status === "ready" &&
+      shouldSurfaceUpdate(
+        state.updater.releaseDate,
+        state.local.optInToBetaUpdates,
+      ),
   );
   const assistantModeEnabled = useAppStore(getIsAssistantModeEnabled);
 

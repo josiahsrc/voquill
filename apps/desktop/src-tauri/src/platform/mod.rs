@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "kebab-case")]
 pub enum NativeSetupResult {
     Success,
@@ -8,7 +8,7 @@ pub enum NativeSetupResult {
     Failed,
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "kebab-case")]
 pub enum NativeSetupStatus {
     Ready,
@@ -16,7 +16,7 @@ pub enum NativeSetupStatus {
     NeedsRestart,
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "kebab-case")]
 pub enum PasteKeybindSupport {
     Disabled,
@@ -122,6 +122,18 @@ pub use linux::volume;
 pub use macos::volume;
 #[cfg(target_os = "windows")]
 pub use windows::volume;
+
+pub fn find_pid_by_window_title(title_substring: &str) -> Option<i32> {
+    #[cfg(target_os = "windows")]
+    {
+        windows::window::find_pid_by_window_title(title_substring)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = title_substring;
+        None
+    }
+}
 
 pub mod app_info;
 

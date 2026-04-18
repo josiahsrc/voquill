@@ -179,3 +179,21 @@ pub(crate) const FLAME_SPEED_BASE: f64 = 4.5;
 
 // ── Thinking shimmer ──────────────────────────────────────────────
 pub(crate) const SHIMMER_SPEED: f64 = 0.01;
+
+// ── Flash blue border ─────────────────────────────────────────────
+pub(crate) const FLASH_BLUE_DURATION: f64 = 0.9;
+pub(crate) const FLASH_BLUE_BORDER_WIDTH: f64 = 3.0;
+pub(crate) const FLASH_BLUE_INSET: f64 = 2.0;
+pub(crate) const FLASH_BLUE_COLOR: (f64, f64, f64) = (0.25, 0.6, 1.0);
+pub(crate) const FLASH_BLUE_GLOW_COLOR: (f64, f64, f64) = (0.45, 0.75, 1.0);
+
+// ── Broadcast transcript ──────────────────────────────────────────
+pub(crate) const TRANSCRIPT_FADE_DELAY: f64 = 3.0;
+pub(crate) const TRANSCRIPT_FADE_SPEED: f64 = 6.0;
+pub(crate) const TRANSCRIPT_RISE_SPEED: f64 = 12.0;
+pub(crate) const TRANSCRIPT_GAP: f64 = 8.0;
+pub(crate) const TRANSCRIPT_HEIGHT: f64 = 28.0;
+pub(crate) const TRANSCRIPT_PADDING_H: f64 = 14.0;
+pub(crate) const TRANSCRIPT_RADIUS: f64 = 10.0;
+pub(crate) const TRANSCRIPT_FONT_SIZE: f64 = 12.0;
+pub(crate) const TRANSCRIPT_MAX_WIDTH: f64 = 440.0;

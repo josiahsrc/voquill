@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use crate::platform::Recorder;
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, specta::Type)]
 pub struct InputDeviceDescriptor {
     pub label: String,
     pub is_default: bool,
@@ -188,7 +188,7 @@ mod cpal_impl {
             counts[bin_index] += 1;
         }
 
-        for (value, count) in bins.iter_mut().zip(counts.into_iter()) {
+        for (value, count) in bins.iter_mut().zip(counts) {
             if count > 0 {
                 *value = (*value / count as f32).clamp(0.0, 1.0);
             }

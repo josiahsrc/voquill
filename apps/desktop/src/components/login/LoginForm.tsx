@@ -1,5 +1,5 @@
 import { Collapse, Stack, Typography } from "@mui/material";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { useSearchParams } from "react-router-dom";
 import { TransitionGroup } from "react-transition-group";
@@ -37,6 +37,19 @@ export const LoginForm = ({
   hideOidcProviders = false,
   defaultMode,
 }: LoginFormProps) => {
+  useState(() => {
+    if (defaultMode) {
+      produceAppState((draft) => {
+        draft.login.mode = defaultMode;
+      });
+    }
+  });
+
+  const [animate, setAnimate] = useState(false);
+  useEffect(() => {
+    setAnimate(true);
+  }, []);
+
   const mode = useMode();
   const errorMessage = useAppStore((state) => state.login.errorMessage);
 
@@ -55,13 +68,7 @@ export const LoginForm = ({
     });
   });
 
-  useEffect(() => {
-    if (defaultMode) {
-      produceAppState((draft) => {
-        draft.login.mode = defaultMode;
-      });
-    }
-  }, [defaultMode]);
+  const timeout = animate ? 400 : 0;
 
   return (
     <Stack spacing={1.5}>
@@ -78,12 +85,12 @@ export const LoginForm = ({
 
       <TransitionGroup>
         {mode === "signIn" && (
-          <Collapse key="signIn" timeout={400} unmountOnExit>
+          <Collapse key="signIn" timeout={timeout} unmountOnExit>
             <SignInForm hideOidcProviders={hideOidcProviders} />
           </Collapse>
         )}
         {mode === "signUp" && (
-          <Collapse key="signUp" timeout={400} unmountOnExit>
+          <Collapse key="signUp" timeout={timeout} unmountOnExit>
             <SignUpForm
               hideModeSwitch={hideModeSwitch}
               hideOidcProviders={hideOidcProviders}
@@ -91,12 +98,12 @@ export const LoginForm = ({
           </Collapse>
         )}
         {mode === "resetPassword" && (
-          <Collapse key="resetPassword" timeout={400} unmountOnExit>
+          <Collapse key="resetPassword" timeout={timeout} unmountOnExit>
             <ResetPasswordForm />
           </Collapse>
         )}
         {mode === "passwordResetSent" && (
-          <Collapse key="passwordResetSent" timeout={400} unmountOnExit>
+          <Collapse key="passwordResetSent" timeout={timeout} unmountOnExit>
             <ResetSentForm />
           </Collapse>
         )}

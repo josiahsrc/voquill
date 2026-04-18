@@ -12,6 +12,7 @@ import { daysToMilliseconds } from "../utils/time.utils";
 import {
   buildManualMacInstallerUrl,
   isReadOnlyFilesystemInstallError,
+  shouldSurfaceUpdate,
 } from "../utils/updater.utils";
 import { getMyUserPreferences } from "../utils/user.utils";
 import { markSurfaceWindowForNextLaunch } from "../utils/window.utils";
@@ -96,7 +97,12 @@ export const checkForAppUpdates = async (): Promise<boolean> => {
     const { dialogOpen, dismissedUntil } = state.updater;
     const ignoreUpdateDialog =
       getMyUserPreferences(state)?.ignoreUpdateDialog ?? false;
+    const isUpdateSurfaced = shouldSurfaceUpdate(
+      update.date ?? null,
+      state.local.optInToBetaUpdates,
+    );
     const shouldAutoShowDialog =
+      isUpdateSurfaced &&
       !ignoreUpdateDialog &&
       !dialogOpen &&
       (!dismissedUntil || Date.now() >= dismissedUntil);

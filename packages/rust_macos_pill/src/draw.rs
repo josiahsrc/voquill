@@ -34,6 +34,10 @@ pub(crate) fn draw_all(ctx: &Ctx, state: &PillState, view_w: f64, view_h: f64) {
 
     draw_pill(ctx, state, ww, wh);
 
+    if state.flash_blue_active.get() {
+        draw_flash_blue(ctx, state, ww, wh);
+    }
+
     if state.assistant_active.get() {
         draw_keyboard_button(ctx, state, ww, wh);
     }
@@ -45,6 +49,10 @@ pub(crate) fn draw_all(ctx: &Ctx, state: &PillState, view_w: f64, view_h: f64) {
 
         if state.flash_t.get() > 0.01 {
             draw_flash_message(ctx, state, ww, wh);
+        }
+
+        if state.transcript_opacity.get() > 0.001 {
+            draw_broadcast_transcript(ctx, state, ww, wh);
         }
 
         draw_cancel_button(ctx, state, ww, wh);
@@ -415,6 +423,87 @@ fn draw_flash_message(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
     }
 
     ctx.restore();
+}
+
+// ── Flash blue border ────────────────────────────────────────────
+
+fn draw_flash_blue(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
+    let elapsed = state.flash_blue_elapsed.get();
+    if elapsed <= 0.0 || elapsed >= FLASH_BLUE_DURATION {
+        return;
+    }
+    let t = elapsed / FLASH_BLUE_DURATION;
+    let alpha = (t * std::f64::consts::PI).sin().max(0.0);
+    if alpha < 0.01 {
+        return;
+    }
+
+    let (px, py, pw, ph) = pill_position(state, ww, wh);
+    let inset = -FLASH_BLUE_INSET;
+    let rx = px + inset;
+    let ry = py + inset;
+    let rw = pw - inset * 2.0;
+    let rh = ph - inset * 2.0;
+
+    let expand_t = state.expand_t.get();
+    let radius = gfx::lerp(COLLAPSED_RADIUS, EXPANDED_RADIUS, expand_t) + FLASH_BLUE_INSET;
+
+    let (gr, gg, gb) = FLASH_BLUE_GLOW_COLOR;
+    gfx::rounded_rect(ctx, rx - 1.5, ry - 1.5, rw + 3.0, rh + 3.0, radius + 1.5);
+    ctx.set_source_rgba(gr, gg, gb, 0.35 * alpha);
+    ctx.set_line_width(FLASH_BLUE_BORDER_WIDTH + 2.0);
+    ctx.stroke();
+
+    let (r, g, b) = FLASH_BLUE_COLOR;
+    gfx::rounded_rect(ctx, rx, ry, rw, rh, radius);
+    ctx.set_source_rgba(r, g, b, alpha);
+    ctx.set_line_width(FLASH_BLUE_BORDER_WIDTH);
+    ctx.stroke();
+}
+
+// ── Broadcast transcript ─────────────────────────────────────────
+
+fn draw_broadcast_transcript(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
+    let alpha = state.transcript_opacity.get();
+    if alpha < 0.01 {
+        return;
+    }
+    let text = state.transcript_text.borrow();
+    if text.is_empty() {
+        return;
+    }
+
+    ctx.select_font_face("sans-serif", false, false);
+    ctx.set_font_size(TRANSCRIPT_FONT_SIZE);
+    let text_extents = ctx.text_extents(&text);
+    let box_w = (text_extents.width + TRANSCRIPT_PADDING_H * 2.0).min(TRANSCRIPT_MAX_WIDTH);
+
+    let (_, pill_y, _, _) = pill_position(state, ww, wh);
+    let box_x = (ww - box_w) / 2.0;
+    let rise = (1.0 - alpha) * 6.0;
+    let box_y = pill_y - TRANSCRIPT_GAP - TRANSCRIPT_HEIGHT + rise;
+
+    gfx::rounded_rect(ctx, box_x, box_y, box_w, TRANSCRIPT_HEIGHT, TRANSCRIPT_RADIUS);
+    ctx.set_source_rgba(0.0, 0.0, 0.0, alpha);
+    ctx.fill();
+
+    gfx::rounded_rect(
+        ctx,
+        box_x + 0.5,
+        box_y + 0.5,
+        box_w - 1.0,
+        TRANSCRIPT_HEIGHT - 1.0,
+        TRANSCRIPT_RADIUS - 0.5,
+    );
+    ctx.set_source_rgba(0.45, 0.75, 1.0, 0.35 * alpha);
+    ctx.set_line_width(1.0);
+    ctx.stroke();
+
+    let tx = box_x + (box_w - text_extents.width) / 2.0 - text_extents.x_bearing;
+    let ty = box_y + (TRANSCRIPT_HEIGHT - text_extents.height) / 2.0 - text_extents.y_bearing;
+    ctx.set_source_rgba(1.0, 1.0, 1.0, 0.95 * alpha);
+    ctx.move_to(tx, ty);
+    ctx.show_text(&text);
 }
 
 // ── Flame ────────────────────────────────────────────────────────

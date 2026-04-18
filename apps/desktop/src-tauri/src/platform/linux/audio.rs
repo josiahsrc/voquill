@@ -351,7 +351,7 @@ fn compute_level_bins(samples: &[f32]) -> Vec<f32> {
         counts[bin_index] += 1;
     }
 
-    for (value, count) in bins.iter_mut().zip(counts.into_iter()) {
+    for (value, count) in bins.iter_mut().zip(counts) {
         if count > 0 {
             *value = (*value / count as f32).clamp(0.0, 1.0);
         }

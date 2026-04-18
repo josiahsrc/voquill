@@ -181,6 +181,16 @@ pub(crate) struct PillState {
     pub(crate) flame_active: Cell<bool>,
     pub(crate) flame_elapsed: Cell<f64>,
     pub(crate) flame_tongues: RefCell<Vec<FlameTongue>>,
+
+    // Flash blue border
+    pub(crate) flash_blue_active: Cell<bool>,
+    pub(crate) flash_blue_elapsed: Cell<f64>,
+
+    // Broadcast transcript (live text above the pill)
+    pub(crate) transcript_text: RefCell<String>,
+    pub(crate) transcript_time_since_update: Cell<f64>,
+    pub(crate) transcript_opacity: Cell<f64>,
+    pub(crate) transcript_has_message: Cell<bool>,
 }
 
 impl PillState {

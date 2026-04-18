@@ -3,13 +3,20 @@ import { useIsOnboarded } from "../../hooks/user.hooks";
 import { Redirect } from "./Redirectors";
 import { getRec } from "@voquill/utilities";
 import { useAppStore } from "../../store";
+import { isEnterpriseFlavor } from "../../utils/env.utils";
 import { getIsLoggedIn } from "../../utils/user.utils";
 
-export type Node = "dashboard" | "notFound" | "onboarding" | "welcome";
+export type Node =
+  | "dashboard"
+  | "notFound"
+  | "onboarding"
+  | "routing"
+  | "welcome";
 
 type GuardState = {
   isOnboarded: boolean;
   isLoggedIn: boolean;
+  isEnterpriseFlavor: boolean;
 };
 
 type GuardEdge = {
@@ -27,6 +34,10 @@ type Graph = Record<Node, NodeDefinition>;
 const graph: Graph = {
   welcome: {
     edges: [
+      {
+        to: "routing",
+        condition: (s) => s.isEnterpriseFlavor && s.isLoggedIn,
+      },
       {
         to: "dashboard",
         condition: (s) => s.isOnboarded,
@@ -56,6 +67,15 @@ const graph: Graph = {
     ],
     builder: () => <Redirect to="/dashboard" />,
   },
+  routing: {
+    edges: [
+      {
+        to: "welcome",
+        condition: (s) => !s.isLoggedIn || !s.isEnterpriseFlavor,
+      },
+    ],
+    builder: () => <Redirect to="/routing" />,
+  },
   notFound: {
     edges: [],
     builder: () => <Redirect to="/not-found" />,
@@ -75,6 +95,7 @@ export const Guard = ({ children, node }: GuardProps) => {
     () => ({
       isOnboarded,
       isLoggedIn,
+      isEnterpriseFlavor: isEnterpriseFlavor(),
     }),
     [isOnboarded, isLoggedIn],
   );

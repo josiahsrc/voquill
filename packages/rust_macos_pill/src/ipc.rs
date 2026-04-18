@@ -82,6 +82,8 @@ pub enum InMessage {
     DismissToast,
     Fireworks { message: String },
     Flame { message: String },
+    FlashBlue,
+    BroadcastTranscript { text: String },
     AssistantState {
         active: bool,
         input_mode: String,

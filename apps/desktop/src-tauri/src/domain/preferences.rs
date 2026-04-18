@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 pub const DEFAULT_DICTATION_LIMIT_MINUTES: i64 = 5;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct UserPreferences {
     pub user_id: String,
