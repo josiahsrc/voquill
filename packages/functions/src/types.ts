@@ -17,16 +17,16 @@ import {
   type EnterpriseLicense,
   type FlaggedAudio,
   type JsonResponse,
+  type LlmMessage,
   type LlmProvider,
   type LlmProviderInput,
+  type LlmTool,
+  type LlmToolChoice,
   type MetricsDaily,
   type MetricsPerProvider,
   type MetricsPerUser,
   type MetricsRange,
   type MetricsSummary,
-  type LlmMessage,
-  type LlmTool,
-  type LlmToolChoice,
   type Nullable,
   type OidcProvider,
   type OidcProviderInput,
@@ -113,6 +113,21 @@ type HandlerDefinitions = {
       password: string;
     };
     output: EmptyObject;
+  };
+  "auth/createSignInCode": {
+    input: EmptyObject;
+    output: {
+      code: string;
+      expiresAt: number;
+    };
+  };
+  "auth/exchangeSignInCode": {
+    input: {
+      code: string;
+    };
+    output: {
+      customToken: string;
+    };
   };
 
   // emulator
@@ -657,6 +672,12 @@ export const RefreshApiTokenInputZod = z
     apiRefreshToken: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"auth/refreshApiToken">>;
+
+export const AuthExchangeSignInCodeInputZod = z
+  .object({
+    code: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"auth/exchangeSignInCode">>;
 
 export const FlaggedAudioZod = z
   .object({
