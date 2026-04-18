@@ -49,7 +49,7 @@ describe("groqGenerateTextResponse", () => {
 
     expect(createCompletion).toHaveBeenCalledTimes(1);
     expect(createCompletion.mock.calls[0][0]).toMatchObject({
-      max_completion_tokens: 1024,
+      max_completion_tokens: 5000,
     });
 
     vi.doUnmock("groq-sdk/index");
