@@ -296,9 +296,11 @@ Here is the transcript:
 ${transcript}
 </transcript>
 
-Process the transcript according to the instructions.
-`.trim();
+  Process the transcript according to the instructions.
+  `.trim();
 };
+
+export const POST_PROCESS_MAX_OUTPUT_TOKENS = 1024;
 
 export const PROCESSED_TRANSCRIPTION_SCHEMA = z.object({
   result: z.string().describe("The processed transcription"),
@@ -307,6 +309,19 @@ export const PROCESSED_TRANSCRIPTION_SCHEMA = z.object({
 export const PROCESSED_TRANSCRIPTION_JSON_SCHEMA =
   zodToJsonSchema(PROCESSED_TRANSCRIPTION_SCHEMA, "Schema").definitions
     ?.Schema ?? {};
+
+export const buildPostProcessingGenerateTextInput = (
+  input: PostProcessingPromptInput,
+) => ({
+  system: buildSystemPostProcessingTonePrompt(input),
+  prompt: buildPostProcessingPrompt(input),
+  jsonResponse: {
+    name: "transcription_cleaning",
+    description: "JSON response with the processed transcription",
+    schema: PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
+  },
+  maxOutputTokens: POST_PROCESS_MAX_OUTPUT_TOKENS,
+});
 
 export const buildSystemAgentPrompt = (): string => {
   return "You are a helpful AI assistant that executes user commands. The user will dictate instructions via voice, and you will execute those instructions and return the output. Your job is to understand what the user wants and produce it. Examples: 'write a poem about cats' → write the poem; 'summarize this article' → provide the summary; 'create a shopping list' → create the list; 'draft an email to my boss' → draft the email. Always return just the requested output, ready to be pasted.";

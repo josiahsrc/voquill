@@ -122,6 +122,7 @@ export type OpenAIGenerateTextArgs = {
   prompt: string;
   imageUrls?: string[];
   jsonResponse?: JsonResponse;
+  maxOutputTokens?: number;
   customFetch?: CustomFetch;
 };
 
@@ -138,6 +139,7 @@ export const openaiGenerateTextResponse = async ({
   prompt,
   imageUrls = [],
   jsonResponse,
+  maxOutputTokens,
   customFetch,
 }: OpenAIGenerateTextArgs): Promise<OpenAIGenerateResponseOutput> => {
   return retry({
@@ -165,7 +167,7 @@ export const openaiGenerateTextResponse = async ({
         messages,
         model,
         temperature: 1,
-        max_completion_tokens: 1024,
+        max_completion_tokens: maxOutputTokens ?? 1024,
         top_p: 1,
         response_format: jsonResponse
           ? {

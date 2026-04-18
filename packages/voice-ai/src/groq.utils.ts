@@ -113,6 +113,7 @@ export type GroqGenerateTextArgs = {
   prompt: string;
   imageUrls?: string[];
   jsonResponse?: JsonResponse;
+  maxOutputTokens?: number;
 };
 
 export type GroqGenerateResponseOutput = {
@@ -127,6 +128,7 @@ export const groqGenerateTextResponse = async ({
   prompt,
   imageUrls = [],
   jsonResponse,
+  maxOutputTokens,
 }: GroqGenerateTextArgs): Promise<GroqGenerateResponseOutput> => {
   return retry({
     retries: 3,
@@ -152,7 +154,7 @@ export const groqGenerateTextResponse = async ({
       const response = await client.chat.completions.create({
         messages,
         model,
-        max_completion_tokens: 8192,
+        max_completion_tokens: maxOutputTokens ?? 1024,
         response_format: jsonResponse
           ? JSON_SCHEMA_SUPPORTED_MODELS.has(model)
             ? {

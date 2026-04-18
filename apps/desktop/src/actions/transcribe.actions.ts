@@ -27,11 +27,9 @@ import {
 import { getLogger } from "../utils/log.utils";
 import {
   buildLocalizedTranscriptionPrompt,
-  buildPostProcessingPrompt,
-  buildSystemPostProcessingTonePrompt,
+  buildPostProcessingGenerateTextInput,
   collectDictionaryEntries,
   PostProcessingPromptInput,
-  PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
   PROCESSED_TRANSCRIPTION_SCHEMA,
 } from "../utils/prompt.utils";
 import { getToneById, getToneConfig } from "../utils/tone.utils";
@@ -219,26 +217,22 @@ export const postProcessTranscript = async ({
       dictationLanguage,
       tone: toneConfig,
     };
-    const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
-    const ppPrompt = buildPostProcessingPrompt(promptInput);
+    const postProcessingGenerateTextInput =
+      buildPostProcessingGenerateTextInput(promptInput);
     getLogger().verbose(
       "Post-process prompt length:",
-      ppPrompt.length,
+      postProcessingGenerateTextInput.prompt.length,
       "system length:",
-      ppSystem.length,
+      postProcessingGenerateTextInput.system.length,
+    );
+    getLogger().verbose(
+      "Post-process output budget:",
+      postProcessingGenerateTextInput.maxOutputTokens,
     );
 
     const postprocessStart = performance.now();
     getLogger().verbose("Calling LLM for post-processing");
-    const genOutput = await genRepo.generateText({
-      system: ppSystem,
-      prompt: ppPrompt,
-      jsonResponse: {
-        name: "transcription_cleaning",
-        description: "JSON response with the processed transcription",
-        schema: PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
-      },
-    });
+    const genOutput = await genRepo.generateText(postProcessingGenerateTextInput);
     const postprocessDuration = performance.now() - postprocessStart;
     metadata.postprocessDurationMs = Math.round(postprocessDuration);
 
@@ -277,7 +271,7 @@ export const postProcessTranscript = async ({
       );
     }
 
-    metadata.postProcessPrompt = ppPrompt;
+    metadata.postProcessPrompt = postProcessingGenerateTextInput.prompt;
     metadata.postProcessApiKeyId = genApiKeyId;
     metadata.postProcessMode = genOutput.metadata?.postProcessingMode || null;
     metadata.postProcessDevice = genOutput.metadata?.inferenceDevice || null;
