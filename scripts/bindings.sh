@@ -6,4 +6,4 @@ cd "$SCRIPT_DIR/.."
 
 echo "Generating @voquill/desktop-native-apis bindings..."
 
-cargo run --manifest-path apps/desktop/src-tauri/Cargo.toml --bin gen_bindings
+cargo run --manifest-path apps/desktop/src-tauri/Cargo.toml --example gen_bindings
