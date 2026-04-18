@@ -21,6 +21,7 @@ export type AzureOpenAIGenerateTextArgs = {
   system?: string;
   prompt: string;
   jsonResponse?: JsonResponse;
+  maxOutputTokens?: number;
 };
 
 export type AzureOpenAIGenerateResponseOutput = {
@@ -44,6 +45,7 @@ export const azureOpenAIGenerateText = async ({
   system,
   prompt,
   jsonResponse,
+  maxOutputTokens,
 }: AzureOpenAIGenerateTextArgs): Promise<AzureOpenAIGenerateResponseOutput> => {
   return retry({
     retries: 3,
@@ -60,7 +62,7 @@ export const azureOpenAIGenerateText = async ({
         messages,
         model: deploymentName,
         temperature: 1,
-        max_completion_tokens: 1024,
+        max_completion_tokens: maxOutputTokens ?? 1024,
         response_format: jsonResponse
           ? {
               type: "json_schema",

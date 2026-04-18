@@ -48,6 +48,7 @@ export type DeepseekGenerateTextArgs = {
   system?: string;
   prompt: string;
   jsonResponse?: JsonResponse;
+  maxOutputTokens?: number;
 };
 
 export type DeepseekGenerateResponseOutput = {
@@ -61,6 +62,7 @@ export const deepseekGenerateTextResponse = async ({
   system,
   prompt,
   jsonResponse,
+  maxOutputTokens,
 }: DeepseekGenerateTextArgs): Promise<DeepseekGenerateResponseOutput> => {
   return retry({
     retries: 3,
@@ -85,7 +87,7 @@ export const deepseekGenerateTextResponse = async ({
         messages,
         model,
         temperature: 1,
-        max_tokens: 1024,
+        max_tokens: maxOutputTokens ?? 1024,
         top_p: 1,
         response_format: jsonResponse ? { type: "json_object" } : undefined,
       });

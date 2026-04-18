@@ -149,6 +149,7 @@ export type GeminiGenerateTextArgs = {
   system?: string;
   prompt: string;
   jsonResponse?: JsonResponse;
+  maxOutputTokens?: number;
 };
 
 export type GeminiGenerateResponseOutput = {
@@ -162,6 +163,7 @@ export const geminiGenerateTextResponse = async ({
   system,
   prompt,
   jsonResponse,
+  maxOutputTokens,
 }: GeminiGenerateTextArgs): Promise<GeminiGenerateResponseOutput> => {
   return retry({
     retries: 3,
@@ -174,6 +176,9 @@ export const geminiGenerateTextResponse = async ({
       }
 
       const config: Record<string, unknown> = {};
+      if (maxOutputTokens != null) {
+        config.maxOutputTokens = maxOutputTokens;
+      }
       if (jsonResponse) {
         config.responseMimeType = "application/json";
         if (jsonResponse.schema) {

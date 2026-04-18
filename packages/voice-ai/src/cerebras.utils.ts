@@ -53,6 +53,7 @@ export type CerebrasGenerateTextArgs = {
   system?: string;
   prompt: string;
   jsonResponse?: JsonResponse;
+  maxOutputTokens?: number;
 };
 
 export type CerebrasGenerateResponseOutput = {
@@ -66,6 +67,7 @@ export const cerebrasGenerateTextResponse = async ({
   system,
   prompt,
   jsonResponse,
+  maxOutputTokens,
 }: CerebrasGenerateTextArgs): Promise<CerebrasGenerateResponseOutput> => {
   return retry({
     retries: 3,
@@ -90,7 +92,7 @@ export const cerebrasGenerateTextResponse = async ({
         messages,
         model,
         temperature: 1,
-        max_tokens: 1024,
+        max_tokens: maxOutputTokens ?? 1024,
         top_p: 1,
         response_format: jsonResponse ? { type: "json_object" } : undefined,
       };

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPostProcessingPrompt,
+  buildPostProcessingGenerateTextInput,
   buildSystemPostProcessingTonePrompt,
+  POST_PROCESS_MAX_OUTPUT_TOKENS,
   PostProcessingPromptInput,
 } from "./prompt.utils";
 import { StyleToneConfig, TemplateToneConfig } from "./tone.utils";
@@ -98,5 +100,23 @@ describe("buildPostProcessingPrompt", () => {
     expect(result).toContain(
       "Process the transcript according to the instructions",
     );
+  });
+});
+
+describe("buildPostProcessingGenerateTextInput", () => {
+  it("builds the transcript-cleanup request with an explicit output budget", () => {
+    const result = buildPostProcessingGenerateTextInput(
+      makeInput({ kind: "style", stylePrompt: "Be formal" }),
+    );
+
+    expect(result).toMatchObject({
+      maxOutputTokens: POST_PROCESS_MAX_OUTPUT_TOKENS,
+      jsonResponse: {
+        name: "transcription_cleaning",
+        description: "JSON response with the processed transcription",
+      },
+    });
+    expect(result.system).toContain("Be formal");
+    expect(result.prompt).toContain("Hello world");
   });
 });
