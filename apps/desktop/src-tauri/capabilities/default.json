@@ -5,6 +5,20 @@
   "windows": [
     "main"
   ],
+  "remote": {
+    "urls": [
+      "http://localhost",
+      "http://localhost/*",
+      "http://localhost:*",
+      "http://localhost:*/*",
+      "http://127.0.0.1",
+      "http://127.0.0.1/*",
+      "http://127.0.0.1:*",
+      "http://127.0.0.1:*/*",
+      "https://*.voquill.com",
+      "https://*.voquill.com/*"
+    ]
+  },
   "permissions": [
     "core:default",
     "core:event:default",
