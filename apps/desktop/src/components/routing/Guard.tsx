@@ -1,10 +1,10 @@
+import { getRec } from "@voquill/utilities";
 import { useMemo } from "react";
 import { useIsOnboarded } from "../../hooks/user.hooks";
-import { Redirect } from "./Redirectors";
-import { getRec } from "@voquill/utilities";
 import { useAppStore } from "../../store";
 import { isEnterpriseFlavor } from "../../utils/env.utils";
 import { getIsLoggedIn } from "../../utils/user.utils";
+import { Redirect } from "./Redirectors";
 
 export type Node =
   | "dashboard"
@@ -52,6 +52,10 @@ const graph: Graph = {
   onboarding: {
     edges: [
       {
+        to: "routing",
+        condition: (s) => s.isEnterpriseFlavor && s.isLoggedIn,
+      },
+      {
         to: "dashboard",
         condition: (s) => s.isOnboarded,
       },
@@ -60,6 +64,10 @@ const graph: Graph = {
   },
   dashboard: {
     edges: [
+      {
+        to: "routing",
+        condition: (s) => s.isEnterpriseFlavor && s.isLoggedIn,
+      },
       {
         to: "welcome",
         condition: (s) => !s.isOnboarded,
