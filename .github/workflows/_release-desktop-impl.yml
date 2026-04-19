@@ -215,9 +215,15 @@ jobs:
 
       - name: Read release notes
         id: release_body
+        env:
+          RELEASE_ENV: ${{ steps.meta.outputs.release_env }}
         run: |
           set -euo pipefail
-          body="$(cat release/desktop.txt)"
+          case "${RELEASE_ENV}" in
+            enterprise|enterprise-dev) notes_file="release/enterprise.txt" ;;
+            *)                         notes_file="release/prod.txt" ;;
+          esac
+          body="$(cat "${notes_file}")"
           printf 'release_body<<EOF\n%s\nEOF\n' "$body" >> "$GITHUB_OUTPUT"
 
       - name: Create release tag
