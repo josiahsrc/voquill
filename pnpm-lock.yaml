@@ -503,6 +503,9 @@ importers:
 
   packages/desktop-utils:
     devDependencies:
+      '@tauri-apps/api':
+        specifier: ~2.10.1
+        version: 2.10.1
       '@types/react':
         specifier: 19.2.10
         version: 19.2.10
