@@ -10,8 +10,18 @@ import { invokeHandler } from "@voquill/functions";
 import { useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { signOut } from "../../actions/login.actions";
+import { getIsDevMode } from "../../utils/env.utils";
 
 const ROUTING_TIMEOUT_MS = 15000;
+
+const getRoutingUrlOverride = (): string | null => {
+  if (!getIsDevMode()) {
+    return null;
+  }
+
+  const override = import.meta.env.VITE_ENTERPRISE_ROUTING_URL_OVERRIDE;
+  return typeof override === "string" && override.trim() ? override : null;
+};
 
 type RoutingState = { phase: "loading" } | { phase: "notFound" };
 
@@ -39,10 +49,14 @@ export default function EnterpriseRoutingPage() {
           return;
         }
 
-        const { url } = await invokeHandler("enterprise/loadRoutingConfig", {});
+        const override = getRoutingUrlOverride();
+        const { url } = override
+          ? { url: override }
+          : await invokeHandler("enterprise/loadRoutingConfig", {});
         if (cancelled) {
           return;
         }
+
         window.clearTimeout(timeoutId);
         window.location.href = url;
       } catch (error) {
@@ -50,6 +64,7 @@ export default function EnterpriseRoutingPage() {
         if (cancelled) {
           return;
         }
+
         window.clearTimeout(timeoutId);
         setState({ phase: "notFound" });
       }

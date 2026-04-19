@@ -13,6 +13,7 @@ interface ImportMetaEnv {
   readonly VITE_FLAVOR?: string;
   readonly VITE_STRIPE_PUBLIC_KEY?: string;
   readonly VITE_NEW_SERVER_URL?: string;
+  readonly VITE_ENTERPRISE_ROUTING_URL_OVERRIDE?: string;
 }
 
 interface ImportMeta {

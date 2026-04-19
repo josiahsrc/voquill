@@ -8,6 +8,7 @@ import { ENTERPRISE_OIDC_COMMAND } from "../types/enterprise-oidc.types";
 import type { GoogleAuthPayload } from "../types/google-auth.types";
 import { GOOGLE_AUTH_COMMAND } from "../types/google-auth.types";
 import { registerMembers } from "../utils/app.utils";
+import { getEffectiveAuth } from "../utils/auth.utils";
 import { getEnterpriseTarget } from "../utils/enterprise.utils";
 import { isEnterpriseFlavor } from "../utils/env.utils";
 import { validateEmail } from "../utils/login.utils";
@@ -223,6 +224,7 @@ export const ensureRustSessionSync = async (): Promise<void> => {
     return;
   }
 
+  await getEffectiveAuth().authStateReady();
   if (getAuthRepo().getCurrentUser()) {
     await getAuthRepo().signOut();
   }
