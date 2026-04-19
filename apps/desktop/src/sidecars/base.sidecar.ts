@@ -15,6 +15,7 @@ export type SidecarConfig = {
   healthTimeoutMs: number;
   healthPollIntervalMs: number;
   logPrefix: string;
+  idleDisposeMs?: number;
 };
 
 export type SidecarRuntime = {
@@ -27,10 +28,13 @@ export abstract class BaseSidecar {
   private runtime: SidecarRuntime | null = null;
   private startupPromise: Promise<SidecarRuntime> | null = null;
   private stoppingPid: number | null = null;
+  private idleTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(protected readonly config: SidecarConfig) {}
 
   async ensureStarted(): Promise<SidecarRuntime> {
+    this.cancelIdleTimer();
+
     if (this.runtime) {
       return this.runtime;
     }
@@ -56,6 +60,7 @@ export abstract class BaseSidecar {
   }
 
   async dispose(): Promise<void> {
+    this.cancelIdleTimer();
     const runtime = this.runtime;
     this.runtime = null;
 
@@ -87,10 +92,37 @@ export abstract class BaseSidecar {
   }
 
   protected async resetRuntime(): Promise<void> {
+    this.cancelIdleTimer();
     const runtime = this.runtime;
     this.runtime = null;
     if (runtime) {
       await runtime.child.kill().catch(() => {});
+    }
+  }
+
+  protected markActivity(): void {
+    if (this.config.idleDisposeMs == null || !this.runtime) {
+      return;
+    }
+
+    this.cancelIdleTimer();
+    this.idleTimer = setTimeout(() => {
+      this.idleTimer = null;
+      getLogger().info(
+        `[${this.config.logPrefix}] idle for ${this.config.idleDisposeMs}ms, disposing to free resources`,
+      );
+      void this.dispose().catch((error) => {
+        getLogger().warning(
+          `[${this.config.logPrefix}] idle dispose failed: ${toErrorMessage(error)}`,
+        );
+      });
+    }, this.config.idleDisposeMs);
+  }
+
+  private cancelIdleTimer(): void {
+    if (this.idleTimer !== null) {
+      clearTimeout(this.idleTimer);
+      this.idleTimer = null;
     }
   }
 

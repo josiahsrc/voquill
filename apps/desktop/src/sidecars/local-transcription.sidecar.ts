@@ -105,6 +105,7 @@ const SIDECAR_REQUEST_RETRY_DELAY_MS = 250;
 const MODEL_DOWNLOAD_TIMEOUT_MS = 45 * 60 * 1_000;
 const MODEL_DOWNLOAD_POLL_INTERVAL_MS = 500;
 const SIDECAR_UPLOAD_CHUNK_SAMPLE_COUNT = 16_000;
+const SIDECAR_IDLE_DISPOSE_MS = 60_000;
 
 export class SidecarRequestError extends Error {
   status?: number;
@@ -136,6 +137,7 @@ export class LocalTranscriptionSidecar extends BaseSidecar {
       healthTimeoutMs: 2_000,
       healthPollIntervalMs: 150,
       logPrefix: `local-sidecar:${mode}`,
+      idleDisposeMs: SIDECAR_IDLE_DISPOSE_MS,
     });
 
     this.mode = mode;
@@ -590,11 +592,13 @@ export class LocalTranscriptionSidecar extends BaseSidecar {
     for (let attempt = 1; attempt <= retries; attempt += 1) {
       const runtime = await this.ensureStarted();
       try {
-        return await this.requestJsonByUrl<T>(runtime.baseUrl, path, {
+        const result = await this.requestJsonByUrl<T>(runtime.baseUrl, path, {
           init,
           timeoutMs,
           retries: 1,
         });
+        this.markActivity();
+        return result;
       } catch (error) {
         lastError = error;
         const isTransport = this.isTransportError(error);
