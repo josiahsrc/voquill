@@ -1,6 +1,10 @@
-import { useEffect, useMemo, useRef } from "react";
+import {
+  ActivationController,
+  useHotkeyFire as useHotkeyFireGeneric,
+  useHotkeyHoldMany as useHotkeyHoldManyGeneric,
+} from "@voquill/desktop-utils";
+import { useEffect, useMemo } from "react";
 import { getAppState, useAppStore } from "../store";
-import type { ActivationController } from "../utils/activation.utils";
 import { getHotkeyCombosForAction } from "../utils/keyboard.utils";
 
 type HoldAction = { actionName: string; controller: ActivationController };
@@ -22,7 +26,8 @@ export const useHotkeyHoldMany = (args: {
   const keysHeld = useAppStore((s) => s.keysHeld);
   const isRecordingHotkey = useAppStore((state) => state.isRecordingHotkey);
   const hotkeyById = useAppStore((state) => state.hotkeyById);
-  const isDisabled = Boolean(args.isDisabled || isRecordingHotkey);
+  const hotkeyTriggers = useAppStore((state) => state.hotkeyTriggers);
+
   const combosByAction = useMemo(() => {
     const map: Record<string, string[][]> = {};
     const state = getAppState();
@@ -35,7 +40,15 @@ export const useHotkeyHoldMany = (args: {
     return map;
   }, [hotkeyById, args.actions]);
 
-  const wasPressedRef = useRef<Map<string, boolean>>(new Map());
+  const genericActions = useMemo(
+    () =>
+      args.actions.map((action) => ({
+        controller: action.controller,
+        combos: combosByAction[action.actionName] ?? [],
+        triggerCount: hotkeyTriggers[action.actionName] ?? 0,
+      })),
+    [args.actions, combosByAction, hotkeyTriggers],
+  );
 
   useEffect(() => {
     return () => {
@@ -45,83 +58,11 @@ export const useHotkeyHoldMany = (args: {
     };
   }, [args.actions]);
 
-  useEffect(() => {
-    const normalize = (key: string) => key.toLowerCase();
-
-    const matchesCombo = (held: string[], combo: string[]) => {
-      if (combo.length === 0) {
-        return false;
-      }
-
-      const uniqueHeld = Array.from(new Set(held.map((key) => normalize(key))));
-      const required = Array.from(new Set(combo.map((key) => normalize(key))));
-
-      if (uniqueHeld.length !== required.length) {
-        return false;
-      }
-
-      const heldSet = new Set(uniqueHeld);
-      return required.every((key) => heldSet.has(key));
-    };
-
-    for (const action of args.actions) {
-      const availableCombos = combosByAction[action.actionName] ?? [];
-      const wasPressed = wasPressedRef.current.get(action.actionName) ?? false;
-      const isPressed = availableCombos.some((combo) =>
-        matchesCombo(keysHeld, combo),
-      );
-
-      if (isDisabled) {
-        wasPressedRef.current.set(action.actionName, isPressed);
-        action.controller.reset();
-        continue;
-      }
-
-      if (
-        action.controller.isActive &&
-        !wasPressed &&
-        !action.controller.hasHadRelease
-      ) {
-        action.controller.forceReset();
-      }
-
-      if (availableCombos.length === 0) {
-        wasPressedRef.current.set(action.actionName, false);
-        action.controller.reset();
-        continue;
-      }
-
-      if (isPressed && !wasPressed) {
-        if (action.controller.shouldIgnoreActivation) {
-          wasPressedRef.current.set(action.actionName, isPressed);
-          continue;
-        }
-
-        action.controller.handlePress();
-      } else if (!isPressed && wasPressed) {
-        action.controller.clearIgnore();
-        action.controller.handleRelease();
-      }
-
-      wasPressedRef.current.set(action.actionName, isPressed);
-    }
-  }, [keysHeld, combosByAction, args.actions, isDisabled]);
-
-  const triggerCounts = useAppStore((s) => s.hotkeyTriggers);
-  const prevTriggerCountsRef = useRef(triggerCounts);
-
-  useEffect(() => {
-    if (!isDisabled) {
-      for (const action of args.actions) {
-        const prev = prevTriggerCountsRef.current[action.actionName] ?? 0;
-        const curr = triggerCounts[action.actionName] ?? 0;
-        if (curr > prev) {
-          action.controller.toggle();
-        }
-      }
-    }
-    prevTriggerCountsRef.current = triggerCounts;
-  }, [triggerCounts, isDisabled, args.actions]);
+  useHotkeyHoldManyGeneric({
+    actions: genericActions,
+    keysHeld,
+    isDisabled: Boolean(args.isDisabled || isRecordingHotkey),
+  });
 };
 
 export const useHotkeyFire = (args: {
@@ -131,121 +72,18 @@ export const useHotkeyFire = (args: {
 }) => {
   const keysHeld = useAppStore((state) => state.keysHeld);
   const isRecordingHotkey = useAppStore((state) => state.isRecordingHotkey);
-  const isDisabled = Boolean(args.isDisabled || isRecordingHotkey);
-  const availableCombos = useAppStore((state) =>
+  const combos = useAppStore((state) =>
     getHotkeyCombosForAction(state, args.actionName),
   );
-
-  const previousKeysHeldRef = useRef<string[]>([]);
-  const comboStateRef = useRef<Map<string, { contaminated: boolean }>>(
-    new Map(),
-  );
-  const wasDisabledRef = useRef(false);
-
-  useEffect(() => {
-    if (isDisabled) {
-      previousKeysHeldRef.current = keysHeld;
-      comboStateRef.current.clear();
-      wasDisabledRef.current = true;
-      return;
-    }
-    const wasDisabled = wasDisabledRef.current;
-    wasDisabledRef.current = false;
-
-    const normalize = (key: string) => key.toLowerCase();
-    const toNormalizedSet = (keys: string[]) =>
-      new Set(keys.map((key) => normalize(key)));
-    const getComboId = (requiredKeys: Set<string>) =>
-      Array.from(requiredKeys).sort().join("+");
-
-    const previousSet = toNormalizedSet(previousKeysHeldRef.current);
-    const currentSet = toNormalizedSet(keysHeld);
-    const activeComboIds = new Set<string>();
-
-    let shouldFire = false;
-    for (const combo of availableCombos) {
-      if (combo.length === 0) {
-        continue;
-      }
-
-      const requiredSet = toNormalizedSet(combo);
-      if (requiredSet.size === 0) {
-        continue;
-      }
-
-      const comboId = getComboId(requiredSet);
-      activeComboIds.add(comboId);
-
-      const comboState = comboStateRef.current.get(comboId) ?? {
-        contaminated: false,
-      };
-
-      const previousIncludesAll = Array.from(requiredSet).every((key) =>
-        previousSet.has(key),
-      );
-      const currentIncludesAll = Array.from(requiredSet).every((key) =>
-        currentSet.has(key),
-      );
-
-      const previousExact =
-        previousIncludesAll && previousSet.size === requiredSet.size;
-      const currentExact =
-        currentIncludesAll && currentSet.size === requiredSet.size;
-
-      if (wasDisabled && currentIncludesAll) {
-        comboState.contaminated = true;
-      }
-
-      if (!previousIncludesAll && currentIncludesAll) {
-        comboState.contaminated = false;
-      }
-
-      if (currentIncludesAll && !currentExact) {
-        comboState.contaminated = true;
-      }
-
-      if (
-        previousExact &&
-        !currentExact &&
-        !currentIncludesAll &&
-        !comboState.contaminated
-      ) {
-        shouldFire = true;
-      }
-
-      if (!currentIncludesAll) {
-        comboState.contaminated = false;
-      }
-
-      comboStateRef.current.set(comboId, comboState);
-
-      if (shouldFire) {
-        break;
-      }
-    }
-
-    for (const comboId of comboStateRef.current.keys()) {
-      if (!activeComboIds.has(comboId)) {
-        comboStateRef.current.delete(comboId);
-      }
-    }
-
-    if (shouldFire) {
-      args.onFire?.();
-    }
-
-    previousKeysHeldRef.current = keysHeld;
-  }, [keysHeld, availableCombos, isDisabled, args.onFire]);
-
   const triggerCount = useAppStore(
     (s) => s.hotkeyTriggers[args.actionName] ?? 0,
   );
-  const prevTriggerCountRef = useRef(triggerCount);
 
-  useEffect(() => {
-    if (!isDisabled && triggerCount > prevTriggerCountRef.current) {
-      args.onFire?.();
-    }
-    prevTriggerCountRef.current = triggerCount;
-  }, [triggerCount, isDisabled, args.onFire]);
+  useHotkeyFireGeneric({
+    combos,
+    triggerCount,
+    keysHeld,
+    isDisabled: Boolean(args.isDisabled || isRecordingHotkey),
+    onFire: args.onFire,
+  });
 };

@@ -82,6 +82,9 @@ importers:
       '@tauri-apps/plugin-updater':
         specifier: ~2.10.1
         version: 2.10.1
+      '@voquill/desktop-utils':
+        specifier: workspace:*
+        version: link:../../packages/desktop-utils
       '@voquill/functions':
         specifier: workspace:*
         version: link:../../packages/functions
@@ -494,6 +497,21 @@ importers:
       '@voquill/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+
+  packages/desktop-utils:
+    devDependencies:
+      '@types/react':
+        specifier: 19.2.10
+        version: 19.2.10
+      '@voquill/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
       typescript:
         specifier: 5.9.2
         version: 5.9.2

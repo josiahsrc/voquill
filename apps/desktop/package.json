@@ -45,6 +45,7 @@
     "@tauri-apps/plugin-process": "~2.3.1",
     "@tauri-apps/plugin-sql": "~2.4.0",
     "@tauri-apps/plugin-updater": "~2.10.1",
+    "@voquill/desktop-utils": "workspace:*",
     "@voquill/functions": "workspace:*",
     "@voquill/pricing": "workspace:*",
     "@voquill/types": "workspace:*",

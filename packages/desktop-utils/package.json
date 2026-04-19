@@ -1,25 +1,26 @@
 {
-  "name": "@voquill/desktop-native-apis",
+  "name": "@voquill/desktop-utils",
   "version": "0.3.4",
-  "description": "Type-safe TypeScript wrappers for the Voquill desktop Tauri commands",
+  "description": "Shared React hooks and logic for Voquill desktop-style clients.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/voquill/voquill.git",
-    "directory": "packages/desktop-native-apis"
+    "directory": "packages/desktop-utils"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "clean": "rm -rf dist",
-    "gen:bindings": "bash ../../scripts/bindings.sh"
+    "clean": "rm -rf dist"
   },
-  "dependencies": {
-    "@tauri-apps/api": "~2.10.1"
+  "peerDependencies": {
+    "react": ">=18"
   },
   "devDependencies": {
+    "@types/react": "^19.0.0",
     "@voquill/typescript-config": "workspace:*",
+    "react": "^19.2.4",
     "typescript": "5.9.2"
   },
   "files": [
