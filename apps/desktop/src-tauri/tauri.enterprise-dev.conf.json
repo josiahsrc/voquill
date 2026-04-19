@@ -1,0 +1,34 @@
+{
+  "productName": "Voquill Enterprise (dev)",
+  "identifier": "com.voquill.desktop.enterprise-dev",
+  "mainBinaryName": "voquill-desktop-enterprise-dev",
+  "app": {
+    "windows": [
+      {
+        "title": "Voquill Enterprise (dev)",
+        "width": 1280,
+        "height": 860,
+        "minWidth": 800,
+        "minHeight": 600,
+        "additionalBrowserArgs": "--disable-features=CalculateNativeWinOcclusion --disable-renderer-backgrounding --disable-background-timer-throttling --disable-backgrounding-occluded-windows"
+      }
+    ]
+  },
+  "bundle": {
+    "linux": {
+      "deb": {
+        "depends": ["libxdo3", "xdotool", "libvulkan1", "libgtk-layer-shell0", "wtype"]
+      },
+      "rpm": {
+        "depends": ["xdotool", "vulkan-loader", "gtk-layer-shell", "wtype"]
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/voquill/voquill/releases/download/desktop-enterprise-dev/latest.json"
+      ]
+    }
+  }
+}

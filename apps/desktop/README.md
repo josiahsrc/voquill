@@ -65,7 +65,7 @@ src-tauri/
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_FLAVOR` | Environment: `dev`, `prod`, or `emulators` (default) |
+| `VITE_FLAVOR` | Environment: `dev`, `prod`, `emulators` (default), `enterprise`, or `enterprise-dev` |
 | `VITE_USE_EMULATORS` | Connect to Firebase emulators |
 | `VOQUILL_ENABLE_DEVTOOLS` | Open dev tools on startup |
 | `VOQUILL_DESKTOP_PLATFORM` | Override platform detection |

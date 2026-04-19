@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 FLAVOR=${1:-prod}
 
 case "${FLAVOR}" in
-  dev|prod|emulators|enterprise)
+  dev|prod|emulators|enterprise|enterprise-dev)
     ;;
   *)
     echo "Unknown flavor: ${FLAVOR}" >&2
@@ -17,10 +17,11 @@ export FLAVOR
 export VITE_FLAVOR="${FLAVOR}"
 
 case "${FLAVOR}" in
-  prod)       export TAURI_DEV_CONFIG="src-tauri/tauri.prod.conf.json" ;;
-  dev)        export TAURI_DEV_CONFIG="src-tauri/tauri.dev.conf.json" ;;
-  emulators)  export TAURI_DEV_CONFIG="src-tauri/tauri.local.conf.json" ;;
-  enterprise) export TAURI_DEV_CONFIG="src-tauri/tauri.enterprise.conf.json" ;;
+  prod)           export TAURI_DEV_CONFIG="src-tauri/tauri.prod.conf.json" ;;
+  dev)            export TAURI_DEV_CONFIG="src-tauri/tauri.dev.conf.json" ;;
+  emulators)      export TAURI_DEV_CONFIG="src-tauri/tauri.local.conf.json" ;;
+  enterprise)     export TAURI_DEV_CONFIG="src-tauri/tauri.enterprise.conf.json" ;;
+  enterprise-dev) export TAURI_DEV_CONFIG="src-tauri/tauri.enterprise-dev.conf.json" ;;
 esac
 
 if [ "${FLAVOR}" = "emulators" ]; then
