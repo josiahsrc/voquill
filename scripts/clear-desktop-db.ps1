@@ -1,14 +1,16 @@
 param(
-    [ValidateSet("local", "dev", "prod")]
+    [ValidateSet("local", "dev", "prod", "enterprise", "enterprise-dev")]
     [string]$Flavor = "local"
 )
 
 $ErrorActionPreference = "Stop"
 
 $Identifier = switch ($Flavor) {
-    "local" { "com.voquill.desktop.local" }
-    "dev"   { "com.voquill.desktop.dev" }
-    "prod"  { "com.voquill.desktop" }
+    "local"          { "com.voquill.desktop.local" }
+    "dev"            { "com.voquill.desktop.dev" }
+    "prod"           { "com.voquill.desktop" }
+    "enterprise"     { "com.voquill.desktop.enterprise" }
+    "enterprise-dev" { "com.voquill.desktop.enterprise-dev" }
 }
 
 $DbFilename = "voquill.db"

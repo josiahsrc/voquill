@@ -6,8 +6,8 @@ $ErrorActionPreference = "Stop"
 
 Set-Location "$PSScriptRoot\.."
 
-if ($Flavor -notin @("dev", "prod", "local")) {
-    Write-Error "Unknown flavor: $Flavor. Must be one of: dev, prod, local"
+if ($Flavor -notin @("dev", "prod", "local", "enterprise", "enterprise-dev")) {
+    Write-Error "Unknown flavor: $Flavor. Must be one of: dev, prod, local, enterprise, enterprise-dev"
     exit 1
 }
 
