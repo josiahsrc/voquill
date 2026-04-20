@@ -1,6 +1,6 @@
 {
   "name": "@voquill/desktop-native-apis",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Type-safe TypeScript wrappers for the Voquill desktop Tauri commands",
   "repository": {
     "type": "git",
