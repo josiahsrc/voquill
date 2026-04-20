@@ -73,8 +73,7 @@ export const UpdateDialog = () => {
   const isUpdating =
     (status === "downloading" || status === "installing") &&
     !pkgInstallerOpened;
-  const showProgress =
-    !isLinux && (status === "downloading" || status === "installing");
+  const showProgress = status === "downloading" || status === "installing";
   const showManualInstallerAction =
     !isLinux &&
     status === "error" &&
@@ -293,11 +292,7 @@ export const UpdateDialog = () => {
         </Stack>
       </DialogContent>
       <DialogActions>
-        {isLinux ? (
-          <Button onClick={handleClose}>
-            <FormattedMessage defaultMessage="Close" />
-          </Button>
-        ) : requiresManualInstall && status === "installing" ? (
+        {requiresManualInstall && status === "installing" ? (
           <Button onClick={handleClose}>
             <FormattedMessage defaultMessage="Close" />
           </Button>
@@ -307,7 +302,7 @@ export const UpdateDialog = () => {
               <FormattedMessage defaultMessage="Later" />
             </Button>
             <Button
-              variant="contained"
+              variant={isLinux ? "text" : "contained"}
               onClick={handleInstall}
               disabled={isUpdating}
               endIcon={
