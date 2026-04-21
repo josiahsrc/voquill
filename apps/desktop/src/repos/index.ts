@@ -65,6 +65,7 @@ import {
   OpenAIModelProviderRepo,
   OpenRouterModelProviderRepo,
   SpeachesModelProviderRepo,
+  XaiModelProviderRepo,
 } from "./model-provider.repo";
 export { BaseModelProviderRepo } from "./model-provider.repo";
 import {
@@ -106,6 +107,7 @@ import {
   OpenAICompatibleTranscribeAudioRepo,
   OpenAITranscribeAudioRepo,
   SpeachesTranscribeAudioRepo,
+  XaiTranscribeAudioRepo,
 } from "./transcribe-audio.repo";
 import { ToolRepo } from "./tool.repo";
 import {
@@ -441,6 +443,11 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
       );
     } else if (prefs.provider === "elevenlabs") {
       repo = new ElevenLabsTranscribeAudioRepo(prefs.apiKeyValue);
+    } else if (prefs.provider === "xai") {
+      repo = new XaiTranscribeAudioRepo(
+        prefs.apiKeyValue,
+        prefs.transcriptionModel,
+      );
     } else {
       repo = new GroqTranscribeAudioRepo(
         prefs.apiKeyValue,
@@ -496,5 +503,7 @@ export const getModelProviderRepo = (
       return new ElevenLabsModelProviderRepo();
     case "deepgram":
       return new DeepgramModelProviderRepo();
+    case "xai":
+      return new XaiModelProviderRepo();
   }
 };

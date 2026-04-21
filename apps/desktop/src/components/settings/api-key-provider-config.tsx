@@ -15,6 +15,7 @@ import {
   openaiCompatibleTestIntegration,
   openaiTestIntegration,
   openrouterTestIntegration,
+  xaiTestIntegration,
 } from "@voquill/voice-ai";
 import { FormattedMessage } from "react-intl";
 import type { SettingsApiKey } from "../../state/settings.state";
@@ -95,6 +96,7 @@ const STANDARD_PROVIDERS: Record<
   gemini: { displayName: "Gemini", testFn: geminiTestIntegration },
   claude: { displayName: "Claude", testFn: claudeTestIntegration },
   cerebras: { displayName: "Cerebras", testFn: cerebrasTestIntegration },
+  xai: { displayName: "xAI Grok", testFn: xaiTestIntegration },
 };
 
 function buildStandardConfig(provider: string): ProviderFormConfig {

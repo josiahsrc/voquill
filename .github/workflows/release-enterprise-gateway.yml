@@ -1,17 +1,20 @@
 name: Release Enterprise Gateway
 
 on:
-  push:
-    branches:
-      - main
-      - enterprise
-    paths:
-      - "enterprise/gateway/**"
-      - "packages/**"
-      - ".github/workflows/release-enterprise-gateway.yml"
+  workflow_call:
+    inputs:
+      release_env:
+        description: "Release environment: dev or prod"
+        required: true
+        type: string
+      version:
+        description: "Semver version to release (prod only, defaults to latest dev tag)"
+        required: false
+        type: string
+        default: ""
   workflow_dispatch:
     inputs:
-      environment:
+      release_env:
         description: "Release environment (prod promotes the most recent dev tag)"
         type: choice
         required: true
@@ -47,18 +50,21 @@ jobs:
       - name: Compute release metadata
         id: meta
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          INPUT_ENVIRONMENT: ${{ github.event.inputs.environment || '' }}
-          INPUT_VERSION: ${{ github.event.inputs.version || '' }}
+          INPUT_RELEASE_ENV: ${{ inputs.release_env }}
+          INPUT_VERSION: ${{ inputs.version || '' }}
         run: |
           set -euo pipefail
           git fetch --tags --force
 
-          if [[ "${EVENT_NAME}" == "push" ]]; then
-            RELEASE_ENV="dev"
-          else
-            RELEASE_ENV="${INPUT_ENVIRONMENT:-prod}"
-          fi
+          case "${INPUT_RELEASE_ENV}" in
+            dev|prod)
+              RELEASE_ENV="${INPUT_RELEASE_ENV}"
+              ;;
+            *)
+              echo "Unsupported release_env '${INPUT_RELEASE_ENV}'" >&2
+              exit 1
+              ;;
+          esac
 
           SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+$'
           TAG_PREFIX="enterprise-gateway"

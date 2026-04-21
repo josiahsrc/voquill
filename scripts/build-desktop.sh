@@ -6,14 +6,23 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
 case "$FLAVOR" in
-    dev|prod|local) ;;
-    *) echo "Unknown flavor: $FLAVOR. Must be one of: dev, prod, local" >&2; exit 1 ;;
+    dev|prod|local|enterprise|enterprise-dev) ;;
+    *) echo "Unknown flavor: $FLAVOR. Must be one of: dev, prod, local, enterprise, enterprise-dev" >&2; exit 1 ;;
 esac
 
 export FLAVOR
 export VITE_FLAVOR="$FLAVOR"
-export VOQUILL_GOOGLE_CLIENT_ID="777461284594-dhgao2eek53ppl4o188ik2i9cigdcmnp.apps.googleusercontent.com"
-export VOQUILL_GOOGLE_CLIENT_SECRET="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"
+
+case "$FLAVOR" in
+    prod|enterprise)
+        export VOQUILL_GOOGLE_CLIENT_ID="777461284594-dhgao2eek53ppl4o188ik2i9cigdcmnp.apps.googleusercontent.com"
+        export VOQUILL_GOOGLE_CLIENT_SECRET="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"
+        ;;
+    *)
+        export VOQUILL_GOOGLE_CLIENT_ID="778214168359-nbgt0dedeol36gl425o5nqt5kaksh38u.apps.googleusercontent.com"
+        export VOQUILL_GOOGLE_CLIENT_SECRET="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"
+        ;;
+esac
 
 echo "Building desktop app (flavor=$FLAVOR)..."
 

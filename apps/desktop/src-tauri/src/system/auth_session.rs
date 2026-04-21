@@ -40,6 +40,26 @@ impl AuthSessionError {
     }
 }
 
+fn read_flavor_env(key: &str) -> Option<String> {
+    let compile_time = match key {
+        "VITE_FIREBASE_API_KEY" => option_env!("VITE_FIREBASE_API_KEY"),
+        "VITE_FIREBASE_PROJECT_ID" => option_env!("VITE_FIREBASE_PROJECT_ID"),
+        "VITE_FLAVOR" => option_env!("VITE_FLAVOR"),
+        "VITE_USE_EMULATORS" => option_env!("VITE_USE_EMULATORS"),
+        _ => None,
+    };
+    compile_time
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_owned)
+        .or_else(|| {
+            env::var(key)
+                .ok()
+                .map(|s| s.trim().to_owned())
+                .filter(|s| !s.is_empty())
+        })
+}
+
 impl From<io::Error> for AuthSessionError {
     fn from(err: io::Error) -> Self {
         AuthSessionError::Io(err.to_string())
@@ -67,13 +87,12 @@ pub struct FirebaseConfig {
 
 impl FirebaseConfig {
     pub fn from_env() -> Result<Self, AuthSessionError> {
-        let api_key = env::var("VITE_FIREBASE_API_KEY")
-            .map_err(|_| AuthSessionError::MissingConfig("VITE_FIREBASE_API_KEY"))?;
-        let project_id = env::var("VITE_FIREBASE_PROJECT_ID")
-            .map_err(|_| AuthSessionError::MissingConfig("VITE_FIREBASE_PROJECT_ID"))?;
-        let flavor = env::var("VITE_FLAVOR").unwrap_or_else(|_| "dev".to_string());
-        let use_emulators_flag = env::var("VITE_USE_EMULATORS")
-            .ok()
+        let api_key = read_flavor_env("VITE_FIREBASE_API_KEY")
+            .ok_or(AuthSessionError::MissingConfig("VITE_FIREBASE_API_KEY"))?;
+        let project_id = read_flavor_env("VITE_FIREBASE_PROJECT_ID")
+            .ok_or(AuthSessionError::MissingConfig("VITE_FIREBASE_PROJECT_ID"))?;
+        let flavor = read_flavor_env("VITE_FLAVOR").unwrap_or_else(|| "dev".to_string());
+        let use_emulators_flag = read_flavor_env("VITE_USE_EMULATORS")
             .map(|value| value.trim().eq_ignore_ascii_case("true"))
             .unwrap_or(false);
         let use_emulators = flavor == "emulators" || (flavor == "dev" && use_emulators_flag);

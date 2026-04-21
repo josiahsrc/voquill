@@ -1,0 +1,5 @@
+- Add support for the cosmic compositor on PopOS!
+- Linux update dialog now shows an optional update button (works on some distros)
+- Add support for xAI's new speach model
+- Beta updates are now opt-in (enable in Settings > More settings)
+- Various stability improvements behind the scenes
