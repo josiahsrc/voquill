@@ -1687,7 +1687,7 @@ pub fn enable_java_access_bridge() -> Result<JavaAccessBridgeStatus, String> {
                     .map(str::trim)
                     .filter(|s| !s.is_empty())
                     .collect();
-                if values.iter().any(|v| *v == JAB_VALUE) {
+                if values.contains(&JAB_VALUE) {
                     already_enabled = true;
                     lines.push(raw.to_string());
                     continue;
