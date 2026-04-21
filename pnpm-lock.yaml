@@ -506,12 +506,6 @@ importers:
       '@tauri-apps/api':
         specifier: ~2.10.1
         version: 2.10.1
-      '@tauri-apps/plugin-process':
-        specifier: ~2.3.1
-        version: 2.3.1
-      '@tauri-apps/plugin-updater':
-        specifier: ~2.10.1
-        version: 2.10.1
       '@types/react':
         specifier: 19.2.10
         version: 19.2.10
