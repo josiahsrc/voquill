@@ -1,6 +1,5 @@
 ---
 import type { Locale } from '../../types/locale';
-import { t } from '../../i18n/translations';
 import { localePath } from '../../utils/paths';
 import BookACall from './BookACall.astro';
 
@@ -9,20 +8,20 @@ interface Props {
 }
 
 const { locale } = Astro.props;
-const i18n = t(locale);
+const pathologyHome = localePath(locale, '/pathology');
 ---
 
 <div class="site-header-wrapper">
 	<header class="site-header">
-		<a href="#" class="logo">
+		<a href={pathologyHome} class="logo">
 			<span class="logo-mark" aria-hidden="true"></span>
 			<span>Voquill</span>
 		</a>
 		<nav aria-label="Primary navigation">
-			<a href="#demo">Demo</a>
-			<a href="#solution">Solution</a>
-			<a href="#features">Features</a>
-			<a href="#compliance">Compliance</a>
+			<a href={`${pathologyHome}#demo`}>Demo</a>
+			<a href={`${pathologyHome}#solution`}>Solution</a>
+			<a href={`${pathologyHome}#features`}>Features</a>
+			<a href={`${pathologyHome}#compliance`}>Compliance</a>
 		</nav>
 		<div class="header-actions">
 			<a href="mailto:hello@voquill.com" class="btn-secondary btn-small">Contact us</a>
