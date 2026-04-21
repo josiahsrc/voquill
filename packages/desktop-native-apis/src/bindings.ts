@@ -625,6 +625,31 @@ async supportsAppDetection() : Promise<boolean> {
 async supportsPasteKeybinds() : Promise<PasteKeybindSupport> {
     return await TAURI_INVOKE("supports_paste_keybinds");
 },
+/**
+ * Enable Java Access Bridge (JAB) for the current user by ensuring
+ * `~/.accessibility.properties` opts the JVM into our assistive-tech entry.
+ * 
+ * JAB is what surfaces Swing/AWT components (e.g. LigoLab) to the OS-level
+ * accessibility APIs our binding/import/export pipeline talks to. Without it,
+ * a Java window looks like a single opaque element and we can't read or
+ * write its fields.
+ * 
+ * Idempotent: running on an already-configured machine is a no-op. If the
+ * file exists with other assistive-tech entries (e.g. screen readers), we
+ * preserve them and append our value to the comma-separated list rather
+ * than overwriting.
+ * 
+ * The JVM only reads this file at process startup, so any Java app that's
+ * currently running must be restarted before the bridge is loaded.
+ */
+async enableJavaAccessBridge() : Promise<Result<JavaAccessBridgeStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("enable_java_access_bridge") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getNativeSetupStatus() : Promise<NativeSetupStatus> {
     return await TAURI_INVOKE("get_native_setup_status");
 },
@@ -834,6 +859,24 @@ export type JabWriteMethod =
  * Read current text, compute diff, apply minimal edits via cursor + keystrokes.
  */
 "keystrokeSimulationSmart"
+export type JavaAccessBridgeStatus = { 
+/**
+ * Absolute path to the `.accessibility.properties` file we operate on.
+ */
+path: string; 
+/**
+ * True if the file already contained our entry — nothing was changed.
+ */
+alreadyEnabled: boolean; 
+/**
+ * True if we wrote (or rewrote) the file.
+ */
+wroteFile: boolean; 
+/**
+ * True if any Java app currently running needs to be restarted before
+ * it picks up the bridge. Always true when `wrote_file` is true.
+ */
+restartRequired: boolean }
 export type MenuIconVariant = "default" | "update"
 export type MonitorAtCursor = { x: number; y: number; width: number; height: number; visibleX: number; visibleY: number; visibleWidth: number; visibleHeight: number; scaleFactor: number; cursorX: number; cursorY: number }
 export type NativeSetupResult = "success" | "require-restart" | "failed"
