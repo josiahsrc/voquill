@@ -89,6 +89,7 @@ fn main() {
         get_hotkey_strategy,
         supports_app_detection,
         supports_paste_keybinds,
+        enable_java_access_bridge,
         get_native_setup_status,
         run_native_setup,
         get_keyboard_language,

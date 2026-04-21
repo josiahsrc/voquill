@@ -1596,6 +1596,133 @@ pub fn supports_paste_keybinds() -> crate::platform::PasteKeybindSupport {
     crate::platform::supports_paste_keybinds()
 }
 
+#[derive(serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct JavaAccessBridgeStatus {
+    /// Absolute path to the `.accessibility.properties` file we operate on.
+    pub path: String,
+    /// True if the file already contained our entry — nothing was changed.
+    pub already_enabled: bool,
+    /// True if we wrote (or rewrote) the file.
+    pub wrote_file: bool,
+    /// True if any Java app currently running needs to be restarted before
+    /// it picks up the bridge. Always true when `wrote_file` is true.
+    pub restart_required: bool,
+}
+
+/// Enable Java Access Bridge (JAB) for the current user by ensuring
+/// `~/.accessibility.properties` opts the JVM into our assistive-tech entry.
+///
+/// JAB is what surfaces Swing/AWT components (e.g. LigoLab) to the OS-level
+/// accessibility APIs our binding/import/export pipeline talks to. Without it,
+/// a Java window looks like a single opaque element and we can't read or
+/// write its fields.
+///
+/// Idempotent: running on an already-configured machine is a no-op. If the
+/// file exists with other assistive-tech entries (e.g. screen readers), we
+/// preserve them and append our value to the comma-separated list rather
+/// than overwriting.
+///
+/// The JVM only reads this file at process startup, so any Java app that's
+/// currently running must be restarted before the bridge is loaded.
+#[tauri::command]
+#[specta::specta]
+pub fn enable_java_access_bridge() -> Result<JavaAccessBridgeStatus, String> {
+    const ASSISTIVE_TECH_KEY: &str = "assistive_technologies";
+    const JAB_VALUE: &str = "com.sun.java.accessibility.AccessBridge";
+
+    // Resolve the user's home dir. Windows uses USERPROFILE; macOS/Linux use
+    // HOME. The JVM reads `.accessibility.properties` from there on every OS.
+    let home = std::env::var_os("USERPROFILE")
+        .or_else(|| std::env::var_os("HOME"))
+        .ok_or_else(|| "Cannot resolve user home directory".to_string())?;
+    let path = std::path::PathBuf::from(home).join(".accessibility.properties");
+
+    // Read existing contents (if any). A missing file is treated as empty.
+    let existing = match std::fs::read_to_string(&path) {
+        Ok(s) => s,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => String::new(),
+        Err(err) => {
+            return Err(format!("Failed to read {}: {}", path.display(), err));
+        }
+    };
+
+    // Walk the file line-by-line, preserving everything we don't own. If we
+    // find an existing `assistive_technologies=` line, merge our value into
+    // its comma-separated list instead of clobbering whatever was already
+    // there (e.g. screen reader entries).
+    let mut lines: Vec<String> = Vec::new();
+    let mut found_key = false;
+    let mut already_enabled = false;
+
+    for raw in existing.lines() {
+        let trimmed = raw.trim_start();
+        if let Some(rest) = trimmed.strip_prefix(ASSISTIVE_TECH_KEY) {
+            let after = rest.trim_start();
+            if let Some(value_part) = after.strip_prefix('=') {
+                found_key = true;
+                let values: Vec<&str> = value_part
+                    .split(',')
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                if values.iter().any(|v| *v == JAB_VALUE) {
+                    already_enabled = true;
+                    lines.push(raw.to_string());
+                    continue;
+                }
+                let mut merged: Vec<&str> = values;
+                merged.push(JAB_VALUE);
+                lines.push(format!("{}={}", ASSISTIVE_TECH_KEY, merged.join(",")));
+                continue;
+            }
+        }
+        lines.push(raw.to_string());
+    }
+
+    if !found_key {
+        lines.push(format!("{}={}", ASSISTIVE_TECH_KEY, JAB_VALUE));
+    }
+
+    if already_enabled {
+        return Ok(JavaAccessBridgeStatus {
+            path: path.to_string_lossy().into_owned(),
+            already_enabled: true,
+            wrote_file: false,
+            restart_required: false,
+        });
+    }
+
+    let mut new_contents = lines.join("\n");
+    if !new_contents.ends_with('\n') {
+        new_contents.push('\n');
+    }
+
+    // Atomic write: write to a sibling temp file, then rename into place so
+    // a crash mid-write doesn't leave a half-written `.accessibility.properties`.
+    let parent = path
+        .parent()
+        .ok_or_else(|| format!("Cannot determine parent dir of {}", path.display()))?;
+    let tmp = parent.join(".accessibility.properties.voquill-tmp");
+    std::fs::write(&tmp, new_contents.as_bytes())
+        .map_err(|err| format!("Failed to write {}: {}", tmp.display(), err))?;
+    std::fs::rename(&tmp, &path).map_err(|err| {
+        format!(
+            "Failed to rename {} to {}: {}",
+            tmp.display(),
+            path.display(),
+            err
+        )
+    })?;
+
+    Ok(JavaAccessBridgeStatus {
+        path: path.to_string_lossy().into_owned(),
+        already_enabled: false,
+        wrote_file: true,
+        restart_required: true,
+    })
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn get_native_setup_status() -> crate::platform::NativeSetupStatus {
