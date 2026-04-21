@@ -1216,6 +1216,7 @@ fn try_get_focused_field_info(
             fingerprint_chain,
             can_paste,
             backend: None,
+            jab_string_path: vec![],
         }))
     })
 }
@@ -1230,7 +1231,11 @@ pub fn read_field_values(fields: Vec<FieldValueRequest>) -> Vec<FieldValueResult
                     if field.backend.as_deref() == Some("jab") {
                         return match super::jab::find_hwnd_for_pid(field.app_pid as u32) {
                             Some(hwnd) => {
-                                match super::jab::jab_read_text(hwnd, &field.element_index_path) {
+                                match super::jab::jab_read_text(
+                                    hwnd,
+                                    field.jab_string_path.as_deref(),
+                                    &field.element_index_path,
+                                ) {
                                     Ok(value) => FieldValueResult { value, error: None },
                                     Err(e) => FieldValueResult {
                                         value: None,
@@ -1378,6 +1383,7 @@ pub fn focus_accessibility_field(
     element_index_path: &[usize],
     fingerprint_chain: Option<&[crate::commands::ElementFingerprint]>,
     backend: Option<&str>,
+    jab_string_path: Option<&[crate::commands::JabElementId]>,
 ) -> Result<(), String> {
     // JAB path — doesn't need UIA, skip the STA thread
     if backend == Some("jab") {
@@ -1386,7 +1392,7 @@ pub fn focus_accessibility_field(
         unsafe {
             let _ = windows::Win32::UI::WindowsAndMessaging::SetForegroundWindow(hwnd);
         }
-        return super::jab::jab_focus_element(hwnd, element_index_path);
+        return super::jab::jab_focus_element(hwnd, jab_string_path, element_index_path);
     }
 
     // Clone ref data so the closure is 'static
@@ -1495,6 +1501,7 @@ pub fn write_accessibility_fields(
                                 );
                                 super::jab::jab_write_text(
                                     hwnd,
+                                    entry.jab_string_path.as_deref(),
                                     &entry.element_index_path,
                                     &entry.value,
                                 )
@@ -1507,17 +1514,21 @@ pub fn write_accessibility_fields(
                                 unsafe {
                                     let _ = windows::Win32::UI::WindowsAndMessaging::SetForegroundWindow(hwnd);
                                 }
-                                super::jab::jab_focus_element(hwnd, &entry.element_index_path)
-                                    .and_then(|()| {
-                                        std::thread::sleep(std::time::Duration::from_millis(100));
-                                        super::input::select_all_keystroke();
-                                        std::thread::sleep(std::time::Duration::from_millis(50));
-                                        super::input::paste_text_into_focused_field(
-                                            &entry.value,
-                                            None,
-                                        )
-                                        .map(|_| ())
-                                    })
+                                super::jab::jab_focus_element(
+                                    hwnd,
+                                    entry.jab_string_path.as_deref(),
+                                    &entry.element_index_path,
+                                )
+                                .and_then(|()| {
+                                    std::thread::sleep(std::time::Duration::from_millis(100));
+                                    super::input::select_all_keystroke();
+                                    std::thread::sleep(std::time::Duration::from_millis(50));
+                                    super::input::paste_text_into_focused_field(
+                                        &entry.value,
+                                        None,
+                                    )
+                                    .map(|_| ())
+                                })
                             }
                             JabWriteMethod::KeystrokeSimulation => {
                                 log::info!(
@@ -1527,13 +1538,17 @@ pub fn write_accessibility_fields(
                                 unsafe {
                                     let _ = windows::Win32::UI::WindowsAndMessaging::SetForegroundWindow(hwnd);
                                 }
-                                super::jab::jab_focus_element(hwnd, &entry.element_index_path)
-                                    .and_then(|()| {
-                                        std::thread::sleep(std::time::Duration::from_millis(100));
-                                        super::input::select_all_keystroke();
-                                        std::thread::sleep(std::time::Duration::from_millis(50));
-                                        super::input::type_text_via_keystrokes(&entry.value)
-                                    })
+                                super::jab::jab_focus_element(
+                                    hwnd,
+                                    entry.jab_string_path.as_deref(),
+                                    &entry.element_index_path,
+                                )
+                                .and_then(|()| {
+                                    std::thread::sleep(std::time::Duration::from_millis(100));
+                                    super::input::select_all_keystroke();
+                                    std::thread::sleep(std::time::Duration::from_millis(50));
+                                    super::input::type_text_via_keystrokes(&entry.value)
+                                })
                             }
                             JabWriteMethod::KeystrokeSimulationSmart => {
                                 log::info!(
@@ -1543,15 +1558,20 @@ pub fn write_accessibility_fields(
                                 unsafe {
                                     let _ = windows::Win32::UI::WindowsAndMessaging::SetForegroundWindow(hwnd);
                                 }
-                                super::jab::jab_focus_element(hwnd, &entry.element_index_path)
-                                    .and_then(|()| {
-                                        std::thread::sleep(std::time::Duration::from_millis(100));
-                                        jab_smart_write(
-                                            hwnd,
-                                            &entry.element_index_path,
-                                            &entry.value,
-                                        )
-                                    })
+                                super::jab::jab_focus_element(
+                                    hwnd,
+                                    entry.jab_string_path.as_deref(),
+                                    &entry.element_index_path,
+                                )
+                                .and_then(|()| {
+                                    std::thread::sleep(std::time::Duration::from_millis(100));
+                                    jab_smart_write(
+                                        hwnd,
+                                        entry.jab_string_path.as_deref(),
+                                        &entry.element_index_path,
+                                        &entry.value,
+                                    )
+                                })
                             }
                         };
                         match result {
@@ -1725,10 +1745,12 @@ fn compute_edit_regions(old: &str, new: &str) -> Vec<EditRegion> {
 /// minimal edits, and apply them via cursor positioning + keystrokes.
 fn jab_smart_write(
     hwnd: windows::Win32::Foundation::HWND,
+    string_path: Option<&[crate::commands::JabElementId]>,
     index_path: &[usize],
     desired: &str,
 ) -> Result<(), String> {
-    let current = super::jab::jab_read_text(hwnd, index_path)?.unwrap_or_default();
+    let current =
+        super::jab::jab_read_text(hwnd, string_path, index_path)?.unwrap_or_default();
 
     if current == desired {
         log::info!("JAB smart write: text already matches, no edits needed");
@@ -1747,7 +1769,7 @@ fn jab_smart_write(
     for edit in edits.iter().rev() {
         let old_len = edit.old_end - edit.old_start;
 
-        super::jab::jab_set_caret_position(hwnd, index_path, edit.old_start)?;
+        super::jab::jab_set_caret_position(hwnd, string_path, index_path, edit.old_start)?;
         std::thread::sleep(std::time::Duration::from_millis(30));
 
         if old_len > 0 {
