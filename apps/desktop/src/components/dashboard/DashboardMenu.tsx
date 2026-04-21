@@ -9,12 +9,12 @@ import {
 } from "@mui/icons-material";
 import { Box, List, Stack } from "@mui/material";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { shouldSurfaceUpdate } from "@voquill/desktop-utils";
 import { FormattedMessage } from "react-intl";
 import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppStore } from "../../store";
 import { getIsAssistantModeEnabled } from "../../utils/assistant-mode.utils";
-import { shouldSurfaceUpdate } from "../../utils/updater.utils";
 import { ListTile } from "../common/ListTile";
 import { DiscordListTile } from "./DiscordListTile";
 import { MobileAppListTile } from "./MobileAppListTile";
