@@ -1,12 +1,7 @@
 name: Release Web
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "apps/web/**"
-      - ".github/workflows/release-web.yml"
+  workflow_call:
   workflow_dispatch:
 
 permissions:

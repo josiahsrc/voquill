@@ -135,7 +135,7 @@ Individual workspaces expose the same commands if you need a narrower scope.
 
 ## Releases & CI
 
-- Desktop builds are produced by `.github/workflows/release-desktop.yml`. The workflow bumps a channel tag, builds all three platforms, and publishes assets plus `latest.json` manifests. Promo runs handle dev→prod promotion. See `desktop-release.md` for step-by-step instructions.
+- Releases are orchestrated by `.github/workflows/release.yml`, which detects which folders changed and invokes per-component reusable workflows (`release-cli.yml`, `_release-desktop-impl.yml`, `release-docs.yml`, `release-web.yml`, `release-enterprise-admin.yml`, `release-enterprise-gateway.yml`). Pushes to `main`/`prod`/`enterprise` release to the `dev`/`prod`/`enterprise` channels respectively. Desktop builds bump a channel tag, build all three platforms, and publish assets plus `latest.json` manifests. See `desktop-release.md` for step-by-step instructions.
 - Turbo caching is configured in `turbo.json`; CI jobs call `npm run build`, `npm run lint`, and other workspace-scoped commands.
 
 ## Documentation

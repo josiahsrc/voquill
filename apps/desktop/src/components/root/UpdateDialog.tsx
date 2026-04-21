@@ -13,6 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { isReadOnlyFilesystemInstallError } from "@voquill/desktop-utils";
 import { useCallback, useMemo } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import Markdown from "react-markdown";
@@ -23,7 +24,6 @@ import {
 import { useAppStore } from "../../store";
 import { formatSize } from "../../utils/format.utils";
 import { getPlatform } from "../../utils/platform.utils";
-import { isReadOnlyFilesystemInstallError } from "../../utils/updater.utils";
 import { CopyableCommand } from "../common/CopyableCommand";
 
 const APT_UPDATE_COMMAND =
@@ -73,8 +73,7 @@ export const UpdateDialog = () => {
   const isUpdating =
     (status === "downloading" || status === "installing") &&
     !pkgInstallerOpened;
-  const showProgress =
-    !isLinux && (status === "downloading" || status === "installing");
+  const showProgress = status === "downloading" || status === "installing";
   const showManualInstallerAction =
     !isLinux &&
     status === "error" &&
@@ -293,11 +292,7 @@ export const UpdateDialog = () => {
         </Stack>
       </DialogContent>
       <DialogActions>
-        {isLinux ? (
-          <Button onClick={handleClose}>
-            <FormattedMessage defaultMessage="Close" />
-          </Button>
-        ) : requiresManualInstall && status === "installing" ? (
+        {requiresManualInstall && status === "installing" ? (
           <Button onClick={handleClose}>
             <FormattedMessage defaultMessage="Close" />
           </Button>
@@ -307,7 +302,7 @@ export const UpdateDialog = () => {
               <FormattedMessage defaultMessage="Later" />
             </Button>
             <Button
-              variant="contained"
+              variant={isLinux ? "text" : "contained"}
               onClick={handleInstall}
               disabled={isUpdating}
               endIcon={

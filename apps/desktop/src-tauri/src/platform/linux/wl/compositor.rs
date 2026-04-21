@@ -17,6 +17,7 @@ enum Compositor {
     Kde,
     Sway,
     Hyprland,
+    Cosmic,
     Unknown(String),
 }
 
@@ -102,6 +103,9 @@ fn detect_compositor() -> Compositor {
         if lower.contains("hyprland") {
             return Compositor::Hyprland;
         }
+        if lower.contains("cosmic") {
+            return Compositor::Cosmic;
+        }
     }
 
     if let Ok(output) = Command::new("sh")
@@ -121,6 +125,9 @@ fn detect_compositor() -> Compositor {
         }
         if procs.lines().any(|l| l.trim() == "hyprland") {
             return Compositor::Hyprland;
+        }
+        if procs.lines().any(|l| l.trim() == "cosmic-comp") {
+            return Compositor::Cosmic;
         }
     }
 
@@ -142,6 +149,7 @@ pub fn sync_compositor_hotkeys(
         Compositor::Kde => sync_kde(&script_path, bindings),
         Compositor::Sway => sync_sway(&script_path, bindings),
         Compositor::Hyprland => sync_hyprland(&script_path, bindings),
+        Compositor::Cosmic => sync_cosmic(&script_path, bindings),
         Compositor::Unknown(name) => {
             log::warn!("Unknown compositor '{name}', skipping hotkey sync");
             Ok(())
@@ -650,6 +658,164 @@ fn sync_kde(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), St
         .status();
 
     log::info!("Synced {synced} KDE compositor hotkeys");
+    Ok(())
+}
+
+// --- Cosmic ---
+//
+// Cosmic stores custom shortcuts as a RON map at
+// ~/.config/cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom
+//
+// The file is a HashMap<Binding, Action> where Binding has (modifiers, key,
+// description) fields and Action includes Spawn(String) for running commands.
+// cosmic-config watches the file via inotify, so changes apply without an
+// explicit reload. The same file holds shortcuts configured via cosmic-settings'
+// UI, so we preserve entries whose description doesn't match our Voquill prefix.
+
+const VOQUILL_COSMIC_MARKER: &str = "description: Some(\"Voquill ";
+
+fn cosmic_shortcuts_file() -> PathBuf {
+    config_home()
+        .join("cosmic")
+        .join("com.system76.CosmicSettings.Shortcuts")
+        .join("v1")
+        .join("custom")
+}
+
+fn keys_to_cosmic_binding(keys: &[String]) -> (Vec<String>, String) {
+    let mut modifiers: Vec<String> = Vec::new();
+    let mut non_mod = String::new();
+
+    for key in keys {
+        if let Some((name, _)) = classify_key(key) {
+            let cosmic_mod = match name {
+                "super" => "Super",
+                "ctrl" => "Ctrl",
+                "shift" => "Shift",
+                "alt" => "Alt",
+                _ => continue,
+            };
+            if !modifiers.contains(&cosmic_mod.to_string()) {
+                modifiers.push(cosmic_mod.to_string());
+            }
+        } else {
+            non_mod = extract_non_modifier_key(key);
+        }
+    }
+
+    (modifiers, non_mod)
+}
+
+fn escape_ron_string(s: &str) -> String {
+    s.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
+/// Split a RON map body (the content between `{` and `}`) into individual entries.
+/// Tracks `()`, `[]`, `{}`, and `""` (with backslash escapes) to find top-level commas.
+fn split_cosmic_entries(body: &str) -> Vec<String> {
+    let mut entries = Vec::new();
+    let mut start = 0usize;
+    let mut depth: u32 = 0;
+    let mut in_string = false;
+    let mut escape = false;
+    let bytes = body.as_bytes();
+
+    for (i, &b) in bytes.iter().enumerate() {
+        if escape {
+            escape = false;
+            continue;
+        }
+        if in_string {
+            match b {
+                b'\\' => escape = true,
+                b'"' => in_string = false,
+                _ => {}
+            }
+            continue;
+        }
+        match b {
+            b'"' => in_string = true,
+            b'(' | b'[' | b'{' => depth += 1,
+            b')' | b']' | b'}' => depth = depth.saturating_sub(1),
+            b',' if depth == 0 => {
+                let entry = body[start..i].trim();
+                if !entry.is_empty() {
+                    entries.push(entry.to_string());
+                }
+                start = i + 1;
+            }
+            _ => {}
+        }
+    }
+
+    let tail = body[start..].trim();
+    if !tail.is_empty() {
+        entries.push(tail.to_string());
+    }
+    entries
+}
+
+fn sync_cosmic(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), String> {
+    let shortcut_file = cosmic_shortcuts_file();
+    let parent = shortcut_file
+        .parent()
+        .ok_or("Invalid cosmic shortcut path")?;
+    fs::create_dir_all(parent)
+        .map_err(|err| format!("Failed to create cosmic shortcut dir: {err}"))?;
+
+    let preserved: Vec<String> = if shortcut_file.exists() {
+        let content = fs::read_to_string(&shortcut_file).unwrap_or_default();
+        let trimmed = content.trim();
+        let body = trimmed.trim_start_matches('{').trim_end_matches('}');
+        split_cosmic_entries(body)
+            .into_iter()
+            .filter(|e| !e.contains(VOQUILL_COSMIC_MARKER))
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    let mut all_entries = preserved;
+    let mut synced = 0;
+    for binding in bindings {
+        if binding.keys.is_empty() {
+            continue;
+        }
+        if !has_non_modifier_key(&binding.keys) {
+            log::warn!(
+                "Skipping Cosmic binding for '{}': modifier-only combos are not supported",
+                binding.action_name
+            );
+            continue;
+        }
+        let (mods, key) = keys_to_cosmic_binding(&binding.keys);
+        let command = format!("{} {}", script_path.display(), binding.action_name);
+        let description = format!("Voquill {}", binding.action_name);
+        all_entries.push(format!(
+            "(modifiers: [{mods}], key: \"{key}\", description: Some(\"{desc}\")): Spawn(\"{cmd}\")",
+            mods = mods.join(", "),
+            key = escape_ron_string(&key),
+            desc = escape_ron_string(&description),
+            cmd = escape_ron_string(&command),
+        ));
+        synced += 1;
+    }
+
+    let content = if all_entries.is_empty() {
+        String::from("{}\n")
+    } else {
+        let body = all_entries
+            .iter()
+            .map(|e| format!("    {e}"))
+            .collect::<Vec<_>>()
+            .join(",\n");
+        format!("{{\n{body},\n}}\n")
+    };
+
+    fs::write(&shortcut_file, &content)
+        .map_err(|err| format!("Failed to write cosmic shortcuts: {err}"))?;
+
+    log::info!("Synced {synced} Cosmic compositor hotkeys");
     Ok(())
 }
 

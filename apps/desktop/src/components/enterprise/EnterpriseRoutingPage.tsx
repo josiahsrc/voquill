@@ -93,7 +93,7 @@ export default function EnterpriseRoutingPage() {
         px: 3,
       }}
     >
-      <Stack spacing={3} alignItems="center" textAlign="center" maxWidth={420}>
+      <Stack spacing={3} alignItems="center" textAlign="center" maxWidth={512}>
         {state.phase === "loading" ? (
           <>
             <CircularProgress />

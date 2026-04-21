@@ -2,16 +2,17 @@
 set -euo pipefail
 
 FLAVOR=${1:-local}
-if [ "${FLAVOR}" = "local" ]; then
-  export IDENTIFIER="com.voquill.desktop.local"
-elif [ "${FLAVOR}" = "prod" ]; then
-  export IDENTIFIER="com.voquill.desktop"
-elif [ "${FLAVOR}" = "dev" ]; then
-  export IDENTIFIER="com.voquill.desktop.dev"
-else
-  echo "Unknown flavor: ${FLAVOR}" >&2
-  exit 1
-fi
+case "${FLAVOR}" in
+  local)           export IDENTIFIER="com.voquill.desktop.local" ;;
+  prod)            export IDENTIFIER="com.voquill.desktop" ;;
+  dev)             export IDENTIFIER="com.voquill.desktop.dev" ;;
+  enterprise)      export IDENTIFIER="com.voquill.desktop.enterprise" ;;
+  enterprise-dev)  export IDENTIFIER="com.voquill.desktop.enterprise-dev" ;;
+  *)
+    echo "Unknown flavor: ${FLAVOR}" >&2
+    exit 1
+    ;;
+esac
 
 DB_FILENAME="voquill.db"
 

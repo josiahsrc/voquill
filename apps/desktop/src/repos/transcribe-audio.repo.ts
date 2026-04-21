@@ -11,6 +11,8 @@ import {
   openaiTranscribeAudio,
   OpenAITranscriptionModel,
   TranscriptionModel,
+  xaiTranscribeAudio,
+  XaiTranscriptionModel,
 } from "@voquill/voice-ai";
 import { getAppState } from "../store";
 import { DEFAULT_MODEL_SIZE, TranscriptionMode } from "../types/ai.types";
@@ -442,6 +444,52 @@ export class ElevenLabsTranscribeAudioRepo extends BaseTranscribeAudioRepo {
       metadata: {
         inferenceDevice: "API • ElevenLabs",
         modelSize: null,
+        transcriptionMode: "api",
+      },
+    };
+  }
+}
+
+export class XaiTranscribeAudioRepo extends BaseTranscribeAudioRepo {
+  private apiKey: string;
+  private model: XaiTranscriptionModel;
+
+  constructor(apiKey: string, model: string | null) {
+    super();
+    this.apiKey = apiKey;
+    this.model = (model as XaiTranscriptionModel) ?? "grok-stt";
+  }
+
+  protected getSegmentDurationSec(): number {
+    return 60;
+  }
+
+  protected getOverlapDurationSec(): number {
+    return 5;
+  }
+
+  protected getBatchChunkCount(): number {
+    return 3;
+  }
+
+  protected async transcribeSegment(
+    input: TranscribeSegmentInput,
+  ): Promise<TranscribeAudioOutput> {
+    const wavBuffer = buildWaveFile(input.samples, input.sampleRate);
+
+    const { text: transcript } = await xaiTranscribeAudio({
+      apiKey: this.apiKey,
+      model: this.model,
+      blob: wavBuffer,
+      ext: "wav",
+      language: input.language,
+    });
+
+    return {
+      text: transcript,
+      metadata: {
+        inferenceDevice: "API • Grok",
+        modelSize: this.model,
         transcriptionMode: "api",
       },
     };

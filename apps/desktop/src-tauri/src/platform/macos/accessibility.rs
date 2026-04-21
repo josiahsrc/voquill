@@ -1145,6 +1145,7 @@ unsafe fn get_focused_field_info_impl() -> Option<crate::commands::Accessibility
         fingerprint_chain: vec![],
         can_paste: false,
         backend: None,
+        jab_string_path: vec![],
     })
 }
 
@@ -1153,6 +1154,7 @@ pub fn focus_accessibility_field(
     element_index_path: &[usize],
     _fingerprint_chain: Option<&[crate::commands::ElementFingerprint]>,
     _backend: Option<&str>,
+    _jab_string_path: Option<&[crate::commands::JabElementId]>,
 ) -> Result<(), String> {
     catch_unwind(AssertUnwindSafe(|| unsafe {
         focus_accessibility_field_impl(app_pid, element_index_path)

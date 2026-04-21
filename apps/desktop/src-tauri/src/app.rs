@@ -305,6 +305,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_hotkey_strategy,
             crate::commands::supports_app_detection,
             crate::commands::supports_paste_keybinds,
+            crate::commands::enable_java_access_bridge,
             crate::commands::get_native_setup_status,
             crate::commands::run_native_setup,
             crate::commands::get_keyboard_language,

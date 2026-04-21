@@ -5,6 +5,7 @@ import {
   DEEPSEEK_MODELS,
   GEMINI_GENERATE_TEXT_MODELS,
   GEMINI_TRANSCRIPTION_MODELS,
+  XAI_TRANSCRIPTION_MODELS,
 } from "@voquill/voice-ai";
 import { fetch } from "@tauri-apps/plugin-http";
 import { getOllamaHeaders } from "../utils/ollama.utils";
@@ -461,6 +462,24 @@ export class ElevenLabsModelProviderRepo extends BaseModelProviderRepo {
 
   async getTranscriptionModels(): Promise<string[]> {
     return [];
+  }
+}
+
+export class XaiModelProviderRepo extends BaseModelProviderRepo {
+  supportsGenerativeTextModels(): boolean {
+    return false;
+  }
+
+  supportsTranscriptionModels(): boolean {
+    return true;
+  }
+
+  async getGenerativeTextModels(): Promise<string[]> {
+    return [];
+  }
+
+  async getTranscriptionModels(): Promise<string[]> {
+    return [...XAI_TRANSCRIPTION_MODELS];
   }
 }
 
