@@ -93,6 +93,18 @@ jobs:
       release_env: ${{ needs.detect.outputs.channel }}
     secrets: inherit
 
+  desktop-enterprise-dev:
+    name: Desktop (enterprise-dev)
+    needs: detect
+    # `main` ships the dev flavor AND the enterprise-dev flavor in parallel, so
+    # enterprise testers on main get the same commit packaged as the enterprise
+    # build. Only fires on the dev channel — prod/enterprise have their own flavors.
+    if: needs.detect.outputs.desktop == 'true' && needs.detect.outputs.channel == 'dev'
+    uses: ./.github/workflows/_release-desktop-impl.yml
+    with:
+      release_env: enterprise-dev
+    secrets: inherit
+
   docs:
     name: Docs
     needs: detect
@@ -139,7 +151,7 @@ jobs:
 
   notify:
     name: Notify Google Chat
-    needs: [detect, cli, desktop, docs, web, enterprise-admin, enterprise-gateway]
+    needs: [detect, cli, desktop, desktop-enterprise-dev, docs, web, enterprise-admin, enterprise-gateway]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -155,6 +167,7 @@ jobs:
           ENTERPRISE_GATEWAY_CHANGED: ${{ needs.detect.outputs.enterprise_gateway }}
           CLI_RESULT: ${{ needs.cli.result }}
           DESKTOP_RESULT: ${{ needs.desktop.result }}
+          DESKTOP_ENTERPRISE_DEV_RESULT: ${{ needs['desktop-enterprise-dev'].result }}
           DOCS_RESULT: ${{ needs.docs.result }}
           WEB_RESULT: ${{ needs.web.result }}
           ENTERPRISE_ADMIN_RESULT: ${{ needs['enterprise-admin'].result }}
@@ -172,10 +185,10 @@ jobs:
           fi
 
           case "$CHANNEL" in
-            dev)        cli_elig=true;  desktop_elig=true;  docs_elig=false; web_elig=false; ea_elig=true;  eg_elig=true  ;;
-            prod)       cli_elig=true;  desktop_elig=true;  docs_elig=true;  web_elig=true;  ea_elig=false; eg_elig=false ;;
-            enterprise) cli_elig=false; desktop_elig=true;  docs_elig=false; web_elig=false; ea_elig=true;  eg_elig=true  ;;
-            *)          cli_elig=false; desktop_elig=false; docs_elig=false; web_elig=false; ea_elig=false; eg_elig=false ;;
+            dev)        cli_elig=true;  desktop_elig=true;  ded_elig=true;  docs_elig=false; web_elig=false; ea_elig=true;  eg_elig=true  ;;
+            prod)       cli_elig=true;  desktop_elig=true;  ded_elig=false; docs_elig=true;  web_elig=true;  ea_elig=false; eg_elig=false ;;
+            enterprise) cli_elig=false; desktop_elig=true;  ded_elig=false; docs_elig=false; web_elig=false; ea_elig=true;  eg_elig=true  ;;
+            *)          cli_elig=false; desktop_elig=false; ded_elig=false; docs_elig=false; web_elig=false; ea_elig=false; eg_elig=false ;;
           esac
 
           lines=""
@@ -199,12 +212,13 @@ jobs:
             lines+=$'\n'"• ${comp}: ${status}"
           }
 
-          add_line cli                "$CLI_CHANGED"                "$CLI_RESULT"                "$cli_elig"
-          add_line desktop            "$DESKTOP_CHANGED"            "$DESKTOP_RESULT"            "$desktop_elig"
-          add_line docs               "$DOCS_CHANGED"               "$DOCS_RESULT"               "$docs_elig"
-          add_line web                "$WEB_CHANGED"                "$WEB_RESULT"                "$web_elig"
-          add_line enterprise-admin   "$ENTERPRISE_ADMIN_CHANGED"   "$ENTERPRISE_ADMIN_RESULT"   "$ea_elig"
-          add_line enterprise-gateway "$ENTERPRISE_GATEWAY_CHANGED" "$ENTERPRISE_GATEWAY_RESULT" "$eg_elig"
+          add_line cli                    "$CLI_CHANGED"                "$CLI_RESULT"                    "$cli_elig"
+          add_line desktop                "$DESKTOP_CHANGED"            "$DESKTOP_RESULT"                "$desktop_elig"
+          add_line desktop-enterprise-dev "$DESKTOP_CHANGED"            "$DESKTOP_ENTERPRISE_DEV_RESULT" "$ded_elig"
+          add_line docs                   "$DOCS_CHANGED"               "$DOCS_RESULT"                   "$docs_elig"
+          add_line web                    "$WEB_CHANGED"                "$WEB_RESULT"                    "$web_elig"
+          add_line enterprise-admin       "$ENTERPRISE_ADMIN_CHANGED"   "$ENTERPRISE_ADMIN_RESULT"       "$ea_elig"
+          add_line enterprise-gateway     "$ENTERPRISE_GATEWAY_CHANGED" "$ENTERPRISE_GATEWAY_RESULT"     "$eg_elig"
 
           if [ "$any_released" != "true" ]; then
             echo "No components released; skipping notification."
