@@ -16,8 +16,14 @@ Get-Process | Where-Object { $_.Name -match '^Voquill' } | Stop-Process -Force -
 
 $env:FLAVOR = $Flavor
 $env:VITE_FLAVOR = $Flavor
-$env:VOQUILL_GOOGLE_CLIENT_ID = "777461284594-dhgao2eek53ppl4o188ik2i9cigdcmnp.apps.googleusercontent.com"
-$env:VOQUILL_GOOGLE_CLIENT_SECRET = "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"
+
+if ($Flavor -in @("prod", "enterprise")) {
+    $env:VOQUILL_GOOGLE_CLIENT_ID = "777461284594-dhgao2eek53ppl4o188ik2i9cigdcmnp.apps.googleusercontent.com"
+    $env:VOQUILL_GOOGLE_CLIENT_SECRET = "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"
+} else {
+    $env:VOQUILL_GOOGLE_CLIENT_ID = "778214168359-nbgt0dedeol36gl425o5nqt5kaksh38u.apps.googleusercontent.com"
+    $env:VOQUILL_GOOGLE_CLIENT_SECRET = "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"
+}
 
 Write-Host "Building desktop app (flavor=$Flavor)..." -ForegroundColor Cyan
 
