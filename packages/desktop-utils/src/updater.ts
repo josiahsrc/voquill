@@ -1,11 +1,61 @@
-import { invoke } from "@tauri-apps/api/core";
-import { relaunch } from "@tauri-apps/plugin-process";
-import {
-  check,
-  type DownloadEvent,
-  type Update,
-} from "@tauri-apps/plugin-updater";
+import { Channel, invoke, Resource } from "@tauri-apps/api/core";
 import type { DesktopPlatform } from "./platform";
+
+// Minimal re-implementation of the bits of `@tauri-apps/plugin-updater` and
+// `@tauri-apps/plugin-process` we need. Those plugins are thin JS wrappers
+// over the same `invoke` commands, so we inline their surface here rather
+// than taking a direct dependency on the plugin packages.
+
+type UpdateMetadata = {
+  rid: number;
+  currentVersion: string;
+  version: string;
+  date?: string;
+  body?: string;
+  rawJson: Record<string, unknown>;
+};
+
+type DownloadEvent =
+  | { event: "Started"; data: { contentLength?: number } }
+  | { event: "Progress"; data: { chunkLength: number } }
+  | { event: "Finished" };
+
+class Update extends Resource {
+  readonly currentVersion: string;
+  readonly version: string;
+  readonly date?: string;
+  readonly body?: string;
+  readonly rawJson: Record<string, unknown>;
+
+  constructor(metadata: UpdateMetadata) {
+    super(metadata.rid);
+    this.currentVersion = metadata.currentVersion;
+    this.version = metadata.version;
+    this.date = metadata.date;
+    this.body = metadata.body;
+    this.rawJson = metadata.rawJson;
+  }
+
+  async downloadAndInstall(onEvent?: (event: DownloadEvent) => void) {
+    const channel = new Channel<DownloadEvent>();
+    if (onEvent) {
+      channel.onmessage = onEvent;
+    }
+    await invoke("plugin:updater|download_and_install", {
+      onEvent: channel,
+      rid: this.rid,
+    });
+  }
+}
+
+const check = async (): Promise<Update | null> => {
+  const metadata = await invoke<UpdateMetadata | null>("plugin:updater|check");
+  return metadata ? new Update(metadata) : null;
+};
+
+const relaunch = async (): Promise<void> => {
+  await invoke("plugin:process|restart");
+};
 
 const GITHUB_RELEASE_DOWNLOAD_BASE =
   "https://github.com/voquill/voquill/releases/download";

@@ -1,6 +1,6 @@
 {
   "name": "@voquill/voice-ai",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "description": "Shared Groq voice transcription helpers",
   "repository": {
     "type": "git",
