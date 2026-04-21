@@ -40,6 +40,7 @@ pub fn focus_accessibility_field(
     _element_index_path: &[usize],
     _fingerprint_chain: Option<&[crate::commands::ElementFingerprint]>,
     _backend: Option<&str>,
+    _jab_string_path: Option<&[crate::commands::JabElementId]>,
 ) -> Result<(), String> {
     Err("Not implemented for Linux".to_string())
 }

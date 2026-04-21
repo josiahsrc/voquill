@@ -820,9 +820,14 @@ export type AccessibilityFieldInfo = { role: string | null; title: string | null
 /**
  * "jab" for Java Access Bridge fields, None for UIAutomation
  */
-backend?: string | null }
-export type AccessibilityFocusTarget = { appPid: number; elementIndexPath: number[]; fingerprintChain: ElementFingerprint[] | null; backend?: string | null }
-export type AccessibilityWriteEntry = { appPid: number; elementIndexPath: number[]; fingerprintChain: ElementFingerprint[] | null; value: string; backend?: string | null; jabWriteMethod?: JabWriteMethod }
+backend?: string | null; 
+/**
+ * Canonical string path for JAB elements. Empty for UIAutomation.
+ * When present, resolvers prefer it over `element_index_path`.
+ */
+jabStringPath?: JabElementId[] }
+export type AccessibilityFocusTarget = { appPid: number; elementIndexPath: number[]; fingerprintChain: ElementFingerprint[] | null; backend?: string | null; jabStringPath?: JabElementId[] | null }
+export type AccessibilityWriteEntry = { appPid: number; elementIndexPath: number[]; fingerprintChain: ElementFingerprint[] | null; value: string; backend?: string | null; jabWriteMethod?: JabWriteMethod; jabStringPath?: JabElementId[] | null }
 export type AccessibilityWriteResult = { succeeded: number; failed: number; errors: string[] }
 export type ApiKeyCreateRequest = { id: string; name: string; provider: string; key: string; baseUrl?: string | null; azureRegion?: string | null; includeV1Path?: boolean | null }
 export type ApiKeyUpdateRequest = { id: string; name?: string | null; key?: string | null; transcriptionModel?: string | null; postProcessingModel?: string | null; openRouterConfig?: string | null; baseUrl?: string | null; azureRegion?: string | null; includeV1Path?: boolean | null }
@@ -835,13 +840,19 @@ export type CompositorBinding = { actionName: string; keys: string[] }
 export type Conversation = { id: string; title: string; createdAt: number; updatedAt: number }
 export type CurrentAppInfoResponse = { appName: string; iconBase64: string }
 export type ElementFingerprint = { automationId: string | null; className: string | null; controlType: number; name: string | null; frameworkId: string | null; childIndex: number }
-export type FieldValueRequest = { appPid: number; elementIndexPath: number[]; fingerprintChain: ElementFingerprint[] | null; backend?: string | null }
+export type FieldValueRequest = { appPid: number; elementIndexPath: number[]; fingerprintChain: ElementFingerprint[] | null; backend?: string | null; jabStringPath?: JabElementId[] | null }
 export type FieldValueResult = { value: string | null; error: string | null }
 export type GoogleAuthEventPayload = { idToken: string; accessToken: string; refreshToken: string | null; expiresIn: number; tokenType: string; user: GoogleUserInfo }
 export type GoogleUserInfo = { sub: string; email: string | null; name: string | null; picture: string | null }
 export type GpuAdapterInfo = { name: string; vendor: number; device: number; deviceType: string; backend: string }
 export type Hotkey = { id: string; actionName: string; keys: string[] }
 export type InputDeviceDescriptor = { label: string; is_default: boolean; caution: boolean }
+/**
+ * Canonical string identifier for a JAB element at one level of the tree.
+ * JAB has no developer-assigned ID, so we combine `name` + `role` (English)
+ * with `index_in_parent` as a tiebreaker when siblings collide.
+ */
+export type JabElementId = { name: string | null; role: string | null; indexInParent: number }
 export type JabWriteMethod = 
 /**
  * JAB `setTextContents` API — replaces entire field contents directly.

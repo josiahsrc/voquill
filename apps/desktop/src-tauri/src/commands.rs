@@ -71,6 +71,17 @@ pub struct ElementFingerprint {
     pub child_index: usize,
 }
 
+/// Canonical string identifier for a JAB element at one level of the tree.
+/// JAB has no developer-assigned ID, so we combine `name` + `role` (English)
+/// with `index_in_parent` as a tiebreaker when siblings collide.
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct JabElementId {
+    pub name: Option<String>,
+    pub role: Option<String>,
+    pub index_in_parent: usize,
+}
+
 #[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AccessibilityFieldInfo {
@@ -89,6 +100,10 @@ pub struct AccessibilityFieldInfo {
     /// "jab" for Java Access Bridge fields, None for UIAutomation
     #[serde(default)]
     pub backend: Option<String>,
+    /// Canonical string path for JAB elements. Empty for UIAutomation.
+    /// When present, resolvers prefer it over `element_index_path`.
+    #[serde(default)]
+    pub jab_string_path: Vec<JabElementId>,
 }
 
 #[derive(serde::Deserialize, specta::Type)]
@@ -99,6 +114,8 @@ pub struct AccessibilityFocusTarget {
     pub fingerprint_chain: Option<Vec<ElementFingerprint>>,
     #[serde(default)]
     pub backend: Option<String>,
+    #[serde(default)]
+    pub jab_string_path: Option<Vec<JabElementId>>,
 }
 
 #[derive(serde::Deserialize, Clone, Debug, Default, specta::Type)]
@@ -126,6 +143,8 @@ pub struct AccessibilityWriteEntry {
     pub backend: Option<String>,
     #[serde(default)]
     pub jab_write_method: JabWriteMethod,
+    #[serde(default)]
+    pub jab_string_path: Option<Vec<JabElementId>>,
 }
 
 #[derive(serde::Serialize, specta::Type)]
@@ -144,6 +163,8 @@ pub struct FieldValueRequest {
     pub fingerprint_chain: Option<Vec<ElementFingerprint>>,
     #[serde(default)]
     pub backend: Option<String>,
+    #[serde(default)]
+    pub jab_string_path: Option<Vec<JabElementId>>,
 }
 
 #[derive(serde::Serialize, specta::Type)]
@@ -1666,7 +1687,7 @@ pub fn enable_java_access_bridge() -> Result<JavaAccessBridgeStatus, String> {
                     .map(str::trim)
                     .filter(|s| !s.is_empty())
                     .collect();
-                if values.iter().any(|v| *v == JAB_VALUE) {
+                if values.contains(&JAB_VALUE) {
                     already_enabled = true;
                     lines.push(raw.to_string());
                     continue;
@@ -1867,6 +1888,7 @@ pub async fn focus_accessibility_field(target: AccessibilityFocusTarget) -> Resu
                 &target.element_index_path,
                 target.fingerprint_chain.as_deref(),
                 target.backend.as_deref(),
+                target.jab_string_path.as_deref(),
             )
         }),
     )

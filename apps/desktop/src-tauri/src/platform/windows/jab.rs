@@ -371,6 +371,145 @@ unsafe fn navigate_to_element(
     }
 }
 
+/// Resolve a single child of `parent_ac` by matching the segment's (name, role)
+/// with `index_in_parent` as a tiebreaker. Returns the matched child context on
+/// success (caller must release it). Returns `None` if no child meets the
+/// minimum viable match threshold.
+unsafe fn resolve_child_by_string_id(
+    api: &JabApi,
+    vm_id: i32,
+    parent_ac: JOBJECT64,
+    seg: &crate::commands::JabElementId,
+) -> Option<JOBJECT64> {
+    let mut parent_info: AccessibleContextInfo = std::mem::zeroed();
+    if (api.get_context_info)(vm_id, parent_ac, &mut parent_info) == 0 {
+        return None;
+    }
+    let child_count = parent_info.children_count.max(0);
+
+    let has_name = seg.name.as_deref().map(|s| !s.is_empty()).unwrap_or(false);
+    let has_role = seg.role.as_deref().map(|s| !s.is_empty()).unwrap_or(false);
+
+    // No identifying string data — fall through to index.
+    if !has_name && !has_role {
+        if (seg.index_in_parent as i32) < child_count {
+            let c = (api.get_child)(vm_id, parent_ac, seg.index_in_parent as i32);
+            if c != 0 {
+                return Some(c);
+            }
+        }
+        return None;
+    }
+
+    let mut fetched: Vec<(JOBJECT64, i32)> = Vec::new();
+
+    for i in 0..child_count {
+        let child = (api.get_child)(vm_id, parent_ac, i);
+        if child == 0 {
+            continue;
+        }
+        let mut info: AccessibleContextInfo = std::mem::zeroed();
+        let score = if (api.get_context_info)(vm_id, child, &mut info) != 0 {
+            let cname = wchar_to_string(&info.name);
+            let crole = wchar_to_string(&info.role_en_us);
+            let mut s: i32 = 0;
+            if has_name && seg.name.as_deref() == Some(cname.as_str()) {
+                s += 100;
+            }
+            if has_role && seg.role.as_deref() == Some(crole.as_str()) {
+                s += 40;
+            }
+            if i as usize == seg.index_in_parent {
+                s += 5;
+            }
+            s
+        } else {
+            -1
+        };
+        fetched.push((child, score));
+    }
+
+    // Minimum viable match: a name match if we have a name, otherwise a role match.
+    let threshold = if has_name { 100 } else { 40 };
+
+    let mut winner: Option<usize> = None;
+    let mut best_score = threshold - 1;
+    for (i, &(_ac, score)) in fetched.iter().enumerate() {
+        if score > best_score {
+            best_score = score;
+            winner = Some(i);
+        }
+    }
+
+    let mut result: Option<JOBJECT64> = None;
+    for (i, (ac, _score)) in fetched.into_iter().enumerate() {
+        if Some(i) == winner {
+            result = Some(ac);
+        } else {
+            (api.release_object)(vm_id, ac);
+        }
+    }
+
+    result
+}
+
+/// Navigate from root to a target element by matching canonical string IDs at
+/// each level. More robust than the index path when sibling indexes shift.
+/// Caller must release the returned context (or handle the 0 sentinel).
+unsafe fn navigate_to_element_by_string_path(
+    api: &JabApi,
+    vm_id: i32,
+    root_ac: JOBJECT64,
+    string_path: &[crate::commands::JabElementId],
+) -> Result<JOBJECT64, String> {
+    let mut current = root_ac;
+    let mut intermediates: Vec<JOBJECT64> = Vec::new();
+
+    for (depth, seg) in string_path.iter().enumerate() {
+        let Some(child) = resolve_child_by_string_id(api, vm_id, current, seg) else {
+            for &ac in &intermediates {
+                (api.release_object)(vm_id, ac);
+            }
+            return Err(format!(
+                "JAB: no child matched string id at depth {} (name={:?} role={:?} index={})",
+                depth, seg.name, seg.role, seg.index_in_parent
+            ));
+        };
+        intermediates.push(child);
+        current = child;
+    }
+
+    if let Some(target) = intermediates.pop() {
+        for &ac in &intermediates {
+            (api.release_object)(vm_id, ac);
+        }
+        Ok(target)
+    } else {
+        Ok(0)
+    }
+}
+
+/// Prefer the canonical string path; on failure, fall back to the index path.
+unsafe fn navigate_preferring_string(
+    api: &JabApi,
+    vm_id: i32,
+    root_ac: JOBJECT64,
+    string_path: Option<&[crate::commands::JabElementId]>,
+    index_path: &[usize],
+) -> Result<JOBJECT64, String> {
+    if let Some(sp) = string_path.filter(|sp| !sp.is_empty()) {
+        match navigate_to_element_by_string_path(api, vm_id, root_ac, sp) {
+            Ok(target) => return Ok(target),
+            Err(e) => {
+                log::warn!(
+                    "JAB string path navigation failed ({e}); falling back to index path"
+                );
+            }
+        }
+    }
+    navigate_to_element(api, vm_id, root_ac, index_path)
+}
+
 /// Find the HWND of the first visible top-level window for a given PID.
 pub fn find_hwnd_for_pid(target_pid: u32) -> Option<HWND> {
     use windows::Win32::UI::WindowsAndMessaging::{
@@ -578,8 +717,9 @@ pub fn jab_get_focused_field_info(
             }
         }
 
-        // Walk up from focused element to build index path
+        // Walk up from focused element to build index path and canonical string path
         let mut index_path: Vec<usize> = Vec::new();
+        let mut string_path: Vec<crate::commands::JabElementId> = Vec::new();
         let mut to_release: Vec<JOBJECT64> = Vec::new();
         let mut current = focused_ac;
 
@@ -594,37 +734,55 @@ pub fn jab_get_focused_field_info(
                 break; // reached root
             }
 
-            let idx = current_info.index_in_parent;
-            if idx >= 0 {
-                index_path.push(idx as usize);
+            let resolved_idx: Option<usize> = if current_info.index_in_parent >= 0 {
+                Some(current_info.index_in_parent as usize)
             } else {
                 // index_in_parent is -1, try to find by iteration
                 let mut parent_info: AccessibleContextInfo = std::mem::zeroed();
+                let mut found: Option<usize> = None;
                 if (api.get_context_info)(vm_id, parent, &mut parent_info) != 0 {
-                    let mut found = false;
                     for i in 0..parent_info.children_count {
                         let sibling = (api.get_child)(vm_id, parent, i);
                         if sibling == current {
-                            index_path.push(i as usize);
-                            found = true;
+                            found = Some(i as usize);
                             break;
                         }
                         if sibling != 0 {
                             (api.release_object)(vm_id, sibling);
                         }
                     }
-                    if !found {
-                        (api.release_object)(vm_id, parent);
-                        break;
-                    }
                 }
-            }
+                found
+            };
+
+            let Some(idx) = resolved_idx else {
+                (api.release_object)(vm_id, parent);
+                break;
+            };
+
+            let level_name = wchar_to_string(&current_info.name);
+            let level_role = wchar_to_string(&current_info.role_en_us);
+            index_path.push(idx);
+            string_path.push(crate::commands::JabElementId {
+                name: if level_name.is_empty() {
+                    None
+                } else {
+                    Some(level_name)
+                },
+                role: if level_role.is_empty() {
+                    None
+                } else {
+                    Some(level_role)
+                },
+                index_in_parent: idx,
+            });
 
             to_release.push(parent);
             current = parent;
         }
 
         index_path.reverse();
+        string_path.reverse();
 
         // Cleanup
         for ac in to_release {
@@ -650,6 +808,7 @@ pub fn jab_get_focused_field_info(
             fingerprint_chain: vec![],
             can_paste: false,
             backend: Some("jab".to_string()),
+            jab_string_path: string_path,
         })
     }
 }
@@ -658,13 +817,19 @@ pub fn jab_get_focused_field_info(
 // Write text
 // ---------------------------------------------------------------------------
 
-/// Write text to a JAB element identified by its index path.
-pub fn jab_write_text(hwnd: HWND, index_path: &[usize], text: &str) -> Result<(), String> {
+/// Write text to a JAB element. Prefers the canonical string path when provided;
+/// falls back to the numeric index path otherwise.
+pub fn jab_write_text(
+    hwnd: HWND,
+    string_path: Option<&[crate::commands::JabElementId]>,
+    index_path: &[usize],
+    text: &str,
+) -> Result<(), String> {
     let (api, vm_id, root_ac) =
         init_jab_for_hwnd(hwnd).ok_or_else(|| "JAB bridge not available".to_string())?;
 
     unsafe {
-        let target = navigate_to_element(api, vm_id, root_ac, index_path)?;
+        let target = navigate_preferring_string(api, vm_id, root_ac, string_path, index_path)?;
         let ac_to_write = if target == 0 { root_ac } else { target };
 
         // Convert text to null-terminated UTF-16
@@ -688,13 +853,18 @@ pub fn jab_write_text(hwnd: HWND, index_path: &[usize], text: &str) -> Result<()
 // Focus element
 // ---------------------------------------------------------------------------
 
-/// Focus a JAB element identified by its index path.
-pub fn jab_focus_element(hwnd: HWND, index_path: &[usize]) -> Result<(), String> {
+/// Focus a JAB element. Prefers the canonical string path when provided;
+/// falls back to the numeric index path otherwise.
+pub fn jab_focus_element(
+    hwnd: HWND,
+    string_path: Option<&[crate::commands::JabElementId]>,
+    index_path: &[usize],
+) -> Result<(), String> {
     let (api, vm_id, root_ac) =
         init_jab_for_hwnd(hwnd).ok_or_else(|| "JAB bridge not available".to_string())?;
 
     unsafe {
-        let target = navigate_to_element(api, vm_id, root_ac, index_path)?;
+        let target = navigate_preferring_string(api, vm_id, root_ac, string_path, index_path)?;
         let ac_to_focus = if target == 0 { root_ac } else { target };
 
         let result = (api.request_focus)(vm_id, ac_to_focus);
@@ -731,9 +901,11 @@ pub fn jab_focus_element(hwnd: HWND, index_path: &[usize]) -> Result<(), String>
 // Caret positioning
 // ---------------------------------------------------------------------------
 
-/// Set the caret (cursor) position within a JAB text element.
+/// Set the caret (cursor) position within a JAB text element. Prefers the
+/// canonical string path when provided; falls back to the numeric index path.
 pub fn jab_set_caret_position(
     hwnd: HWND,
+    string_path: Option<&[crate::commands::JabElementId]>,
     index_path: &[usize],
     position: usize,
 ) -> Result<(), String> {
@@ -741,7 +913,7 @@ pub fn jab_set_caret_position(
         init_jab_for_hwnd(hwnd).ok_or_else(|| "JAB bridge not available".to_string())?;
 
     unsafe {
-        let target = navigate_to_element(api, vm_id, root_ac, index_path)?;
+        let target = navigate_preferring_string(api, vm_id, root_ac, string_path, index_path)?;
         let ac = if target == 0 { root_ac } else { target };
 
         let result = (api.set_caret_position)(vm_id, ac, position as i32);
@@ -763,13 +935,18 @@ pub fn jab_set_caret_position(
 // Read text value
 // ---------------------------------------------------------------------------
 
-/// Read the current text value of a JAB element.
-pub fn jab_read_text(hwnd: HWND, index_path: &[usize]) -> Result<Option<String>, String> {
+/// Read the current text value of a JAB element. Prefers the canonical string
+/// path when provided; falls back to the numeric index path otherwise.
+pub fn jab_read_text(
+    hwnd: HWND,
+    string_path: Option<&[crate::commands::JabElementId]>,
+    index_path: &[usize],
+) -> Result<Option<String>, String> {
     let (api, vm_id, root_ac) =
         init_jab_for_hwnd(hwnd).ok_or_else(|| "JAB bridge not available".to_string())?;
 
     unsafe {
-        let target = navigate_to_element(api, vm_id, root_ac, index_path)?;
+        let target = navigate_preferring_string(api, vm_id, root_ac, string_path, index_path)?;
         let ac = if target == 0 { root_ac } else { target };
 
         let mut info: AccessibleContextInfo = std::mem::zeroed();
