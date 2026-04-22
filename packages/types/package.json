@@ -1,6 +1,6 @@
 {
   "name": "@voquill/types",
-  "version": "0.3.13",
+  "version": "0.3.14",
   "description": "Shared types for the monorepo",
   "repository": {
     "type": "git",

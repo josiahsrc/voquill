@@ -587,6 +587,20 @@ async readAccessibilityFieldValues(fields: FieldValueRequest[]) : Promise<Result
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Enumerate currently-running processes matching `identity`. Returns every
+ * candidate so the caller (which knows the binding's `windowTitle` and other
+ * heuristics) can disambiguate when multiple instances are running. Returns
+ * an empty vec when the app is not running.
+ */
+async resolveAppPids(identity: AppIdentity) : Promise<Result<AppProcessMatch[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("resolve_app_pids", { identity }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async checkFocusedPasteTarget() : Promise<Result<PasteTargetState, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("check_focused_paste_target") };
@@ -833,13 +847,50 @@ backend?: string | null;
  * Canonical string path for JAB elements. Empty for UIAutomation.
  * When present, resolvers prefer it over `element_index_path`.
  */
-jabStringPath?: JabElementId[] }
+jabStringPath?: JabElementId[]; 
+/**
+ * Stable identity (exe path, bundle id, ...) captured at bind time.
+ * Persisting this alongside the PID lets callers re-resolve the PID
+ * after the host app restarts via `resolve_app_pids`.
+ */
+appIdentity?: AppIdentity | null }
 export type AccessibilityFocusTarget = { appPid: number; elementIndexPath: number[]; fingerprintChain: ElementFingerprint[] | null; backend?: string | null; jabStringPath?: JabElementId[] | null }
 export type AccessibilityWriteEntry = { appPid: number; elementIndexPath: number[]; fingerprintChain: ElementFingerprint[] | null; value: string; backend?: string | null; jabWriteMethod?: JabWriteMethod; jabStringPath?: JabElementId[] | null }
 export type AccessibilityWriteResult = { succeeded: number; failed: number; errors: string[] }
 export type ApiKeyCreateRequest = { id: string; name: string; provider: string; key: string; baseUrl?: string | null; azureRegion?: string | null; includeV1Path?: boolean | null }
 export type ApiKeyUpdateRequest = { id: string; name?: string | null; key?: string | null; transcriptionModel?: string | null; postProcessingModel?: string | null; openRouterConfig?: string | null; baseUrl?: string | null; azureRegion?: string | null; includeV1Path?: boolean | null }
 export type ApiKeyView = { id: string; name: string; provider: string; createdAt: number; keySuffix?: string | null; keyFull?: string | null; transcriptionModel?: string | null; postProcessingModel?: string | null; openRouterConfig?: string | null; baseUrl?: string | null; azureRegion?: string | null; includeV1Path?: boolean | null }
+/**
+ * Stable, relaunch-surviving identifier for a host application. PIDs change
+ * every launch; these fields do not. Populated by `get_focused_field_info`
+ * at capture time, then passed to `resolve_app_pids` on subsequent sessions
+ * to re-resolve the current PID.
+ * 
+ * Every field is optional because availability is platform-dependent and
+ * bindings captured on one OS must still deserialize on another.
+ */
+export type AppIdentity = { 
+/**
+ * Windows: full absolute path to the process executable (e.g.
+ * `C:\Program Files\LigoLab\LigoLab.exe`). Case-insensitive match.
+ */
+exePath?: string | null; 
+/**
+ * Windows: basename of `exe_path` (e.g. `LigoLab.exe`). Lossy fallback
+ * used when the install directory differs across machines.
+ */
+exeName?: string | null; 
+/**
+ * macOS: `CFBundleIdentifier` of the application (e.g.
+ * `com.ligolab.client`). The canonical stable id on that platform.
+ */
+bundleId?: string | null }
+/**
+ * A currently-running process that matches an `AppIdentity`. Returned from
+ * `resolve_app_pids`; the caller (frontend) picks one, typically by
+ * matching `window_title` against the title recorded with the binding.
+ */
+export type AppProcessMatch = { pid: number; exePath: string | null; appName: string | null; windowTitle: string | null }
 export type AppTarget = { id: string; name: string; createdAt: string; toneId: string | null; iconPath: string | null; pasteKeybind?: string | null }
 export type AppTargetUpsertArgs = { id: string; name: string; toneId?: string | null; iconPath?: string | null; pasteKeybind?: string | null }
 export type AudioClip = "start_recording_clip" | "stop_recording_clip" | "alert_linux_clip" | "alert_macos_clip" | "alert_windows_10_clip" | "alert_windows_11_clip"
