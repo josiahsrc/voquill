@@ -13,6 +13,7 @@ const AUTH_STATUS_NOT_DETERMINED: i64 = 0;
 const AUTH_STATUS_RESTRICTED: i64 = 1;
 const AUTH_STATUS_DENIED: i64 = 2;
 const AUTH_STATUS_AUTHORIZED: i64 = 3;
+const SCREEN_RECORDING_REQUESTED_KEY: &str = "voquill.permission.screen-recording-requested";
 
 #[link(name = "ApplicationServices", kind = "framework")]
 extern "C" {
@@ -136,7 +137,8 @@ pub(crate) fn request_microphone_permission() -> Result<PermissionStatus, String
 pub(crate) fn check_screen_recording_permission() -> Result<PermissionStatus, String> {
     unsafe {
         let authorized = CGPreflightScreenCaptureAccess();
-        Ok(screen_recording_status(authorized, false))
+        let requested_before = has_requested_screen_recording_permission();
+        Ok(screen_recording_status(authorized, false, requested_before))
     }
 }
 
@@ -144,8 +146,14 @@ pub(crate) fn request_screen_recording_permission() -> Result<PermissionStatus, 
     unsafe {
         log::debug!("request_screen_recording_permission invoked");
         let initial_authorized = CGPreflightScreenCaptureAccess();
-        let prompt_shown = !initial_authorized;
+        let requested_before = has_requested_screen_recording_permission();
+        let prompt_shown = !initial_authorized && !requested_before;
+
         if prompt_shown {
+            mark_screen_recording_permission_requested();
+        }
+
+        if !initial_authorized {
             let request_result = CGRequestScreenCaptureAccess();
             log::debug!(
                 "request_screen_recording_permission request_result={}",
@@ -154,7 +162,11 @@ pub(crate) fn request_screen_recording_permission() -> Result<PermissionStatus, 
         }
 
         let final_authorized = CGPreflightScreenCaptureAccess();
-        Ok(screen_recording_status(final_authorized, prompt_shown))
+        Ok(screen_recording_status(
+            final_authorized,
+            prompt_shown,
+            requested_before || prompt_shown,
+        ))
     }
 }
 
@@ -171,20 +183,44 @@ fn permission_state_from_authorization(status: i64) -> Result<PermissionState, S
     }
 }
 
-fn screen_recording_state_from_bool(authorized: bool) -> PermissionState {
+fn screen_recording_state_from_access(
+    authorized: bool,
+    requested_before: bool,
+) -> PermissionState {
     if authorized {
         PermissionState::Authorized
+    } else if requested_before {
+        PermissionState::Denied
     } else {
         PermissionState::NotDetermined
     }
 }
 
-fn screen_recording_status(authorized: bool, prompt_shown: bool) -> PermissionStatus {
+fn screen_recording_status(
+    authorized: bool,
+    prompt_shown: bool,
+    requested_before: bool,
+) -> PermissionStatus {
     PermissionStatus {
         kind: PermissionKind::ScreenRecording,
-        state: screen_recording_state_from_bool(authorized),
+        state: screen_recording_state_from_access(authorized, requested_before),
         prompt_shown,
     }
+}
+
+unsafe fn has_requested_screen_recording_permission() -> bool {
+    let defaults: id = msg_send![class!(NSUserDefaults), standardUserDefaults];
+    let key = NSString::alloc(nil).init_str(SCREEN_RECORDING_REQUESTED_KEY);
+    let has_requested: bool = msg_send![defaults, boolForKey: key];
+    let _: () = msg_send![key, release];
+    has_requested
+}
+
+unsafe fn mark_screen_recording_permission_requested() {
+    let defaults: id = msg_send![class!(NSUserDefaults), standardUserDefaults];
+    let key = NSString::alloc(nil).init_str(SCREEN_RECORDING_REQUESTED_KEY);
+    let _: () = msg_send![defaults, setBool: true forKey: key];
+    let _: () = msg_send![key, release];
 }
 
 fn open_microphone_privacy_settings() -> bool {
@@ -268,7 +304,7 @@ mod tests {
 
     #[test]
     fn screen_recording_status_uses_screen_recording_kind() {
-        let status = screen_recording_status(true, false);
+        let status = screen_recording_status(true, false, false);
 
         assert_eq!(status.kind, PermissionKind::ScreenRecording);
         assert_eq!(status.state, PermissionState::Authorized);
@@ -276,11 +312,29 @@ mod tests {
     }
 
     #[test]
-    fn unresolved_screen_recording_request_stays_not_determined() {
-        let status = screen_recording_status(false, true);
+    fn screen_recording_status_without_prior_request_is_not_determined() {
+        let status = screen_recording_status(false, false, false);
 
         assert_eq!(status.kind, PermissionKind::ScreenRecording);
         assert_eq!(status.state, PermissionState::NotDetermined);
+        assert!(!status.prompt_shown);
+    }
+
+    #[test]
+    fn screen_recording_status_after_prior_request_without_access_is_denied() {
+        let status = screen_recording_status(false, false, true);
+
+        assert_eq!(status.kind, PermissionKind::ScreenRecording);
+        assert_eq!(status.state, PermissionState::Denied);
+        assert!(!status.prompt_shown);
+    }
+
+    #[test]
+    fn screen_recording_status_after_prompt_without_access_is_denied() {
+        let status = screen_recording_status(false, true, true);
+
+        assert_eq!(status.kind, PermissionKind::ScreenRecording);
+        assert_eq!(status.state, PermissionState::Denied);
         assert!(status.prompt_shown);
     }
 }
