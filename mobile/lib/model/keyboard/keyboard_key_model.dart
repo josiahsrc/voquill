@@ -26,7 +26,10 @@ class KeyboardKeyModel with EquatableMixin {
     required this.label,
     this.value,
     this.flex = 1,
-  });
+  }) : assert(
+         role != KeyboardKeyRole.character || value != null,
+         'Character keys require a value.',
+       );
 
   const KeyboardKeyModel.character({
     required String id,
@@ -40,11 +43,15 @@ class KeyboardKeyModel with EquatableMixin {
        );
 
   const KeyboardKeyModel.action({
-    required String id,
-    required KeyboardKeyRole role,
-    required String label,
-    int flex = 1,
-  }) : this(id: id, role: role, label: label, flex: flex);
+    required this.id,
+    required this.role,
+    required this.label,
+    this.flex = 1,
+  }) : assert(
+         role != KeyboardKeyRole.character,
+         'Use KeyboardKeyModel.character for character keys.',
+       ),
+       value = null;
 
   bool get isCharacter => role == KeyboardKeyRole.character;
 

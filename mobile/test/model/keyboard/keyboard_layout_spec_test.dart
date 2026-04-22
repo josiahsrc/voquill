@@ -1,6 +1,4 @@
-import 'package:app/model/keyboard/keyboard_layout_model.dart';
-import 'package:app/model/keyboard/keyboard_state_model.dart';
-import 'package:app/model/keyboard/keyboard_toolbar_model.dart';
+import 'package:app/model/keyboard/keyboard.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -32,6 +30,34 @@ void main() {
     state = state.showAlpha();
 
     expect(state.caseState, KeyboardCaseState.capsLock);
+  });
+
+  test('character commit clears shift back to lower', () {
+    final state = const KeyboardStateModel.alpha(
+      caseState: KeyboardCaseState.shift,
+    );
+
+    final updatedState = state.onCharacterCommit();
+
+    expect(updatedState.caseState, KeyboardCaseState.lower);
+  });
+
+  test('character commit preserves caps lock', () {
+    final state = const KeyboardStateModel.alpha(
+      caseState: KeyboardCaseState.capsLock,
+    );
+
+    final updatedState = state.onCharacterCommit();
+
+    expect(updatedState.caseState, KeyboardCaseState.capsLock);
+  });
+
+  test('character commit keeps lower state unchanged', () {
+    final state = const KeyboardStateModel.alpha();
+
+    final updatedState = state.onCharacterCommit();
+
+    expect(updatedState.caseState, KeyboardCaseState.lower);
   });
 
   test('toolbar exposes a distinct persistent language action', () {
@@ -188,6 +214,28 @@ void main() {
         const KeyboardKeyModel.character(id: 'character-c', value: 'c'),
       ),
       throwsUnsupportedError,
+    );
+  });
+
+  test('action constructor rejects character role without a value', () {
+    expect(
+      () => KeyboardKeyModel.action(
+        id: 'invalid-character',
+        role: KeyboardKeyRole.character,
+        label: 'a',
+      ),
+      throwsA(isA<AssertionError>()),
+    );
+  });
+
+  test('base constructor rejects character role without a value', () {
+    expect(
+      () => KeyboardKeyModel(
+        id: 'invalid-base-character',
+        role: KeyboardKeyRole.character,
+        label: 'a',
+      ),
+      throwsA(isA<AssertionError>()),
     );
   });
 }
