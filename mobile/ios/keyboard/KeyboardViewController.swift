@@ -303,6 +303,13 @@ class KeyboardViewController: UIInputViewController {
     private var upgradeButton: UIButton!
     private var fullAccessBanner: UIView!
 
+    // MARK: - Full Keyboard
+    private var keyboardLayoutSpec: KeyboardLayoutSpec?
+    private let keyboardStateMachine = KeyboardStateMachine()
+    private lazy var matrixBuilder = KeyboardMatrixBuilder { [weak self] key in self?.handleKeyTap(key) }
+    private var keyMatrixContainer: UIView?
+    private var isFullKeyboardMode = false
+
     override func viewDidLoad() {
         super.viewDidLoad()
         initMixpanel()
@@ -335,6 +342,7 @@ class KeyboardViewController: UIInputViewController {
         startDarwinObservers()
         refreshMemberData()
         startMemberRefreshTimer()
+        loadKeyboardLayout()
     }
 
     private func syncFullAccessStatus() {
@@ -355,6 +363,9 @@ class KeyboardViewController: UIInputViewController {
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         updateColorsForAppearance()
+        if keyboardLayoutSpec != nil {
+            renderKeyMatrix()
+        }
     }
 
     private func updateColorsForAppearance() {
@@ -362,7 +373,68 @@ class KeyboardViewController: UIInputViewController {
         progressView.barColor = .white
     }
 
-    // MARK: - Dictation State
+    // MARK: - Full Keyboard
+
+    private func loadKeyboardLayout() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        guard let data = defaults?.data(forKey: "voquill_keyboard_layouts"),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let layouts = json["layouts"] as? [String: Any],
+              let activeLanguage = json["activeLanguage"] as? String else { return }
+        let layoutDict = (layouts[activeLanguage] ?? layouts.values.first) as? [String: Any]
+        guard let layoutDict = layoutDict,
+              let spec = KeyboardLayoutSpec.from(layoutDict) else { return }
+        keyboardLayoutSpec = spec
+        renderKeyMatrix()
+    }
+
+    private func renderKeyMatrix() {
+        guard let spec = keyboardLayoutSpec else { return }
+        let isDark = traitCollection.userInterfaceStyle == .dark
+        keyMatrixContainer?.removeFromSuperview()
+        let matrix = matrixBuilder.buildMatrix(layout: spec, state: keyboardStateMachine, isDark: isDark)
+        matrix.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(matrix)
+        NSLayoutConstraint.activate([
+            matrix.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            matrix.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            matrix.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            matrix.heightAnchor.constraint(equalToConstant: 200),
+        ])
+        keyMatrixContainer = matrix
+        isFullKeyboardMode = true
+        pillButton?.isHidden = true
+    }
+
+    private func handleKeyTap(_ key: KeyboardKeySpec) {
+        switch key.role {
+        case .character:
+            let ch = keyboardStateMachine.caseState != .lower
+                ? (key.value ?? key.label).uppercased()
+                : (key.value ?? key.label).lowercased()
+            textDocumentProxy.insertText(ch)
+            keyboardStateMachine.onCharacterCommit()
+            if let m = keyMatrixContainer { matrixBuilder.updateShiftKey(in: m, state: keyboardStateMachine) }
+        case .shift:
+            keyboardStateMachine.onShiftTap()
+            if let m = keyMatrixContainer { matrixBuilder.updateShiftKey(in: m, state: keyboardStateMachine) }
+        case .delete:
+            textDocumentProxy.deleteBackward()
+        case .space:
+            textDocumentProxy.insertText(" ")
+        case .enter:
+            textDocumentProxy.insertText("\n")
+        case .mode:
+            keyboardStateMachine.onModeTap()
+            renderKeyMatrix()
+        case .globe:
+            advanceToNextInputMode()
+        case .startStop:
+            break
+        default:
+            break
+        }
+    }
 
     private func refreshDictationState() {
         let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
