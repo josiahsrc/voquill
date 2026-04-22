@@ -1871,6 +1871,28 @@ pub async fn get_screen_context() -> Result<ScreenContextInfo, String> {
 
 #[tauri::command]
 #[specta::specta]
+pub async fn get_screen_capture_context() -> Result<Option<String>, String> {
+    #[cfg(target_os = "macos")]
+    {
+        Ok(tokio::time::timeout(
+            std::time::Duration::from_secs(20),
+            tauri::async_runtime::spawn_blocking(
+                crate::platform::macos::screen_capture::get_screen_capture_context,
+            ),
+        )
+        .await
+        .map_err(|_| "get_screen_capture_context timed out".to_string())?
+        .map_err(|err| err.to_string())??)
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        Ok(None)
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn find_pid_by_window_title(title_substring: String) -> Result<Option<i32>, String> {
     tauri::async_runtime::spawn_blocking(move || {
         crate::platform::find_pid_by_window_title(&title_substring)

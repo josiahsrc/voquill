@@ -79,6 +79,7 @@ fn main() {
         play_audio,
         get_text_field_info,
         get_screen_context,
+        get_screen_capture_context,
         get_selected_text,
         gather_accessibility_dump,
         get_focused_field_info,

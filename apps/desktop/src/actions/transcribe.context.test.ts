@@ -2,12 +2,21 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppState, INITIAL_APP_STATE } from "../state/app.state";
 import * as transcribeActions from "./transcribe.actions";
 
-const { storeState, generateTextMock } = vi.hoisted(() => ({
+const { storeState, generateTextMock, invokeMock } = vi.hoisted(() => ({
   storeState: {
     appState: undefined as AppState | undefined,
   },
   generateTextMock: vi.fn(),
+  invokeMock: vi.fn(),
 }));
+
+vi.mock("@tauri-apps/api/core", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tauri-apps/api/core")>();
+  return {
+    ...actual,
+    invoke: invokeMock,
+  };
+});
 
 vi.mock("../repos", () => ({
   getGenerateTextRepo: () => ({
@@ -66,6 +75,7 @@ describe("desktop dictation context", () => {
       },
     };
     generateTextMock.mockReset();
+    invokeMock.mockReset();
     generateTextMock.mockResolvedValue({
       text: JSON.stringify({ result: "Clean transcript" }),
       metadata: {
@@ -78,19 +88,20 @@ describe("desktop dictation context", () => {
   it("derives current editor and selected text from finalize-time accessibility info", () => {
     expect("resolveDesktopDictationContext" in transcribeActions).toBe(true);
 
-    const context = (transcribeActions as Record<string, any>)
-      .resolveDesktopDictationContext({
-        currentApp: {
-          id: "notion",
-          name: "Notion",
-        },
-        a11yInfo: {
-          cursorPosition: 6,
-          selectionLength: 6,
-          textContent: "Draft launch plan",
-        },
-        screenContext: "Release checklist",
-      });
+    const context = (
+      transcribeActions as Record<string, any>
+    ).resolveDesktopDictationContext({
+      currentApp: {
+        id: "notion",
+        name: "Notion",
+      },
+      a11yInfo: {
+        cursorPosition: 6,
+        selectionLength: 6,
+        textContent: "Draft launch plan",
+      },
+      screenContext: "Release checklist",
+    });
 
     expect(context).toEqual({
       currentApp: {
@@ -104,6 +115,16 @@ describe("desktop dictation context", () => {
       selectedText: "launch",
       screenContext: "Release checklist",
     });
+  });
+
+  it("normalizes screen capture context command failures to null", async () => {
+    invokeMock.mockRejectedValueOnce(new Error("screen capture unavailable"));
+
+    const { getScreenCaptureContext } =
+      await import("../utils/screen-context-provider");
+
+    await expect(getScreenCaptureContext()).resolves.toBeNull();
+    expect(invokeMock).toHaveBeenCalledWith("get_screen_capture_context");
   });
 
   it("includes finalize-time app, editor, selection, and screen context in post-processing prompts", async () => {
