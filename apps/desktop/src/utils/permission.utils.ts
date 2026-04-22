@@ -6,12 +6,14 @@ import type {
   PermissionStatus,
 } from "../types/permission.types";
 
-export const REQUIRED_PERMISSIONS: PermissionKind[] = [
+export const REQUIRED_PERMISSIONS = [
   "microphone",
   "accessibility",
-];
+] as const satisfies readonly PermissionKind[];
 
-export const ENHANCEMENT_PERMISSIONS: PermissionKind[] = ["screen-recording"];
+export const ENHANCEMENT_PERMISSIONS = [
+  "screen-recording",
+] as const satisfies readonly PermissionKind[];
 
 export const checkMicrophonePermission =
   async (): Promise<PermissionStatus> => {
@@ -96,13 +98,7 @@ export const getPermissionInstructions = (kind: PermissionKind): string => {
   }
 
   if (kind === "screen-recording") {
-    if (platform === "macos") {
-      return "System Settings → Privacy & Security → Screen Recording";
-    }
-    if (platform === "windows") {
-      return "Allow screen capture access when Windows prompts for it.";
-    }
-    return "Allow screen recording access in your desktop environment settings.";
+    return "Optional enhancement for future OCR and screen context support. It is not required to start Voquill today, and native setup arrives in a later update.";
   }
 
   if (platform === "macos") {

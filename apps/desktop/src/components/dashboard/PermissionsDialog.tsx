@@ -264,6 +264,10 @@ export const PermissionsDialog = () => {
     isManuallyOpened &&
     !viewState.shouldAutoOpen &&
     !viewState.shouldShowRestartMessage;
+  const isOptionalEnhancementsView =
+    viewState.shouldShowManualEntry &&
+    !viewState.shouldAutoOpen &&
+    !viewState.shouldShowRestartMessage;
 
   useEffect(() => {
     if (viewState.shouldAutoOpen) {
@@ -300,7 +304,7 @@ export const PermissionsDialog = () => {
           }}
         >
           <Button variant="outlined" onClick={() => setIsManuallyOpened(true)}>
-            <FormattedMessage defaultMessage="Permissions" />
+            <FormattedMessage defaultMessage="Optional permissions" />
           </Button>
         </Box>
       )}
@@ -323,12 +327,24 @@ export const PermissionsDialog = () => {
         }}
       >
         <DialogTitle>
-          <FormattedMessage defaultMessage="Permissions needed" />
+          <FormattedMessage
+            defaultMessage={
+              isOptionalEnhancementsView
+                ? "Optional permissions"
+                : "Permissions needed"
+            }
+          />
         </DialogTitle>
         <DialogContent>
           <Stack spacing={3}>
             <Typography variant="body1">
-              <FormattedMessage defaultMessage="Voquill is an AI dictation tool. It needs microphone and accessibility access in order to function properly." />
+              <FormattedMessage
+                defaultMessage={
+                  isOptionalEnhancementsView
+                    ? "Voquill already has its required startup permissions. Screen recording is only an optional enhancement for future OCR and screen context features."
+                    : "Voquill is an AI dictation tool. It needs microphone and accessibility access in order to function properly."
+                }
+              />
             </Typography>
             <Stack>
               {REQUIRED_PERMISSIONS.map((kind) => (

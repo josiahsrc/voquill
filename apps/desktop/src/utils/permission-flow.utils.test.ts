@@ -1,4 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("./platform.utils", () => ({
+  getPlatform: () => "macos",
+}));
 
 const loadSubject = async () => {
   return import("./permission-flow.utils").catch(
@@ -163,7 +167,7 @@ describe("screen recording permission contract", () => {
   it("keeps screen recording optional while leaving it requestable", async () => {
     const [
       { INITIAL_APP_STATE },
-      { REQUIRED_PERMISSIONS, ENHANCEMENT_PERMISSIONS },
+      { REQUIRED_PERMISSIONS, ENHANCEMENT_PERMISSIONS, getPermissionInstructions },
       permissionFlowSubject,
     ] = await Promise.all([
       import("../state/app.state"),
@@ -191,8 +195,8 @@ describe("screen recording permission contract", () => {
       { requestInFlight: boolean; awaitingExternalApproval: boolean }
     >;
 
-    expect(REQUIRED_PERMISSIONS).not.toContain("screen-recording");
-    expect(ENHANCEMENT_PERMISSIONS).toContain("screen-recording");
+    expect(REQUIRED_PERMISSIONS).toEqual(["microphone", "accessibility"]);
+    expect(ENHANCEMENT_PERMISSIONS).toEqual(["screen-recording"]);
     expect(permissions).toHaveProperty("screen-recording");
     expect(permissions["screen-recording"]).toMatchObject({
       kind: "screen-recording",
@@ -216,6 +220,9 @@ describe("screen recording permission contract", () => {
       isAwaitingExternalApproval: false,
       shouldOpenSettings: false,
     });
+    expect(getPermissionInstructions("screen-recording")).toContain(
+      "not required to start",
+    );
   });
 });
 
@@ -280,6 +287,63 @@ describe("derivePermissionsDialogViewState", () => {
       shouldAutoOpen: false,
       shouldShowManualEntry: true,
       isOpen: true,
+    });
+  });
+
+  it("does not let screen recording block startup permission gating", async () => {
+    const [{ INITIAL_APP_STATE }, permissionFlowSubject] = await Promise.all([
+      import("../state/app.state"),
+      loadSubject(),
+    ]);
+
+    const derivePermissionsDialogViewState =
+      permissionFlowSubject.derivePermissionsDialogViewState as
+        | ((input: {
+            permissions: typeof INITIAL_APP_STATE.permissions;
+            permissionWasGranted: boolean;
+            isWelcomePage: boolean;
+            isManuallyOpened: boolean;
+          }) => {
+            blocked: boolean;
+            allAuthorized: boolean;
+            shouldAutoOpen: boolean;
+            shouldShowManualEntry: boolean;
+          })
+        | undefined;
+
+    expect(derivePermissionsDialogViewState).toBeTypeOf("function");
+
+    const permissions = {
+      ...INITIAL_APP_STATE.permissions,
+      microphone: {
+        kind: "microphone" as const,
+        state: "authorized" as const,
+        promptShown: false,
+      },
+      accessibility: {
+        kind: "accessibility" as const,
+        state: "authorized" as const,
+        promptShown: false,
+      },
+      "screen-recording": {
+        kind: "screen-recording" as const,
+        state: "denied" as const,
+        promptShown: true,
+      },
+    };
+
+    expect(
+      derivePermissionsDialogViewState?.({
+        permissions,
+        permissionWasGranted: false,
+        isWelcomePage: false,
+        isManuallyOpened: false,
+      }),
+    ).toMatchObject({
+      blocked: false,
+      allAuthorized: true,
+      shouldAutoOpen: false,
+      shouldShowManualEntry: true,
     });
   });
 });
