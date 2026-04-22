@@ -1110,16 +1110,19 @@ fn try_get_focused_field_info(
                 .map(|f| f == "Java" || f == "JavaFX")
                 .unwrap_or(false);
 
+        let app_identity = app_pid.and_then(|pid| capture_app_identity(pid as u32));
+
         if is_java {
             let hwnd = windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow();
             if !hwnd.0.is_null() {
                 let window_title = get_element_name(&automation.ElementFromHandle(hwnd)?);
-                if let Some(jab_info) = super::jab::jab_get_focused_field_info(
+                if let Some(mut jab_info) = super::jab::jab_get_focused_field_info(
                     hwnd,
                     app_pid.unwrap_or(0),
                     app_name.as_deref(),
                     window_title,
                 ) {
+                    jab_info.app_identity = app_identity.clone();
                     return Ok(Some(jab_info));
                 }
                 log::warn!("JAB focused field detection failed, falling through to UIA path");
@@ -1217,6 +1220,7 @@ fn try_get_focused_field_info(
             can_paste,
             backend: None,
             jab_string_path: vec![],
+            app_identity,
         }))
     })
 }
@@ -1826,20 +1830,135 @@ unsafe fn try_write_via_paste(element: &IUIAutomationElement, value: &str) -> Re
 }
 
 fn get_process_name(pid: u32) -> Option<String> {
+    let path = get_process_exe_path(pid)?;
+    path.rsplit('\\').next().map(|s| s.to_string())
+}
+
+fn get_process_exe_path(pid: u32) -> Option<String> {
     use windows::Win32::System::ProcessStatus::GetModuleFileNameExW;
     use windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
 
     unsafe {
         let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
-        let mut buf = [0u16; 260];
+        let mut buf = [0u16; 1024];
         let len = GetModuleFileNameExW(Some(handle), None, &mut buf);
         let _ = windows::Win32::Foundation::CloseHandle(handle);
         if len == 0 {
             return None;
         }
-        let path = String::from_utf16_lossy(&buf[..len as usize]);
-        path.rsplit('\\').next().map(|s| s.to_string())
+        Some(String::from_utf16_lossy(&buf[..len as usize]))
     }
+}
+
+pub fn capture_app_identity(pid: u32) -> Option<crate::commands::AppIdentity> {
+    let exe_path = get_process_exe_path(pid)?;
+    let exe_name = exe_path.rsplit('\\').next().map(|s| s.to_string());
+    Some(crate::commands::AppIdentity {
+        exe_path: Some(exe_path),
+        exe_name,
+        bundle_id: None,
+    })
+}
+
+pub fn resolve_app_pids(
+    identity: &crate::commands::AppIdentity,
+) -> Vec<crate::commands::AppProcessMatch> {
+    use windows::Win32::System::ProcessStatus::EnumProcesses;
+
+    let expected_path = identity.exe_path.as_deref().map(|s| s.to_lowercase());
+    let expected_name = identity.exe_name.as_deref().map(|s| s.to_lowercase());
+    if expected_path.is_none() && expected_name.is_none() {
+        return Vec::new();
+    }
+
+    let mut pid_buf = vec![0u32; 4096];
+    let mut bytes_returned: u32 = 0;
+    let ok = unsafe {
+        EnumProcesses(
+            pid_buf.as_mut_ptr(),
+            (pid_buf.len() * std::mem::size_of::<u32>()) as u32,
+            &mut bytes_returned,
+        )
+    };
+    if ok.is_err() {
+        return Vec::new();
+    }
+    let pid_count = bytes_returned as usize / std::mem::size_of::<u32>();
+    pid_buf.truncate(pid_count);
+
+    let titles_by_pid = enumerate_visible_window_titles();
+
+    let mut matches = Vec::new();
+    for pid in pid_buf {
+        if pid == 0 {
+            continue;
+        }
+        let Some(path) = get_process_exe_path(pid) else {
+            continue;
+        };
+        let path_lc = path.to_lowercase();
+        let name_lc = path.rsplit('\\').next().map(|s| s.to_lowercase());
+
+        let is_match = match (&expected_path, &expected_name, &name_lc) {
+            (Some(expected), _, _) => &path_lc == expected,
+            (None, Some(expected), Some(actual)) => actual == expected,
+            _ => false,
+        };
+        if !is_match {
+            continue;
+        }
+
+        let window_title = titles_by_pid
+            .get(&pid)
+            .and_then(|titles| titles.first().cloned());
+        let app_name = path.rsplit('\\').next().map(|s| s.to_string());
+
+        matches.push(crate::commands::AppProcessMatch {
+            pid: pid as i32,
+            exe_path: Some(path),
+            app_name,
+            window_title,
+        });
+    }
+    matches
+}
+
+fn enumerate_visible_window_titles() -> std::collections::HashMap<u32, Vec<String>> {
+    use std::collections::HashMap;
+    use windows::Win32::UI::WindowsAndMessaging::{
+        FindWindowExW, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId,
+        IsWindowVisible,
+    };
+
+    let mut titles: HashMap<u32, Vec<String>> = HashMap::new();
+    unsafe {
+        let mut hwnd = match FindWindowExW(None, None, None, None) {
+            Ok(h) => h,
+            Err(_) => return titles,
+        };
+        loop {
+            if IsWindowVisible(hwnd).as_bool() {
+                let len = GetWindowTextLengthW(hwnd);
+                if len > 0 {
+                    let mut buf = vec![0u16; (len + 1) as usize];
+                    let got = GetWindowTextW(hwnd, &mut buf);
+                    if got > 0 {
+                        let title = String::from_utf16_lossy(&buf[..got as usize]);
+                        let mut pid: u32 = 0;
+                        GetWindowThreadProcessId(hwnd, Some(&mut pid));
+                        if pid > 0 && !title.is_empty() {
+                            titles.entry(pid).or_default().push(title);
+                        }
+                    }
+                }
+            }
+            match FindWindowExW(None, Some(hwnd), None, None) {
+                Ok(next) => hwnd = next,
+                Err(_) => break,
+            }
+        }
+    }
+    titles
 }
 
 fn control_type_name(ct: i32) -> String {

@@ -299,6 +299,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::write_accessibility_fields,
             crate::commands::focus_accessibility_field,
             crate::commands::read_accessibility_field_values,
+            crate::commands::resolve_app_pids,
             crate::commands::check_focused_paste_target,
             crate::commands::read_enterprise_target,
             crate::commands::run_terminal_command,
