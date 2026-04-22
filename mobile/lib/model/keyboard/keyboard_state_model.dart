@@ -40,6 +40,9 @@ class KeyboardStateModel with EquatableMixin {
   }
 
   KeyboardStateModel onShiftDoubleTap() {
+    if (!isAlpha) {
+      return this;
+    }
     return copyWith(
       layerState: KeyboardLayerState.alpha,
       caseState: KeyboardCaseState.capsLock,

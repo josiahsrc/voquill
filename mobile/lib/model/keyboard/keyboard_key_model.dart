@@ -7,6 +7,7 @@ enum KeyboardKeyRole {
   space,
   enter,
   mode,
+  language,
   globe,
   overflow,
   startStop,

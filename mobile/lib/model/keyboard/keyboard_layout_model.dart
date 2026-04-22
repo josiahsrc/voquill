@@ -105,19 +105,22 @@ class KeyboardLayoutModel with EquatableMixin {
   }
 
   KeyboardLayoutModel copyWith({
+    String? languageCode,
     List<List<KeyboardKeyModel>>? alphaRows,
     List<List<KeyboardKeyModel>>? numericRows,
     List<List<KeyboardKeyModel>>? symbolRows,
     KeyboardKeyModel? shift,
+    KeyboardBottomRowModel? bottomRow,
+    KeyboardToolbarModel? toolbar,
   }) {
     return KeyboardLayoutModel(
-      languageCode: languageCode,
+      languageCode: languageCode ?? this.languageCode,
       alphaRows: alphaRows ?? this.alphaRows,
       numericRows: numericRows ?? this.numericRows,
       symbolRows: symbolRows ?? this.symbolRows,
       shift: shift ?? this.shift,
-      bottomRow: bottomRow,
-      toolbar: toolbar,
+      bottomRow: bottomRow ?? this.bottomRow,
+      toolbar: toolbar ?? this.toolbar,
     );
   }
 

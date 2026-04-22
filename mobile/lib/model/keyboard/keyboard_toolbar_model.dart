@@ -23,7 +23,7 @@ class KeyboardToolbarModel with EquatableMixin {
       ),
       language: KeyboardKeyModel.action(
         id: 'toolbar-language',
-        role: KeyboardKeyRole.globe,
+        role: KeyboardKeyRole.language,
         label: 'Language',
       ),
       mode: KeyboardKeyModel.action(
