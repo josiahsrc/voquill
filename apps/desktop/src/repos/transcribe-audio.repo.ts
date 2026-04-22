@@ -74,6 +74,10 @@ export type TranscribeSegmentInput = {
 };
 
 export abstract class BaseTranscribeAudioRepo extends BaseRepo {
+  supportsPromptHints(): boolean {
+    return false;
+  }
+
   /**
    * Maximum duration in seconds for a single audio segment.
    * Override in child classes based on provider limits.
@@ -169,6 +173,10 @@ export abstract class BaseTranscribeAudioRepo extends BaseRepo {
 }
 
 export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
+  override supportsPromptHints(): boolean {
+    return true;
+  }
+
   // Local whisper can handle longer segments, but 60s is a safe default
   protected getSegmentDurationSec(): number {
     return 60;
@@ -274,6 +282,10 @@ export class GroqTranscribeAudioRepo extends BaseTranscribeAudioRepo {
     this.model = (model as TranscriptionModel) ?? "whisper-large-v3-turbo";
   }
 
+  override supportsPromptHints(): boolean {
+    return true;
+  }
+
   // Groq has 25MB limit, 60s segments are well within that
   protected getSegmentDurationSec(): number {
     return 60;
@@ -321,6 +333,10 @@ export class OpenAITranscribeAudioRepo extends BaseTranscribeAudioRepo {
     super();
     this.openaiApiKey = apiKey;
     this.model = (model as OpenAITranscriptionModel) ?? "whisper-1";
+  }
+
+  override supportsPromptHints(): boolean {
+    return true;
   }
 
   // OpenAI has 25MB limit, 60s segments are well within that
@@ -460,6 +476,10 @@ export class XaiTranscribeAudioRepo extends BaseTranscribeAudioRepo {
     this.model = (model as XaiTranscriptionModel) ?? "grok-stt";
   }
 
+  override supportsPromptHints(): boolean {
+    return true;
+  }
+
   protected getSegmentDurationSec(): number {
     return 60;
   }
@@ -482,6 +502,7 @@ export class XaiTranscribeAudioRepo extends BaseTranscribeAudioRepo {
       model: this.model,
       blob: wavBuffer,
       ext: "wav",
+      prompt: input.prompt ?? undefined,
       language: input.language,
     });
 
@@ -554,6 +575,10 @@ export class GeminiTranscribeAudioRepo extends BaseTranscribeAudioRepo {
     this.model = (model as GeminiTranscriptionModel) ?? "gemini-2.5-flash";
   }
 
+  override supportsPromptHints(): boolean {
+    return true;
+  }
+
   protected getSegmentDurationSec(): number {
     return 60;
   }
@@ -599,6 +624,10 @@ export class SpeachesTranscribeAudioRepo extends BaseTranscribeAudioRepo {
     super();
     this.baseUrl = baseUrl;
     this.model = model;
+  }
+
+  override supportsPromptHints(): boolean {
+    return true;
   }
 
   protected getSegmentDurationSec(): number {
@@ -648,6 +677,10 @@ export class OpenAICompatibleTranscribeAudioRepo extends BaseTranscribeAudioRepo
     this.baseUrl = baseUrl;
     this.model = model;
     this.apiKey = apiKey;
+  }
+
+  override supportsPromptHints(): boolean {
+    return true;
   }
 
   protected getSegmentDurationSec(): number {
@@ -800,6 +833,7 @@ export class NewServerTranscribeAudioRepo extends BaseTranscribeAudioRepo {
                 sampleRate: input.sampleRate,
                 glossary: entries.sources,
                 language: input.language,
+                prompt: input.prompt ?? undefined,
               }),
             );
             return;

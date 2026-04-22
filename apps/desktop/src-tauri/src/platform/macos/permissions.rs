@@ -163,26 +163,6 @@ fn open_microphone_privacy_settings() -> bool {
     }
 }
 
-fn open_accessibility_privacy_settings() -> bool {
-    unsafe {
-        let url_string = NSString::alloc(nil).init_str(
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
-        );
-        let url: id = msg_send![class!(NSURL), URLWithString: url_string];
-        if url == nil {
-            let _: () = msg_send![url_string, release];
-            return false;
-        }
-
-        let workspace: id = msg_send![class!(NSWorkspace), sharedWorkspace];
-        let success: bool = msg_send![workspace, openURL: url];
-
-        let _: () = msg_send![url_string, release];
-
-        success
-    }
-}
-
 pub(crate) fn check_accessibility_permission() -> Result<PermissionStatus, String> {
     unsafe {
         let trusted = AXIsProcessTrusted();
@@ -198,7 +178,7 @@ fn accessibility_state_from_bool(trusted: bool) -> PermissionState {
     if trusted {
         PermissionState::Authorized
     } else {
-        PermissionState::Denied
+        PermissionState::NotDetermined
     }
 }
 
@@ -225,27 +205,11 @@ pub(crate) fn request_accessibility_permission() -> Result<PermissionStatus, Str
             );
         }
 
-        let mut final_trusted = AXIsProcessTrusted();
+        let final_trusted = AXIsProcessTrusted();
         log::debug!(
             "request_accessibility_permission final_trusted={}",
             final_trusted
         );
-
-        if !final_trusted {
-            let settings_opened = open_accessibility_privacy_settings();
-            log::debug!(
-                "Accessibility settings opened via helper={}",
-                settings_opened
-            );
-            if settings_opened {
-                final_trusted = AXIsProcessTrusted();
-                log::debug!(
-                    "request_accessibility_permission final_trusted_after_settings={}",
-                    final_trusted
-                );
-            }
-            prompt_shown |= settings_opened;
-        }
 
         Ok(PermissionStatus {
             kind: PermissionKind::Accessibility,

@@ -1,4 +1,11 @@
 import { getRec } from "@voquill/utilities";
+import {
+  assembleDictationContext,
+  type DictationContext,
+  type DictationContextTarget,
+  type DictationContextTerm,
+  type DictationIntent,
+} from "@voquill/dictation-core";
 import z from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
 import { Locale } from "../i18n/config";
@@ -16,42 +23,40 @@ const sanitizeGlossaryValue = (value: string): string =>
   // oxlint-disable-next-line no-control-regex
   value.replace(/\0/g, "").replace(/\s+/g, " ").trim();
 
-export const collectDictionaryEntries = (
+export type BuildDictationContextInput = {
+  dictationLanguage: string;
+  intent?: DictationIntent;
+  terms?: DictationContextTerm[];
+  currentApp?: DictationContextTarget | null;
+  currentEditor?: DictationContextTarget | null;
+  selectedText?: string | null;
+  screenContext?: string | null;
+};
+
+export const buildDictationContext = ({
+  dictationLanguage,
+  intent = { kind: "dictation", format: "clean" },
+  terms = [],
+  currentApp = null,
+  currentEditor = null,
+  selectedText = null,
+  screenContext = null,
+}: BuildDictationContextInput): DictationContext =>
+  assembleDictationContext({
+    intent,
+    language: dictationLanguage,
+    terms,
+    currentApp,
+    currentEditor,
+    selectedText,
+    screenContext,
+  });
+
+export const collectDictionaryTerms = (
   state: AppState,
-): DictionaryEntries => {
-  const sources = new Map<string, string>();
-  const replacements = new Map<string, ReplacementRule>();
-
-  const recordSource = (candidate: string): string | null => {
-    const sanitized = sanitizeGlossaryValue(candidate);
-    if (!sanitized) {
-      return null;
-    }
-
-    const key = sanitized.toLowerCase();
-    if (!sources.has(key)) {
-      sources.set(key, sanitized);
-    }
-
-    return sources.get(key) ?? sanitized;
-  };
-
-  const recordReplacement = (source: string, destination: string) => {
-    const sanitizedSource = recordSource(source);
-    const sanitizedDestination = sanitizeGlossaryValue(destination);
-
-    if (!sanitizedSource || !sanitizedDestination) {
-      return;
-    }
-
-    const key = `${sanitizedSource.toLowerCase()}→${sanitizedDestination.toLowerCase()}`;
-    if (!replacements.has(key)) {
-      replacements.set(key, {
-        source: sanitizedSource,
-        destination: sanitizedDestination,
-      });
-    }
-  };
+): DictationContextTerm[] => {
+  const userName = sanitizeGlossaryValue(getMyUserName(state));
+  const terms: DictationContextTerm[] = [];
 
   for (const termId of state.dictionary.termIds) {
     const term = state.termById[termId];
@@ -59,20 +64,43 @@ export const collectDictionaryEntries = (
       continue;
     }
 
-    if (term.isReplacement) {
-      recordReplacement(term.sourceValue, term.destinationValue);
-    } else {
-      recordSource(term.sourceValue);
-    }
+    terms.push({
+      sourceValue: sanitizeGlossaryValue(term.sourceValue),
+      destinationValue: sanitizeGlossaryValue(term.destinationValue),
+      isReplacement: term.isReplacement,
+    });
   }
 
-  // These should always be added to the vocabulary
-  recordSource("Voquill");
-  recordSource(getMyUserName(state));
+  terms.push({
+    sourceValue: "Voquill",
+    destinationValue: "Voquill",
+    isReplacement: false,
+  });
+  terms.push({
+    sourceValue: userName,
+    destinationValue: userName,
+    isReplacement: false,
+  });
+
+  return terms;
+};
+
+export const collectDictionaryEntries = (
+  state: AppState,
+): DictionaryEntries => {
+  const context = buildDictationContext({
+    dictationLanguage: "auto",
+    terms: collectDictionaryTerms(state),
+  });
 
   return {
-    sources: Array.from(sources.values()),
-    replacements: Array.from(replacements.values()),
+    sources: context.glossaryTerms,
+    replacements: Object.entries(context.replacementMap).map(
+      ([source, destination]) => ({
+        source,
+        destination,
+      }),
+    ),
   };
 };
 
@@ -92,6 +120,7 @@ export type PostProcessingPromptInput = {
   userName: string;
   dictationLanguage: string;
   tone: ToneConfig;
+  context?: DictationContext;
 };
 
 const buildPostProcessingTemplateVars = (
@@ -102,6 +131,10 @@ const buildPostProcessingTemplateVars = (
     ["username", input.userName],
     ["transcript", input.transcript],
     ["language", languageName],
+    ["currentApp", input.context?.currentApp?.name ?? ""],
+    ["currentEditor", input.context?.currentEditor?.name ?? ""],
+    ["selectedText", input.context?.selectedText ?? ""],
+    ["screenContext", input.context?.screenContext ?? ""],
   ];
 };
 
@@ -110,6 +143,37 @@ const getStylePrompt = (input: PostProcessingPromptInput): string => {
     return input.tone.stylePrompt;
   }
   return "Clean up the provided transcript";
+};
+
+const buildPostProcessingContextPrompt = (
+  context?: DictationContext,
+): string => {
+  const lines: string[] = [];
+
+  if (context?.currentApp?.name) {
+    lines.push(`Current app: ${context.currentApp.name}`);
+  }
+
+  if (context?.currentEditor?.name) {
+    lines.push(`Current editor: ${context.currentEditor.name}`);
+  }
+
+  if (context?.selectedText) {
+    lines.push(`Selected text: ${context.selectedText}`);
+  }
+
+  if (context?.screenContext) {
+    lines.push(`Screen context: ${context.screenContext}`);
+  }
+
+  if (Object.keys(context?.replacementMap ?? {}).length > 0) {
+    const replacements = Object.entries(context?.replacementMap ?? {})
+      .map(([source, destination]) => `${source} → ${destination}`)
+      .join(", ");
+    lines.push(`Preserve these replacements: ${replacements}`);
+  }
+
+  return lines.join("\n");
 };
 
 export const buildSystemPostProcessingTonePrompt = (
@@ -124,11 +188,12 @@ export const buildSystemPostProcessingTonePrompt = (
 
   const stylePrompt = getStylePrompt(input);
   const languageName = getDisplayNameForLanguage(input.dictationLanguage);
+  const contextPrompt = buildPostProcessingContextPrompt(input.context);
   const fullPrompt = `
-${stylePrompt}
-The result must be in the ${languageName} language.
-Respond with JSON only: { "result": "<processed-transcript>" }
-`;
+ ${stylePrompt}
+ ${contextPrompt ? `${contextPrompt}\n` : ""}The result must be in the ${languageName} language.
+ Respond with JSON only: { "result": "<processed-transcript>" }
+ `;
 
   return applyTemplateVars(
     fullPrompt.trim(),
@@ -272,10 +337,19 @@ export const buildLocalizedTranscriptionPrompt = (args: {
   state: AppState;
 }): string => {
   const joinedEntries = args.entries.sources.join(", ");
+  const joinedReplacements = args.entries.replacements
+    .map(({ source, destination }) => `${source} → ${destination}`)
+    .join(", ");
   const prompt =
     getRec(transcriptionPromptByCode, args.dictationLanguage) ??
     transcriptionPromptByCode.en;
-  return applyTemplateVars(prompt, [["glossary", joinedEntries]]);
+  const glossaryPrompt = applyTemplateVars(prompt, [["glossary", joinedEntries]]);
+
+  if (!joinedReplacements) {
+    return glossaryPrompt;
+  }
+
+  return `${glossaryPrompt}\n\nReplacement destinations: ${joinedReplacements}`;
 };
 
 export const buildPostProcessingPrompt = (

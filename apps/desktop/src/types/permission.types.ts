@@ -15,3 +15,19 @@ export type PermissionStatus = {
 };
 
 export type PermissionMap = Record<PermissionKind, Nullable<PermissionStatus>>;
+
+export type PermissionRequestLifecycle = {
+  requestInFlight: boolean;
+  awaitingExternalApproval: boolean;
+};
+
+export type PermissionGateStateInput = PermissionRequestLifecycle & {
+  kind: PermissionKind;
+  status: Nullable<PermissionStatus>;
+};
+
+export type PermissionGateState = {
+  canRequest: boolean;
+  isAwaitingExternalApproval: boolean;
+  shouldOpenSettings: boolean;
+};

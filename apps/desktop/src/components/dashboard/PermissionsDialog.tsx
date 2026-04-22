@@ -22,6 +22,10 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
 import type { PermissionKind } from "../../types/permission.types";
 import {
+  derivePermissionGateState,
+  resolvePermissionRequestLifecycle,
+} from "../../utils/permission-flow.utils";
+import {
   REQUIRED_PERMISSIONS,
   describePermissionState,
   getPermissionInstructions,
@@ -55,15 +59,38 @@ const getPurposeDescription = (
 const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
   const intl = useIntl();
   const status = useAppStore((state) => state.permissions[kind]);
-  const [requesting, setRequesting] = useState(false);
+  const requestLifecycle = useAppStore(
+    (state) => state.permissionRequests[kind],
+  );
+  const gateState = useMemo(
+    () =>
+      derivePermissionGateState({
+        kind,
+        status,
+        requestInFlight: requestLifecycle.requestInFlight,
+        awaitingExternalApproval: requestLifecycle.awaitingExternalApproval,
+      }),
+    [kind, requestLifecycle, status],
+  );
 
   const { icon, color, chipColor, chipLabel } = useMemo(() => {
-    if (!status) {
+    if (!status || requestLifecycle.requestInFlight) {
       return {
         icon: <PendingOutlined sx={{ fontSize: ICON_SIZE }} />,
         color: "text.secondary" as const,
         chipColor: "default" as const,
-        chipLabel: intl.formatMessage({ defaultMessage: "Checking" }),
+        chipLabel: requestLifecycle.requestInFlight
+          ? intl.formatMessage({ defaultMessage: "Requesting" })
+          : intl.formatMessage({ defaultMessage: "Checking" }),
+      };
+    }
+
+    if (gateState.isAwaitingExternalApproval) {
+      return {
+        icon: <PendingOutlined sx={{ fontSize: ICON_SIZE }} />,
+        color: "warning.main" as const,
+        chipColor: "warning" as const,
+        chipLabel: intl.formatMessage({ defaultMessage: "Awaiting approval" }),
       };
     }
 
@@ -84,20 +111,46 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
       chipColor: "error" as const,
       chipLabel: describePermissionState(status.state),
     };
-  }, [status, intl]);
+  }, [
+    gateState.isAwaitingExternalApproval,
+    intl,
+    requestLifecycle.requestInFlight,
+    status,
+  ]);
 
-  const instructions = getPermissionInstructions(kind);
+  const instructions = gateState.isAwaitingExternalApproval
+    ? intl.formatMessage({
+        defaultMessage:
+          "Finish enabling this permission in System Settings, then return to Voquill.",
+      })
+    : getPermissionInstructions(kind);
   const title = getPermissionLabel(kind);
-  const requestingDisabled = status
-    ? isPermissionAuthorized(status.state)
-    : false;
+  const buttonLabel = requestLifecycle.requestInFlight
+    ? intl.formatMessage({ defaultMessage: "Requesting" })
+    : gateState.isAwaitingExternalApproval
+      ? intl.formatMessage({ defaultMessage: "Awaiting approval" })
+      : gateState.shouldOpenSettings
+        ? intl.formatMessage({ defaultMessage: "Open settings" })
+        : intl.formatMessage({ defaultMessage: "Enable" });
 
   const handleRequest = useCallback(async () => {
-    if (requesting || requestingDisabled) {
+    const latestState = useAppStore.getState();
+    const latestGateState = derivePermissionGateState({
+      kind,
+      status: latestState.permissions[kind],
+      requestInFlight: latestState.permissionRequests[kind].requestInFlight,
+      awaitingExternalApproval:
+        latestState.permissionRequests[kind].awaitingExternalApproval,
+    });
+
+    if (!latestGateState.canRequest) {
       return;
     }
 
-    setRequesting(true);
+    produceAppState((draft) => {
+      draft.permissionRequests[kind].requestInFlight = true;
+    });
+
     try {
       const requestFn =
         kind === "microphone"
@@ -106,13 +159,21 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
       const result = await requestFn();
       produceAppState((draft) => {
         draft.permissions[kind] = result;
+        draft.permissionRequests[kind] = resolvePermissionRequestLifecycle({
+          kind,
+          status: result,
+          requestInFlight: draft.permissionRequests[kind].requestInFlight,
+          awaitingExternalApproval:
+            draft.permissionRequests[kind].awaitingExternalApproval,
+        });
       });
     } catch (error) {
       console.error(`Failed to request ${kind} permission`, error);
-    } finally {
-      setRequesting(false);
+      produceAppState((draft) => {
+        draft.permissionRequests[kind].requestInFlight = false;
+      });
     }
-  }, [kind, requesting, requestingDisabled]);
+  }, [kind]);
 
   return (
     <Stack
@@ -138,10 +199,15 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
         variant="outlined"
         size="small"
         onClick={() => void handleRequest()}
-        disabled={requesting || requestingDisabled}
-        endIcon={<OpenInNew />}
+        disabled={!gateState.canRequest}
+        endIcon={
+          requestLifecycle.requestInFlight ||
+          gateState.isAwaitingExternalApproval ? undefined : (
+            <OpenInNew />
+          )
+        }
       >
-        <FormattedMessage defaultMessage="Enable" />
+        {buttonLabel}
       </Button>
     </Stack>
   );
