@@ -127,6 +127,18 @@ describe("desktop dictation context", () => {
     expect(invokeMock).toHaveBeenCalledWith("get_screen_capture_context");
   });
 
+  it("passes through screen capture context OCR text when the command succeeds", async () => {
+    invokeMock.mockResolvedValueOnce("Draft launch checklist");
+
+    const { getScreenCaptureContext } =
+      await import("../utils/screen-context-provider");
+
+    await expect(getScreenCaptureContext()).resolves.toBe(
+      "Draft launch checklist",
+    );
+    expect(invokeMock).toHaveBeenCalledWith("get_screen_capture_context");
+  });
+
   it("includes finalize-time app, editor, selection, and screen context in post-processing prompts", async () => {
     await transcribeActions.postProcessTranscript({
       rawTranscript: "update the summary",
