@@ -347,13 +347,16 @@ async fn sign_in_with_custom_token(
     Ok(parsed)
 }
 
-fn navigate_main_to_built_in(app: &AppHandle) -> Result<(), String> {
+pub(crate) fn navigate_main_to_built_in(app: &AppHandle) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "main webview not available".to_string())?;
-    let url = built_in_url(app)?;
+    let url = built_in_url(app)?.to_string();
+    let url_json = serde_json::to_string(&url)
+        .map_err(|err| format!("serialize built-in url: {err}"))?;
+    let script = format!("window.location.replace({url_json});");
     window
-        .navigate(url)
+        .eval(&script)
         .map_err(|err| format!("navigate failed: {err}"))
 }
 
