@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { produceAppState } from "../../store";
+import { resolvePermissionRequestLifecycle } from "../../utils/permission-flow.utils";
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
@@ -30,8 +31,37 @@ export const PermissionSideEffects = () => {
 
       if (mountedRef.current) {
         produceAppState((draft) => {
-          draft.permissions.microphone = microphone;
-          draft.permissions.accessibility = accessibility;
+          if (microphone) {
+            draft.permissions.microphone = microphone;
+            if (!draft.permissionRequests.microphone.requestInFlight) {
+              draft.permissionRequests.microphone =
+                resolvePermissionRequestLifecycle({
+                  kind: "microphone",
+                  status: microphone,
+                  requestInFlight:
+                    draft.permissionRequests.microphone.requestInFlight,
+                  awaitingExternalApproval:
+                    draft.permissionRequests.microphone
+                      .awaitingExternalApproval,
+                });
+            }
+          }
+
+          if (accessibility) {
+            draft.permissions.accessibility = accessibility;
+            if (!draft.permissionRequests.accessibility.requestInFlight) {
+              draft.permissionRequests.accessibility =
+                resolvePermissionRequestLifecycle({
+                  kind: "accessibility",
+                  status: accessibility,
+                  requestInFlight:
+                    draft.permissionRequests.accessibility.requestInFlight,
+                  awaitingExternalApproval:
+                    draft.permissionRequests.accessibility
+                      .awaitingExternalApproval,
+                });
+            }
+          }
         });
       }
     } finally {

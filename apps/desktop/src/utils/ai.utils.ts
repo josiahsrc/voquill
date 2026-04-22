@@ -24,6 +24,15 @@ export const unwrapNestedLlmResponse = <T extends Record<string, unknown>>(
   return parsed;
 };
 
+export const parseStructuredJsonResponse = <TKey extends string>(
+  text: string,
+  key: TKey,
+): Record<TKey, unknown> => {
+  const extractedJson = extractJsonFromMarkdown(text);
+  const parsed = JSON.parse(extractedJson) as Record<TKey, unknown>;
+  return unwrapNestedLlmResponse(parsed, key);
+};
+
 export const extractJsonFromMarkdown = (text: string): string => {
   // Try to extract JSON from markdown code blocks
   const jsonBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);

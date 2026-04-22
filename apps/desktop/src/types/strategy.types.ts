@@ -1,4 +1,8 @@
-import type { AppTarget, Nullable } from "@voquill/types";
+import type {
+  AppTarget,
+  DictationContextTarget,
+  Nullable,
+} from "@voquill/types";
 import type {
   PostProcessMetadata,
   TranscribeAudioMetadata,
@@ -20,6 +24,9 @@ export type HandleTranscriptParams = {
   toneId: string | null;
   a11yInfo: TextFieldInfo | null;
   currentApp: AppTarget | null;
+  currentEditor?: DictationContextTarget | null;
+  selectedText?: string | null;
+  screenContext?: string | null;
   loadingToken: symbol | null;
   audio: StopRecordingResponse;
   transcriptionMetadata: TranscribeAudioMetadata;

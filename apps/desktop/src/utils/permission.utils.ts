@@ -37,6 +37,18 @@ export const isPermissionAuthorized = (
   return state === "authorized";
 };
 
+export const isPermissionDenied = (
+  state: PermissionState | null | undefined,
+): boolean => {
+  return state === "denied";
+};
+
+export const isPermissionRestricted = (
+  state: PermissionState | null | undefined,
+): boolean => {
+  return state === "restricted";
+};
+
 export const getPermissionLabel = (kind: PermissionKind): string => {
   switch (kind) {
     case "microphone":
@@ -75,7 +87,7 @@ export const describePermissionState = (state: PermissionState): string => {
     case "authorized":
       return "Authorized";
     case "not-determined":
-      return "Awaiting approval";
+      return "Not granted yet";
     case "restricted":
       return "Restricted by system";
     case "denied":

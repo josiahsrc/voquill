@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildDictationContext,
   buildPostProcessingPrompt,
   buildSystemPostProcessingTonePrompt,
   PostProcessingPromptInput,
@@ -15,6 +16,45 @@ const makeInput = (
   dictationLanguage: "en",
   tone,
   ...overrides,
+});
+
+describe("buildDictationContext", () => {
+  it("preserves replacement destinations in shared context assembly", () => {
+    const result = buildDictationContext({
+      dictationLanguage: "en",
+      terms: [
+        {
+          sourceValue: "voquill",
+          destinationValue: "Voquill",
+          isReplacement: true,
+        },
+        {
+          sourceValue: "GraphQL",
+          destinationValue: "GraphQL",
+          isReplacement: false,
+        },
+      ],
+    });
+
+    expect(result.glossaryTerms).toEqual(["voquill", "GraphQL"]);
+    expect(result.replacementMap).toEqual({ voquill: "Voquill" });
+  });
+
+  it("preserves selected text and screen context in shared context assembly", () => {
+    const result = buildDictationContext({
+      dictationLanguage: "en",
+      selectedText: "  Draft\0 summary \n section  ",
+      screenContext: "\0Browser tab  \n product requirements  ",
+    } as Parameters<typeof buildDictationContext>[0] & {
+      selectedText: string;
+      screenContext: string;
+    });
+
+    expect(result).toMatchObject({
+      selectedText: "Draft summary section",
+      screenContext: "Browser tab product requirements",
+    });
+  });
 });
 
 describe("buildSystemPostProcessingTonePrompt", () => {
@@ -61,6 +101,31 @@ describe("buildSystemPostProcessingTonePrompt", () => {
     );
     expect(result).toContain("Clean up the provided transcript");
     expect(result).toContain("English");
+  });
+
+  it("includes app and editor context when available", () => {
+    const result = buildSystemPostProcessingTonePrompt(
+      makeInput(
+        { kind: "style", stylePrompt: "Be formal" },
+        {
+          context: buildDictationContext({
+            dictationLanguage: "en",
+            currentApp: { id: "notes", name: "Notes" },
+            currentEditor: { id: "body", name: "Document Body" },
+            selectedText: "  Pending\0 launch \n notes  ",
+            screenContext: "\0Browser tab  \n release dashboard  ",
+          } as Parameters<typeof buildDictationContext>[0] & {
+            selectedText: string;
+            screenContext: string;
+          }),
+        },
+      ),
+    );
+
+    expect(result).toContain("Current app: Notes");
+    expect(result).toContain("Current editor: Document Body");
+    expect(result).toContain("Selected text: Pending launch notes");
+    expect(result).toContain("Screen context: Browser tab release dashboard");
   });
 });
 
