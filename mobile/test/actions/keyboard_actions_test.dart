@@ -84,7 +84,7 @@ void main() {
       );
       expect(
         (payloads['setKeyboardToolbar'] as Map)['activeMode'],
-        'dictation',
+        'Auto',
       );
       expect((payloads['setKeyboardLanguages'] as Map)['activeLanguage'], 'fr');
     },

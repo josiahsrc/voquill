@@ -145,6 +145,8 @@ class VoquillIME : InputMethodService() {
     private lateinit var topLeftRow: LinearLayout
     private lateinit var utilButtonRow: LinearLayout
     private var activeMode = "Auto"
+    private val availableModes = listOf("Auto", "Manual", "Dictation")
+    private var overflowActions: List<String> = listOf("addToDictionary")
 
     private var lastDebugLog = ""
     private var pendingErrorMessage = ""
@@ -692,6 +694,37 @@ class VoquillIME : InputMethodService() {
         }
     }
 
+    private fun cycleMode() {
+        val idx = availableModes.indexOf(activeMode)
+        activeMode = availableModes[(idx + 1) % availableModes.size]
+        toolbarController.updateMode(activeMode)
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString("voquill_keyboard_active_mode", activeMode)
+            .apply()
+    }
+
+    private fun showOverflowPopup() {
+        val anchor = keyboardToolbarRow.findViewWithTag<android.widget.TextView>("toolbar_overflow")
+            ?: keyboardToolbarRow
+        val popup = android.widget.PopupMenu(this, anchor)
+        overflowActions.forEachIndexed { i, action ->
+            val label = when (action) {
+                "addToDictionary" -> "Add to Dictionary"
+                "tone"            -> "Tone"
+                "settings"        -> "Settings"
+                "help"            -> "Help"
+                else              -> action
+            }
+            popup.menu.add(0, i, i, label)
+        }
+        popup.setOnMenuItemClickListener { item ->
+            dbg("overflow action: ${overflowActions.getOrNull(item.itemId)}")
+            true
+        }
+        popup.show()
+    }
+
     private fun renderKeyMatrix() {
         val layout = keyboardLayoutSpec ?: return
         currentMatrixView?.let { keyMatrixContainer.removeView(it) }
@@ -732,6 +765,8 @@ class VoquillIME : InputMethodService() {
                 if (arr != null) visibleActions = (0 until arr.length()).map { arr.getString(it) }
                 val storedMode = json.optString("activeMode", "")
                 if (storedMode.isNotBlank()) activeMode = storedMode
+                val oarr = json.optJSONArray("overflowActions")
+                if (oarr != null) overflowActions = (0 until oarr.length()).map { oarr.getString(it) }
             }
         }
 
@@ -742,8 +777,8 @@ class VoquillIME : InputMethodService() {
             isDark = isDarkMode,
             onStartStop = ::onPillTap,
             onLanguage = ::onLanguageChipTap,
-            onMode = { if (android.os.Build.VERSION.SDK_INT >= 0) dbg("mode chip tapped — Task 7 pending") },
-            onOverflow = { dbg("overflow chip tapped — Task 8 pending") },
+            onMode = { cycleMode() },
+            onOverflow = { showOverflowPopup() },
         )
         keyboardToolbarRow.addView(
             toolbarView,

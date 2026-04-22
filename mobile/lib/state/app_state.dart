@@ -72,7 +72,7 @@ class AppState with EquatableMixin {
     this.dictationLanguages = const ['en'],
     this.activeDictationLanguage,
     this.keyboardLayoutsByLanguage = const {},
-    this.keyboardToolbarActiveMode = 'dictation',
+    this.keyboardToolbarActiveMode = 'Auto',
     this.keyboardToolbarVisibleActions = const [
       'startStop',
       'language',

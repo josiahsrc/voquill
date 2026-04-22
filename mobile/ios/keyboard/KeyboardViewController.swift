@@ -311,6 +311,8 @@ class KeyboardViewController: UIInputViewController {
     private var isFullKeyboardMode = false
     private var toolbarView: UIView?
     private var activeMode: String = "Auto"
+    private let availableModes = ["Auto", "Manual", "Dictation"]
+    private var overflowActions: [String] = ["addToDictionary"]
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -433,7 +435,7 @@ class KeyboardViewController: UIInputViewController {
         pillButton?.isHidden = true
     }
 
-    private func buildToolbar(isDark: Bool, visibleActions: [String], modeLabel: String) -> UIView {
+    private func buildToolbar(isDark: Bool, visibleActions: [String], modeLabel: String, overflowActions: [String] = []) -> UIView {
         let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
 
         let stack = UIStackView()
@@ -486,19 +488,15 @@ class KeyboardViewController: UIInputViewController {
 
         // Mode
         if visibleActions.contains("mode") {
-            let btn = makeChip(title: modeLabel, identifier: "toolbar_mode") {
-                #if DEBUG
-                NSLog("[VoquillKB] mode chip tapped — Task 7 pending")
-                #endif
+            let btn = makeChip(title: modeLabel, identifier: "toolbar_mode") { [weak self] in
+                self?.cycleMode()
             }
             stack.addArrangedSubview(btn)
         }
 
         // Overflow
-        let overflow = makeChip(title: "⋯", identifier: "toolbar_overflow") {
-            #if DEBUG
-            NSLog("[VoquillKB] overflow chip tapped — Task 8 pending")
-            #endif
+        let overflow = makeChip(title: "⋯", identifier: "toolbar_overflow") { [weak self] in
+            self?.toggleOverflowStrip()
         }
         stack.addArrangedSubview(overflow)
 
@@ -516,9 +514,10 @@ class KeyboardViewController: UIInputViewController {
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             if let actions = json["visibleActions"] as? [String] { visibleActions = actions }
             if let mode = json["activeMode"] as? String { activeMode = mode }
+            if let oarr = json["overflowActions"] as? [String] { overflowActions = oarr }
         }
 
-        let toolbar = buildToolbar(isDark: isDark, visibleActions: visibleActions, modeLabel: activeMode)
+        let toolbar = buildToolbar(isDark: isDark, visibleActions: visibleActions, modeLabel: activeMode, overflowActions: overflowActions)
         view.addSubview(toolbar)
         NSLayoutConstraint.activate([
             toolbar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -570,6 +569,69 @@ class KeyboardViewController: UIInputViewController {
         default:
             break
         }
+    }
+
+    private func cycleMode() {
+        let idx = availableModes.firstIndex(of: activeMode) ?? 0
+        activeMode = availableModes[(idx + 1) % availableModes.count]
+        UserDefaults(suiteName: DictationConstants.appGroupId)?
+            .set(activeMode, forKey: "voquill_keyboard_active_mode")
+        renderToolbar()
+    }
+
+    private var overflowStripView: UIView?
+
+    private func toggleOverflowStrip() {
+        if let strip = overflowStripView {
+            strip.removeFromSuperview()
+            overflowStripView = nil
+            return
+        }
+        guard let toolbar = toolbarView else { return }
+        let strip = buildOverflowStrip(actions: overflowActions)
+        view.addSubview(strip)
+        NSLayoutConstraint.activate([
+            strip.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            strip.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            strip.topAnchor.constraint(equalTo: toolbar.bottomAnchor, constant: 2),
+            strip.heightAnchor.constraint(equalToConstant: 34),
+        ])
+        overflowStripView = strip
+    }
+
+    private func buildOverflowStrip(actions: [String]) -> UIView {
+        let strip = UIStackView()
+        strip.translatesAutoresizingMaskIntoConstraints = false
+        strip.axis = .horizontal
+        strip.distribution = .fillEqually
+        strip.spacing = 6
+        strip.layoutMargins = UIEdgeInsets(top: 2, left: 8, bottom: 2, right: 8)
+        strip.isLayoutMarginsRelativeArrangement = true
+        let isDark = traitCollection.userInterfaceStyle == .dark
+
+        for action in actions {
+            let label: String = {
+                switch action {
+                case "addToDictionary": return "Add to Dict"
+                case "tone":            return "Tone"
+                case "settings":        return "Settings"
+                case "help":            return "Help"
+                default:                return action
+                }
+            }()
+            let btn = UIButton(type: .system)
+            btn.setTitle(label, for: .normal)
+            btn.titleLabel?.font = .systemFont(ofSize: 12)
+            btn.backgroundColor = isDark ? UIColor(white: 0.22, alpha: 1) : UIColor(white: 0.82, alpha: 1)
+            btn.layer.cornerRadius = 6
+            btn.accessibilityIdentifier = "overflow_\(action)"
+            #if DEBUG
+            let capturedAction = action
+            btn.addAction(UIAction { _ in NSLog("[VoquillKB] overflow: \(capturedAction)") }, for: .touchUpInside)
+            #endif
+            strip.addArrangedSubview(btn)
+        }
+        return strip
     }
 
     private func refreshDictationState() {

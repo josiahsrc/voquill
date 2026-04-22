@@ -1,7 +1,12 @@
 import 'package:equatable/equatable.dart';
 
 /// All action identifiers that can appear in the toolbar.
-const _knownActions = ['startStop', 'language', 'mode', 'addToDictionary'];
+// Actions that may appear in the toolbar or overflow strip.
+// tone, settings, help are planned for future native screens.
+const _knownActions = [
+  'startStop', 'language', 'mode',
+  'addToDictionary', 'tone', 'settings', 'help',
+];
 
 /// Payload model for the keyboard toolbar, describing which actions are
 /// visible and what dictation mode is active.
@@ -35,6 +40,7 @@ class KeyboardToolbarModel with EquatableMixin {
   Map<String, dynamic> toJson() => {
     'visibleActions': visibleActions,
     'activeMode': activeMode,
+    'overflowActions': overflowActions,
   };
 
   @override

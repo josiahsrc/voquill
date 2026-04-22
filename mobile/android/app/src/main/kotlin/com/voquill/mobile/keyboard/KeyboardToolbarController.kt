@@ -82,7 +82,7 @@ class KeyboardToolbarController(private val context: Context) {
         }
 
         // Overflow
-        val overflow = makeChip("⋯", onOverflow)
+        val overflow = makeChip("⋯", onOverflow).apply { tag = "toolbar_overflow" }
         toolbar.addView(overflow, chipParams())
 
         return toolbar
