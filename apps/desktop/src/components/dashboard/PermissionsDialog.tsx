@@ -241,6 +241,7 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
 };
 
 export const PermissionsDialog = () => {
+  const intl = useIntl();
   const permissions = useAppStore((state) => state.permissions);
   const [isManuallyOpened, setIsManuallyOpened] = useState(false);
   const [permissionWasGranted, setPermissionWasGranted] = useState(false);
@@ -285,6 +286,18 @@ export const PermissionsDialog = () => {
     viewState.shouldShowManualEntry &&
     !viewState.shouldAutoOpen &&
     !viewState.shouldShowRestartMessage;
+  const dialogTitle = isOptionalEnhancementsView
+    ? intl.formatMessage({ defaultMessage: "Optional permissions" })
+    : intl.formatMessage({ defaultMessage: "Permissions needed" });
+  const dialogDescription = isOptionalEnhancementsView
+    ? intl.formatMessage({
+        defaultMessage:
+          "Voquill already has its required startup permissions. Screen recording is only an optional enhancement for future OCR and screen context features.",
+      })
+    : intl.formatMessage({
+        defaultMessage:
+          "Voquill is an AI dictation tool. It needs microphone and accessibility access in order to function properly.",
+      });
 
   useEffect(() => {
     if (viewState.shouldAutoOpen) {
@@ -344,25 +357,11 @@ export const PermissionsDialog = () => {
         }}
       >
         <DialogTitle>
-          <FormattedMessage
-            defaultMessage={
-              isOptionalEnhancementsView
-                ? "Optional permissions"
-                : "Permissions needed"
-            }
-          />
+          {dialogTitle}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={3}>
-            <Typography variant="body1">
-              <FormattedMessage
-                defaultMessage={
-                  isOptionalEnhancementsView
-                    ? "Voquill already has its required startup permissions. Screen recording is only an optional enhancement for future OCR and screen context features."
-                    : "Voquill is an AI dictation tool. It needs microphone and accessibility access in order to function properly."
-                }
-              />
-            </Typography>
+            <Typography variant="body1">{dialogDescription}</Typography>
             <Stack>
               {REQUIRED_PERMISSIONS.map((kind) => (
                 <PermissionRow key={kind} kind={kind} />
