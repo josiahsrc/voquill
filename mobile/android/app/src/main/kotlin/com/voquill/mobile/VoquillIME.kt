@@ -708,6 +708,11 @@ class VoquillIME : InputMethodService() {
         topLeftRow.visibility = View.GONE
         utilButtonRow.visibility = View.GONE
         renderToolbar()
+        // Push matrix below toolbar (40dp) so it doesn't cover the toolbar row
+        val density = resources.displayMetrics.density
+        (keyMatrixContainer.layoutParams as FrameLayout.LayoutParams).topMargin =
+            (40 * density).toInt()
+        keyMatrixContainer.requestLayout()
         keyMatrixContainer.visibility = View.VISIBLE
         pillButton.visibility = View.GONE
     }
@@ -716,15 +721,29 @@ class VoquillIME : InputMethodService() {
         keyboardToolbarRow.removeAllViews()
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val activeLanguage = prefs.getString(KEY_DICTATION_LANGUAGE, dictationLanguages.firstOrNull() ?: "en") ?: "en"
+
+        // Read stored toolbar config from Flutter sync (matches iOS implementation)
+        var visibleActions = listOf("startStop", "language", "mode")
+        val toolbarJson = prefs.getString(KEY_KEYBOARD_TOOLBAR, null)
+        if (toolbarJson != null) {
+            runCatching {
+                val json = JSONObject(toolbarJson)
+                val arr = json.optJSONArray("visibleActions")
+                if (arr != null) visibleActions = (0 until arr.length()).map { arr.getString(it) }
+                val storedMode = json.optString("activeMode", "")
+                if (storedMode.isNotBlank()) activeMode = storedMode
+            }
+        }
+
         val toolbarView = toolbarController.buildToolbar(
-            visibleActions = listOf("startStop", "language", "mode"),
+            visibleActions = visibleActions,
             activeLanguage = activeLanguage,
             activeMode = activeMode,
             isDark = isDarkMode,
             onStartStop = ::onPillTap,
             onLanguage = ::onLanguageChipTap,
-            onMode = { /* cycle mode — placeholder for Task 7 */ },
-            onOverflow = { /* show overflow — placeholder for Task 8 */ },
+            onMode = { if (android.os.Build.VERSION.SDK_INT >= 0) dbg("mode chip tapped — Task 7 pending") },
+            onOverflow = { dbg("overflow chip tapped — Task 8 pending") },
         )
         keyboardToolbarRow.addView(
             toolbarView,
@@ -734,6 +753,18 @@ class VoquillIME : InputMethodService() {
             )
         )
         keyboardToolbarRow.visibility = View.VISIBLE
+    }
+
+    private fun resetToVoiceOnlyMode() {
+        if (!isFullKeyboardMode) return
+        isFullKeyboardMode = false
+        keyMatrixContainer.visibility = View.GONE
+        keyboardToolbarRow.visibility = View.GONE
+        (keyMatrixContainer.layoutParams as FrameLayout.LayoutParams).topMargin = 0
+        keyMatrixContainer.requestLayout()
+        topLeftRow.visibility = View.VISIBLE
+        utilButtonRow.visibility = View.VISIBLE
+        pillButton.visibility = View.VISIBLE
     }
 
     private fun renderToneChips() {
