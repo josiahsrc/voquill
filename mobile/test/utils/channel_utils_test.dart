@@ -81,7 +81,7 @@ void main() {
     final calls = <String, dynamic>{};
     fakeSharedChannel.onInvoke = (method, args) {
       if (method == 'setKeyboardToolbar') {
-        calls.addAll(Map<String, dynamic>.from(args as Map));
+        (args as Map).forEach((k, v) => calls[k as String] = v);
       }
       return null;
     };

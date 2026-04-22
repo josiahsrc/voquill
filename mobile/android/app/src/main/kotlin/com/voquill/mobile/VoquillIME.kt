@@ -139,6 +139,13 @@ class VoquillIME : InputMethodService() {
     private var currentMatrixView: View? = null
     private var isFullKeyboardMode = false
 
+    // Keyboard action toolbar
+    private val toolbarController = KeyboardToolbarController(this)
+    private lateinit var keyboardToolbarRow: LinearLayout
+    private lateinit var topLeftRow: LinearLayout
+    private lateinit var utilButtonRow: LinearLayout
+    private var activeMode = "Auto"
+
     private var lastDebugLog = ""
     private var pendingErrorMessage = ""
 
@@ -187,6 +194,9 @@ class VoquillIME : InputMethodService() {
         toneScroll.setFadingEdgeLength((18 * resources.displayMetrics.density).toInt())
 
         keyMatrixContainer = view.findViewById(R.id.key_matrix_container)
+        keyboardToolbarRow = view.findViewById(R.id.keyboard_toolbar_row)
+        topLeftRow = view.findViewById(R.id.top_left_row)
+        utilButtonRow = view.findViewById(R.id.util_button_row)
 
         baseKeyboardHeightPx = keyboardContent.layoutParams.height
         baseKeyboardPaddingBottomPx = keyboardContent.paddingBottom
@@ -695,8 +705,35 @@ class VoquillIME : InputMethodService() {
         )
         currentMatrixView = view
         isFullKeyboardMode = true
+        topLeftRow.visibility = View.GONE
+        utilButtonRow.visibility = View.GONE
+        renderToolbar()
         keyMatrixContainer.visibility = View.VISIBLE
         pillButton.visibility = View.GONE
+    }
+
+    private fun renderToolbar() {
+        keyboardToolbarRow.removeAllViews()
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val activeLanguage = prefs.getString(KEY_DICTATION_LANGUAGE, dictationLanguages.firstOrNull() ?: "en") ?: "en"
+        val toolbarView = toolbarController.buildToolbar(
+            visibleActions = listOf("startStop", "language", "mode"),
+            activeLanguage = activeLanguage,
+            activeMode = activeMode,
+            isDark = isDarkMode,
+            onStartStop = ::onPillTap,
+            onLanguage = ::onLanguageChipTap,
+            onMode = { /* cycle mode — placeholder for Task 7 */ },
+            onOverflow = { /* show overflow — placeholder for Task 8 */ },
+        )
+        keyboardToolbarRow.addView(
+            toolbarView,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
+        keyboardToolbarRow.visibility = View.VISIBLE
     }
 
     private fun renderToneChips() {

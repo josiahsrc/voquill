@@ -89,4 +89,12 @@ void main() {
       expect((payloads['setKeyboardLanguages'] as Map)['activeLanguage'], 'fr');
     },
   );
+
+  test('keyboard toolbar has startStop, language, mode as visible actions', () {
+    final state = getAppState();
+    expect(
+      state.keyboardToolbarVisibleActions,
+      containsAll(['startStop', 'language', 'mode']),
+    );
+  });
 }
