@@ -64,9 +64,9 @@ export const isPermissionRestricted = (
 };
 
 export const isPermissionRequestActionable = (
-  kind: PermissionKind,
+  _kind: PermissionKind,
 ): boolean => {
-  return kind !== "screen-recording";
+  return true;
 };
 
 export const getPermissionLabel = (kind: PermissionKind): string => {
@@ -96,7 +96,10 @@ export const getPermissionInstructions = (kind: PermissionKind): string => {
   }
 
   if (kind === "screen-recording") {
-    return "Optional enhancement for future OCR and screen context support. It is not required to start Voquill today, and native setup arrives in a later update.";
+    if (platform === "macos") {
+      return "System Settings → Privacy & Security → Screen Recording";
+    }
+    return "Allow screen recording in your system privacy settings.";
   }
 
   if (platform === "macos") {

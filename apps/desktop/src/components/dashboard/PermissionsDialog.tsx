@@ -60,7 +60,7 @@ const getPurposeDescription = (
     }),
     "screen-recording": intl.formatMessage({
       defaultMessage:
-        "Optional: enables future screen-capture OCR features from the dashboard.",
+        "Optional enhancement for OCR and screen context support. Enables Voquill to read on-screen text to improve dictation accuracy.",
     }),
   };
   return descriptions[kind];

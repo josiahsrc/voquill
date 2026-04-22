@@ -403,7 +403,7 @@
   "open_the_current_assistant_conversation_in_the_main_window": "현재 어시스턴트 대화를 메인 창에서 열기",
   "open_the_dictionary_page_and_add_a_glossary_term_or_replacem": "사전 페이지를 열고 용어집 용어 또는 교체 규칙을 추가하세요.",
   "opening_installer": "설치 프로그램을 여는 중...",
-  "optional_enables_future_screen_capture_ocr_features_from_the": "Optional: enables future screen-capture OCR features from the dashboard.",
+  "optional_enables_future_screen_capture_ocr_features_from_the": "Optional enhancement for OCR and screen context support. Enables Voquill to read on-screen text to improve dictation accuracy.",
   "optional_for_now_only_receiver_targets_need_an_address_for_d": "현재는 선택 사항입니다. 수신자 대상만 배송을 위해 주소가 필요합니다.",
   "optional_permissions": "Optional permissions",
   "or": "또는",

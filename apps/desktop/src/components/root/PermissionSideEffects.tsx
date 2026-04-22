@@ -5,6 +5,7 @@ import { resolvePermissionRequestLifecycle } from "../../utils/permission-flow.u
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
+  checkScreenRecordingPermission,
 } from "../../utils/permission.utils";
 
 export const PermissionSideEffects = () => {
@@ -18,19 +19,17 @@ export const PermissionSideEffects = () => {
 
     checkingRef.current = true;
     try {
-  // NOTE: screen-recording permission is intentionally NOT polled here.
-  // Screen-recording is an optional, enhancement-only feature gated behind a "Coming soon"
-  // UI label.  Its permission state is seeded at startup (not-determined or authorized via
-  // the native check) and is updated only when the user interacts with the Permissions dialog.
-  // TODO: When the "Coming soon" gate is lifted, add checkScreenRecordingPermission() here
-  // alongside the microphone/accessibility calls so the status chip stays current.
-  const [microphone, accessibility] = await Promise.all([
+      const [microphone, accessibility, screenRecording] = await Promise.all([
         checkMicrophonePermission().catch((error) => {
           console.error("Failed to fetch microphone permission", error);
           return null;
         }),
         checkAccessibilityPermission().catch((error) => {
           console.error("Failed to fetch accessibility permission", error);
+          return null;
+        }),
+        checkScreenRecordingPermission().catch((error) => {
+          console.error("Failed to fetch screen-recording permission", error);
           return null;
         }),
       ]);
@@ -64,6 +63,22 @@ export const PermissionSideEffects = () => {
                     draft.permissionRequests.accessibility.requestInFlight,
                   awaitingExternalApproval:
                     draft.permissionRequests.accessibility
+                      .awaitingExternalApproval,
+                });
+            }
+          }
+
+          if (screenRecording) {
+            draft.permissions["screen-recording"] = screenRecording;
+            if (!draft.permissionRequests["screen-recording"].requestInFlight) {
+              draft.permissionRequests["screen-recording"] =
+                resolvePermissionRequestLifecycle({
+                  kind: "screen-recording",
+                  status: screenRecording,
+                  requestInFlight:
+                    draft.permissionRequests["screen-recording"].requestInFlight,
+                  awaitingExternalApproval:
+                    draft.permissionRequests["screen-recording"]
                       .awaitingExternalApproval,
                 });
             }

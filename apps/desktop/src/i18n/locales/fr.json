@@ -403,7 +403,7 @@
   "open_the_current_assistant_conversation_in_the_main_window": "Ouvrir la conversation actuelle de l'assistant dans la fenêtre principale.",
   "open_the_dictionary_page_and_add_a_glossary_term_or_replacem": "Ouvrez la page du dictionnaire et ajoutez un terme de glossaire ou une règle de remplacement.",
   "opening_installer": "Ouverture de l'installateur...",
-  "optional_enables_future_screen_capture_ocr_features_from_the": "Optional: enables future screen-capture OCR features from the dashboard.",
+  "optional_enables_future_screen_capture_ocr_features_from_the": "Optional enhancement for OCR and screen context support. Enables Voquill to read on-screen text to improve dictation accuracy.",
   "optional_for_now_only_receiver_targets_need_an_address_for_d": "Optionnel pour le moment. Seuls les cibles du destinataire ont besoin d’une adresse pour la livraison.",
   "optional_permissions": "Optional permissions",
   "or": "ou",

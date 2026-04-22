@@ -410,7 +410,7 @@
   "open_the_current_assistant_conversation_in_the_main_window": "Open the current assistant conversation in the main window.",
   "open_the_dictionary_page_and_add_a_glossary_term_or_replacem": "Open the Dictionary page and add a glossary term or replacement rule.",
   "opening_installer": "Opening installer...",
-  "optional_enables_future_screen_capture_ocr_features_from_the": "Optional: enables future screen-capture OCR features from the dashboard.",
+  "optional_enables_future_screen_capture_ocr_features_from_the": "Optional enhancement for OCR and screen context support. Enables Voquill to read on-screen text to improve dictation accuracy.",
   "optional_enhancements": "Optional enhancements",
   "optional_for_now_only_receiver_targets_need_an_address_for_d": "Optional for now. Only receiver targets need an address for delivery.",
   "optional_permissions": "Optional permissions",

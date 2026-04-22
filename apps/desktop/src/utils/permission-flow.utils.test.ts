@@ -221,15 +221,15 @@ describe("screen recording permission contract", () => {
       shouldOpenSettings: false,
     });
     expect(getPermissionInstructions("screen-recording")).toContain(
-      "not required to start",
+      "Screen Recording",
     );
   });
 
-  it("keeps screen recording non-actionable until native support lands", async () => {
+  it("screen recording is now actionable (gate lifted)", async () => {
     const { isPermissionRequestActionable } = await import("./permission.utils");
 
     expect(isPermissionRequestActionable).toBeTypeOf("function");
-    expect(isPermissionRequestActionable("screen-recording")).toBe(false);
+    expect(isPermissionRequestActionable("screen-recording")).toBe(true);
     expect(isPermissionRequestActionable("microphone")).toBe(true);
   });
 
@@ -237,6 +237,7 @@ describe("screen recording permission contract", () => {
     const { canRequestPermission } = await loadSubject();
 
     expect(canRequestPermission).toBeTypeOf("function");
+    // screen-recording is now actionable — canRequest=true means it can be requested
     expect(
       canRequestPermission?.({
         kind: "screen-recording",
@@ -246,7 +247,7 @@ describe("screen recording permission contract", () => {
           shouldOpenSettings: false,
         },
       }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       canRequestPermission?.({
         kind: "microphone",
