@@ -35,15 +35,25 @@ class KeyboardLayoutModel with EquatableMixin {
   final KeyboardBottomRowModel bottomRow;
   final KeyboardToolbarModel toolbar;
 
-  const KeyboardLayoutModel({
+  KeyboardLayoutModel({
     required this.languageCode,
-    required this.alphaRows,
-    required this.numericRows,
-    required this.symbolRows,
+    required List<List<KeyboardKeyModel>> alphaRows,
+    required List<List<KeyboardKeyModel>> numericRows,
+    required List<List<KeyboardKeyModel>> symbolRows,
     required this.shift,
     required this.bottomRow,
     required this.toolbar,
-  });
+  }) : alphaRows = _freezeRows(alphaRows),
+       numericRows = _freezeRows(numericRows),
+       symbolRows = _freezeRows(symbolRows);
+
+  static List<List<KeyboardKeyModel>> _freezeRows(
+    List<List<KeyboardKeyModel>> rows,
+  ) {
+    return List<List<KeyboardKeyModel>>.unmodifiable(
+      rows.map(List<KeyboardKeyModel>.unmodifiable),
+    );
+  }
 
   factory KeyboardLayoutModel.englishQwerty() {
     final alphaRows = [

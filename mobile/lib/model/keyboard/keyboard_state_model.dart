@@ -30,6 +30,9 @@ class KeyboardStateModel with EquatableMixin {
   bool get isUppercase => caseState != KeyboardCaseState.lower;
 
   KeyboardStateModel onShiftTap() {
+    if (!isAlpha) {
+      return this;
+    }
     return switch (caseState) {
       KeyboardCaseState.lower => copyWith(caseState: KeyboardCaseState.shift),
       KeyboardCaseState.shift => copyWith(caseState: KeyboardCaseState.lower),

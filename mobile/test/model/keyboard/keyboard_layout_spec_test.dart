@@ -117,4 +117,77 @@ void main() {
     expect(updatedState.layerState, KeyboardLayerState.numeric);
     expect(updatedState.caseState, KeyboardCaseState.lower);
   });
+
+  test('shift tap is ignored outside alpha layer', () {
+    final state = const KeyboardStateModel.symbols();
+
+    final updatedState = state.onShiftTap();
+
+    expect(updatedState.layerState, KeyboardLayerState.symbols);
+    expect(updatedState.caseState, KeyboardCaseState.lower);
+  });
+
+  test('layout snapshots nested rows immutably', () {
+    final sourceRow = <KeyboardKeyModel>[
+      const KeyboardKeyModel.character(id: 'character-a', value: 'a'),
+    ];
+    final sourceRows = <List<KeyboardKeyModel>>[sourceRow];
+    final layout = KeyboardLayoutModel(
+      languageCode: 'en',
+      alphaRows: sourceRows,
+      numericRows: const [],
+      symbolRows: const [],
+      shift: const KeyboardKeyModel.action(
+        id: 'shift',
+        role: KeyboardKeyRole.shift,
+        label: 'shift',
+      ),
+      bottomRow: const KeyboardBottomRowModel(
+        mode: KeyboardKeyModel.action(
+          id: 'mode',
+          role: KeyboardKeyRole.mode,
+          label: '123',
+        ),
+        globe: KeyboardKeyModel.action(
+          id: 'globe',
+          role: KeyboardKeyRole.globe,
+          label: '🌐',
+        ),
+        space: KeyboardKeyModel.action(
+          id: 'space',
+          role: KeyboardKeyRole.space,
+          label: 'space',
+        ),
+        delete: KeyboardKeyModel.action(
+          id: 'delete',
+          role: KeyboardKeyRole.delete,
+          label: '⌫',
+        ),
+        enter: KeyboardKeyModel.action(
+          id: 'enter',
+          role: KeyboardKeyRole.enter,
+          label: 'return',
+        ),
+      ),
+      toolbar: KeyboardToolbarModel.standard(),
+    );
+
+    sourceRow.add(
+      const KeyboardKeyModel.character(id: 'character-b', value: 'b'),
+    );
+    sourceRows.add(<KeyboardKeyModel>[]);
+
+    expect(layout.alphaRows, hasLength(1));
+    expect(layout.alphaRows.first, hasLength(1));
+    expect(
+      () => layout.alphaRows.add(<KeyboardKeyModel>[]),
+      throwsUnsupportedError,
+    );
+    expect(
+      () => layout.alphaRows.first.add(
+        const KeyboardKeyModel.character(id: 'character-c', value: 'c'),
+      ),
+      throwsUnsupportedError,
+    );
+  });
 }
