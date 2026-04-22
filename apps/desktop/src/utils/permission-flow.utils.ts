@@ -1,9 +1,11 @@
 import type {
   PermissionGateState,
   PermissionGateStateInput,
+  PermissionMap,
   PermissionRequestLifecycle,
 } from "../types/permission.types";
 import {
+  REQUIRED_PERMISSIONS,
   isPermissionAuthorized,
   isPermissionDenied,
   isPermissionRestricted,
@@ -63,5 +65,61 @@ export const resolvePermissionRequestLifecycle = ({
   return {
     requestInFlight: false,
     awaitingExternalApproval: shouldKeepAwaitingExternalApproval,
+  };
+};
+
+type PermissionsDialogViewStateInput = {
+  permissions: PermissionMap;
+  permissionWasGranted: boolean;
+  isWelcomePage: boolean;
+  isManuallyOpened: boolean;
+};
+
+type PermissionsDialogViewState = {
+  ready: boolean;
+  blocked: boolean;
+  allAuthorized: boolean;
+  shouldAutoOpen: boolean;
+  shouldShowRestartMessage: boolean;
+  shouldShowManualEntry: boolean;
+  isOpen: boolean;
+};
+
+export const derivePermissionsDialogViewState = ({
+  permissions,
+  permissionWasGranted,
+  isWelcomePage,
+  isManuallyOpened,
+}: PermissionsDialogViewStateInput): PermissionsDialogViewState => {
+  let ready = true;
+  let blocked = false;
+  let allAuthorized = true;
+
+  for (const kind of REQUIRED_PERMISSIONS) {
+    const status = permissions[kind];
+    if (!status) {
+      ready = false;
+      allAuthorized = false;
+      continue;
+    }
+
+    if (!isPermissionAuthorized(status.state)) {
+      blocked = true;
+      allAuthorized = false;
+    }
+  }
+
+  const shouldAutoOpen = ready && blocked && !isWelcomePage;
+  const shouldShowRestartMessage = allAuthorized && permissionWasGranted;
+  const shouldShowManualEntry = ready && allAuthorized;
+
+  return {
+    ready,
+    blocked,
+    allAuthorized,
+    shouldAutoOpen,
+    shouldShowRestartMessage,
+    shouldShowManualEntry,
+    isOpen: isManuallyOpened || shouldAutoOpen || shouldShowRestartMessage,
   };
 };

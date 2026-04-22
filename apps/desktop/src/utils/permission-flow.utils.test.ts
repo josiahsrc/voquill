@@ -218,3 +218,68 @@ describe("screen recording permission contract", () => {
     });
   });
 });
+
+describe("derivePermissionsDialogViewState", () => {
+  it("keeps optional dashboard permissions reachable after required permissions are granted", async () => {
+    const [{ INITIAL_APP_STATE }, permissionFlowSubject] = await Promise.all([
+      import("../state/app.state"),
+      loadSubject(),
+    ]);
+
+    const derivePermissionsDialogViewState =
+      permissionFlowSubject.derivePermissionsDialogViewState as
+        | ((input: {
+            permissions: typeof INITIAL_APP_STATE.permissions;
+            permissionWasGranted: boolean;
+            isWelcomePage: boolean;
+            isManuallyOpened: boolean;
+          }) => {
+            shouldAutoOpen: boolean;
+            shouldShowManualEntry: boolean;
+            isOpen: boolean;
+          })
+        | undefined;
+
+    expect(derivePermissionsDialogViewState).toBeTypeOf("function");
+
+    const permissions = {
+      ...INITIAL_APP_STATE.permissions,
+      microphone: {
+        kind: "microphone" as const,
+        state: "authorized" as const,
+        promptShown: false,
+      },
+      accessibility: {
+        kind: "accessibility" as const,
+        state: "authorized" as const,
+        promptShown: false,
+      },
+    };
+
+    expect(
+      derivePermissionsDialogViewState?.({
+        permissions,
+        permissionWasGranted: false,
+        isWelcomePage: false,
+        isManuallyOpened: false,
+      }),
+    ).toMatchObject({
+      shouldAutoOpen: false,
+      shouldShowManualEntry: true,
+      isOpen: false,
+    });
+
+    expect(
+      derivePermissionsDialogViewState?.({
+        permissions,
+        permissionWasGranted: false,
+        isWelcomePage: false,
+        isManuallyOpened: true,
+      }),
+    ).toMatchObject({
+      shouldAutoOpen: false,
+      shouldShowManualEntry: true,
+      isOpen: true,
+    });
+  });
+});

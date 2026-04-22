@@ -11,6 +11,7 @@ import {
   Box,
   Chip,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogTitle,
   Stack,
@@ -22,6 +23,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
 import type { PermissionKind } from "../../types/permission.types";
 import {
+  derivePermissionsDialogViewState,
   derivePermissionGateState,
   resolvePermissionRequestLifecycle,
 } from "../../utils/permission-flow.utils";
@@ -223,6 +225,7 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
 
 export const PermissionsDialog = () => {
   const permissions = useAppStore((state) => state.permissions);
+  const [isManuallyOpened, setIsManuallyOpened] = useState(false);
   const [permissionWasGranted, setPermissionWasGranted] = useState(false);
   const previousPermissionsRef = useRef(permissions);
   const location = useLocation();
@@ -247,36 +250,26 @@ export const PermissionsDialog = () => {
     previousPermissionsRef.current = permissions;
   }, [permissions]);
 
-  const { ready, blocked, allAuthorized } = useMemo(() => {
-    let known = true;
-    let missing = false;
-    let allAuth = true;
-
-    for (const kind of REQUIRED_PERMISSIONS) {
-      const status = permissions[kind];
-      if (!status) {
-        known = false;
-        allAuth = false;
-        continue;
-      }
-
-      if (!isPermissionAuthorized(status.state)) {
-        missing = true;
-        allAuth = false;
-      }
-    }
-
-    return { ready: known, blocked: missing, allAuthorized: allAuth };
-  }, [permissions]);
-
-  const open = ready && blocked && !isWelcomePage;
-  const showRestartMessage = allAuthorized && permissionWasGranted;
+  const viewState = useMemo(
+    () =>
+      derivePermissionsDialogViewState({
+        permissions,
+        permissionWasGranted,
+        isWelcomePage,
+        isManuallyOpened,
+      }),
+    [permissions, permissionWasGranted, isWelcomePage, isManuallyOpened],
+  );
+  const canCloseManually =
+    isManuallyOpened &&
+    !viewState.shouldAutoOpen &&
+    !viewState.shouldShowRestartMessage;
 
   useEffect(() => {
-    if (open) {
+    if (viewState.shouldAutoOpen) {
       setGotStartedAtNow();
     }
-  }, [open]);
+  }, [viewState.shouldAutoOpen]);
 
   const handleRestart = useCallback(async () => {
     try {
@@ -296,66 +289,89 @@ export const PermissionsDialog = () => {
   };
 
   return (
-    <Dialog
-      open={open || showRestartMessage}
-      onClose={handleClose}
-      fullWidth
-      maxWidth="sm"
-      disableEscapeKeyDown
-      slotProps={{
-        backdrop: {
-          sx: { backdropFilter: "blur(4px)" },
-        },
-        paper: {
-          sx: (theme) => ({
-            paddingBottom: 2,
-            backgroundColor: theme.vars?.palette.level1,
-          }),
-        },
-      }}
-    >
-      <DialogTitle>
-        <FormattedMessage defaultMessage="Permissions needed" />
-      </DialogTitle>
-      <DialogContent>
-        <Stack spacing={3}>
-          <Typography variant="body1">
-            <FormattedMessage defaultMessage="Voquill is an AI dictation tool. It needs microphone and accessibility access in order to function properly." />
-          </Typography>
-          <Stack>
-            {REQUIRED_PERMISSIONS.map((kind) => (
-              <PermissionRow key={kind} kind={kind} />
-            ))}
-          </Stack>
-          <Stack spacing={1}>
-            <Typography variant="overline" color="text.secondary">
-              <FormattedMessage defaultMessage="Optional enhancements" />
+    <>
+      {viewState.shouldShowManualEntry && !viewState.isOpen && (
+        <Box
+          sx={{
+            position: "fixed",
+            right: 24,
+            bottom: 24,
+            zIndex: (theme) => theme.zIndex.appBar,
+          }}
+        >
+          <Button variant="outlined" onClick={() => setIsManuallyOpened(true)}>
+            <FormattedMessage defaultMessage="Permissions" />
+          </Button>
+        </Box>
+      )}
+      <Dialog
+        open={viewState.isOpen}
+        onClose={handleClose}
+        fullWidth
+        maxWidth="sm"
+        disableEscapeKeyDown
+        slotProps={{
+          backdrop: {
+            sx: { backdropFilter: "blur(4px)" },
+          },
+          paper: {
+            sx: (theme) => ({
+              paddingBottom: 2,
+              backgroundColor: theme.vars?.palette.level1,
+            }),
+          },
+        }}
+      >
+        <DialogTitle>
+          <FormattedMessage defaultMessage="Permissions needed" />
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={3}>
+            <Typography variant="body1">
+              <FormattedMessage defaultMessage="Voquill is an AI dictation tool. It needs microphone and accessibility access in order to function properly." />
             </Typography>
             <Stack>
-              {ENHANCEMENT_PERMISSIONS.map((kind) => (
+              {REQUIRED_PERMISSIONS.map((kind) => (
                 <PermissionRow key={kind} kind={kind} />
               ))}
             </Stack>
+            <Stack spacing={1}>
+              <Typography variant="overline" color="text.secondary">
+                <FormattedMessage defaultMessage="Optional enhancements" />
+              </Typography>
+              <Stack>
+                {ENHANCEMENT_PERMISSIONS.map((kind) => (
+                  <PermissionRow key={kind} kind={kind} />
+                ))}
+              </Stack>
+            </Stack>
+            {viewState.shouldShowRestartMessage && (
+              <Alert
+                severity="info"
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => void handleRestart()}
+                    startIcon={<RestartAlt />}
+                  >
+                    <FormattedMessage defaultMessage="Restart" />
+                  </Button>
+                }
+              >
+                <FormattedMessage defaultMessage="Please restart the application for the new permissions to take effect." />
+              </Alert>
+            )}
           </Stack>
-          {showRestartMessage && (
-            <Alert
-              severity="info"
-              action={
-                <Button
-                  color="inherit"
-                  size="small"
-                  onClick={() => void handleRestart()}
-                  startIcon={<RestartAlt />}
-                >
-                  <FormattedMessage defaultMessage="Restart" />
-                </Button>
-              }
-            >
-              <FormattedMessage defaultMessage="Please restart the application for the new permissions to take effect." />
-            </Alert>
-          )}
-        </Stack>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+        {canCloseManually && (
+          <DialogActions sx={{ paddingX: 3 }}>
+            <Button onClick={() => setIsManuallyOpened(false)}>
+              <FormattedMessage defaultMessage="Close" />
+            </Button>
+          </DialogActions>
+        )}
+      </Dialog>
+    </>
   );
 };
