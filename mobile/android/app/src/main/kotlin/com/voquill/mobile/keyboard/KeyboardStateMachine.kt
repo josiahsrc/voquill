@@ -26,12 +26,6 @@ class KeyboardStateMachine {
         lastShiftTapTime = now
     }
 
-    fun onShiftDoubleTap() {
-        if (layer != KeyboardLayer.ALPHA) return
-        caseState = KeyboardCaseState.CAPS_LOCK
-        lastShiftTapTime = 0L
-    }
-
     fun onCharacterCommit() {
         if (caseState == KeyboardCaseState.SHIFT) {
             caseState = KeyboardCaseState.LOWER

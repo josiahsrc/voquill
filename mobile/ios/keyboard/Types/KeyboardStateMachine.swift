@@ -11,7 +11,7 @@ final class KeyboardStateMachine {
     func onShiftTap() {
         guard layer == .alpha else { return }
         let now = Date()
-        if let last = lastShiftTapTime, now.timeIntervalSince(last) < 0.3 {
+        if let last = lastShiftTapTime, now.timeIntervalSince(last) < 0.3, caseState == .shift {
             caseState = .capsLock
             lastShiftTapTime = nil
         } else {

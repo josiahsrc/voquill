@@ -377,15 +377,25 @@ class KeyboardViewController: UIInputViewController {
 
     private func loadKeyboardLayout() {
         let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
-        guard let data = defaults?.data(forKey: "voquill_keyboard_layouts"),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let layouts = json["layouts"] as? [String: Any],
-              let activeLanguage = json["activeLanguage"] as? String else { return }
-        let layoutDict = (layouts[activeLanguage] ?? layouts.values.first) as? [String: Any]
-        guard let layoutDict = layoutDict,
-              let spec = KeyboardLayoutSpec.from(layoutDict) else { return }
-        keyboardLayoutSpec = spec
-        renderKeyMatrix()
+        guard let data = defaults?.data(forKey: "voquill_keyboard_layouts") else { return }
+        do {
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let layouts = json["layouts"] as? [String: Any],
+                  let activeLanguage = json["activeLanguage"] as? String else {
+                NSLog("[VoquillKB] Keyboard layout JSON missing required fields")
+                return
+            }
+            let layoutDict = (layouts[activeLanguage] ?? layouts.values.first) as? [String: Any]
+            guard let layoutDict = layoutDict,
+                  let spec = KeyboardLayoutSpec.from(layoutDict) else {
+                NSLog("[VoquillKB] Failed to build KeyboardLayoutSpec")
+                return
+            }
+            keyboardLayoutSpec = spec
+            renderKeyMatrix()
+        } catch {
+            NSLog("[VoquillKB] Failed to parse keyboard layout JSON: \(error)")
+        }
     }
 
     private func renderKeyMatrix() {
@@ -430,7 +440,15 @@ class KeyboardViewController: UIInputViewController {
         case .globe:
             advanceToNextInputMode()
         case .startStop:
-            break
+            // Toggle voice dictation — mirrors the voice pill tap
+            switch dictationPhase {
+            case .idle:
+                openURL("voquill://dictate")
+            case .active:
+                DarwinNotificationManager.shared.post(DictationConstants.startRecording)
+            case .recording:
+                DarwinNotificationManager.shared.post(DictationConstants.stopRecording)
+            }
         default:
             break
         }

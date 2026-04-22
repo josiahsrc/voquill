@@ -648,7 +648,7 @@ class VoquillIME : InputMethodService() {
                 ?: layouts.optJSONObject(layouts.keys().next())
                 ?: return
             keyboardLayoutSpec = KeyboardLayoutSpec.fromJson(layoutJson)
-            if (isFullKeyboardMode) renderKeyMatrix()
+            renderKeyMatrix()
         } catch (e: Exception) {
             dbg("Failed to load keyboard layout: $e")
         }
@@ -660,7 +660,7 @@ class VoquillIME : InputMethodService() {
             KeyboardKeyRole.CHARACTER -> {
                 val ch = if (keyboardStateMachine.caseState != KeyboardCaseState.LOWER)
                     (key.value ?: key.label).uppercase()
-                else key.value ?: key.label
+                else (key.value ?: key.label).lowercase()
                 ic.commitText(ch, 1)
                 keyboardStateMachine.onCharacterCommit()
                 currentMatrixView?.let { keyboardMatrixRenderer.updateShiftState(it, keyboardStateMachine) }
@@ -696,6 +696,7 @@ class VoquillIME : InputMethodService() {
         currentMatrixView = view
         isFullKeyboardMode = true
         keyMatrixContainer.visibility = View.VISIBLE
+        pillButton.visibility = View.GONE
     }
 
     private fun renderToneChips() {

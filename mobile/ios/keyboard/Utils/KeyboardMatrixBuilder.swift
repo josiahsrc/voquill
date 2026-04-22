@@ -1,6 +1,7 @@
 import UIKit
 
 final class KeyboardMatrixBuilder {
+    private static let kShiftButtonTag = 0x5348_4946  // "SHIF"
     private let onKeyTap: (KeyboardKeySpec) -> Void
 
     init(onKeyTap: @escaping (KeyboardKeySpec) -> Void) {
@@ -30,7 +31,7 @@ final class KeyboardMatrixBuilder {
     func updateShiftKey(in matrixView: UIView, state: KeyboardStateMachine) {
         matrixView.subviews.forEach { rowView in
             (rowView as? UIStackView)?.arrangedSubviews.forEach { keyView in
-                if keyView.tag == KeyboardKeyRole.shift.hashValue {
+                if keyView.tag == KeyboardMatrixBuilder.kShiftButtonTag {
                     (keyView as? UIButton)?.setTitle(shiftLabel(state), for: .normal)
                 }
             }
@@ -52,13 +53,17 @@ final class KeyboardMatrixBuilder {
         stack.spacing = 6
 
         let totalFlex = keys.reduce(0) { $0 + $1.flex }
+        let n = CGFloat(keys.count)
 
         for key in keys {
             let btn = makeKeyButton(key: key, state: state, isDark: isDark)
             stack.addArrangedSubview(btn)
+            // Account for inter-key spacing so widths don't over-constrain the stack
+            let spacingShare = stack.spacing * (n - 1) * CGFloat(key.flex) / CGFloat(totalFlex)
             btn.widthAnchor.constraint(
                 equalTo: stack.widthAnchor,
-                multiplier: CGFloat(key.flex) / CGFloat(totalFlex)
+                multiplier: CGFloat(key.flex) / CGFloat(totalFlex),
+                constant: -spacingShare
             ).isActive = true
         }
         return stack
@@ -78,7 +83,7 @@ final class KeyboardMatrixBuilder {
             label = state.caseState != .lower ? key.label.uppercased() : key.label.lowercased()
         } else if key.role == .shift {
             label = shiftLabel(state)
-            btn.tag = KeyboardKeyRole.shift.hashValue
+            btn.tag = KeyboardMatrixBuilder.kShiftButtonTag
         } else if key.role == .mode {
             label = modeLabel(state)
         }

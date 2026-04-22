@@ -185,7 +185,7 @@ class KeyboardMatrixRenderer(
 
     private fun modeLabel(layer: KeyboardLayer): String = when (layer) {
         KeyboardLayer.ALPHA -> "123"
-        KeyboardLayer.NUMERIC -> "#+=  "
+        KeyboardLayer.NUMERIC -> "#+="
         KeyboardLayer.SYMBOL -> "ABC"
     }
 
