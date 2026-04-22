@@ -1,4 +1,7 @@
-use std::{env, mem, thread, time::Duration};
+use std::{
+    env, mem, thread,
+    time::{Duration, Instant},
+};
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE, KEYBDINPUT,
@@ -311,7 +314,25 @@ fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> 
         .set_text(text.to_string())
         .map_err(|err| format!("failed to store clipboard text: {err}"))?;
 
-    thread::sleep(Duration::from_millis(50));
+    // Windows' clipboard-change broadcast reaches other processes via the
+    // message pump, not synchronously. If we fire Ctrl+V before the target
+    // app has observed the new contents, paste fetches the previous value —
+    // which during batched writes leaks earlier fields' values into later
+    // ones. Poll the clipboard until readback matches what we wrote.
+    if !text.is_empty() {
+        let deadline = Instant::now() + Duration::from_millis(1000);
+        loop {
+            match clipboard.get_text() {
+                Ok(ref read) if read == text => break,
+                _ => {
+                    if Instant::now() >= deadline {
+                        return Err("clipboard verification timed out".into());
+                    }
+                    thread::sleep(Duration::from_millis(10));
+                }
+            }
+        }
+    }
 
     release_modifier_keys();
     thread::sleep(Duration::from_millis(30));
