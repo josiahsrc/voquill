@@ -71,6 +71,12 @@ export const isPermissionRestricted = (
   return state === "restricted";
 };
 
+export const isPermissionRequestActionable = (
+  kind: PermissionKind,
+): boolean => {
+  return kind !== "screen-recording";
+};
+
 export const getPermissionLabel = (kind: PermissionKind): string => {
   switch (kind) {
     case "microphone":

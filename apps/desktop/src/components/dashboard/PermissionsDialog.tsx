@@ -34,6 +34,7 @@ import {
   getPermissionInstructions,
   getPermissionLabel,
   isPermissionAuthorized,
+  isPermissionRequestActionable,
   requestAccessibilityPermission,
   requestMicrophonePermission,
   requestScreenRecordingPermission,
@@ -80,8 +81,18 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
       }),
     [kind, requestLifecycle, status],
   );
+  const isRequestActionable = isPermissionRequestActionable(kind);
 
   const { icon, color, chipColor, chipLabel } = useMemo(() => {
+    if (!isRequestActionable) {
+      return {
+        icon: <PendingOutlined sx={{ fontSize: ICON_SIZE }} />,
+        color: "text.secondary" as const,
+        chipColor: "default" as const,
+        chipLabel: intl.formatMessage({ defaultMessage: "Coming soon" }),
+      };
+    }
+
     if (!status || requestLifecycle.requestInFlight) {
       return {
         icon: <PendingOutlined sx={{ fontSize: ICON_SIZE }} />,
@@ -121,6 +132,7 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
     };
   }, [
     gateState.isAwaitingExternalApproval,
+    isRequestActionable,
     intl,
     requestLifecycle.requestInFlight,
     status,
@@ -133,13 +145,15 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
       })
     : getPermissionInstructions(kind);
   const title = getPermissionLabel(kind);
-  const buttonLabel = requestLifecycle.requestInFlight
-    ? intl.formatMessage({ defaultMessage: "Requesting" })
-    : gateState.isAwaitingExternalApproval
-      ? intl.formatMessage({ defaultMessage: "Awaiting approval" })
-      : gateState.shouldOpenSettings
-        ? intl.formatMessage({ defaultMessage: "Open settings" })
-        : intl.formatMessage({ defaultMessage: "Enable" });
+  const buttonLabel = !isRequestActionable
+    ? intl.formatMessage({ defaultMessage: "Coming soon" })
+    : requestLifecycle.requestInFlight
+      ? intl.formatMessage({ defaultMessage: "Requesting" })
+      : gateState.isAwaitingExternalApproval
+        ? intl.formatMessage({ defaultMessage: "Awaiting approval" })
+        : gateState.shouldOpenSettings
+          ? intl.formatMessage({ defaultMessage: "Open settings" })
+          : intl.formatMessage({ defaultMessage: "Enable" });
 
   const handleRequest = useCallback(async () => {
     const latestState = useAppStore.getState();
@@ -209,8 +223,9 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
         variant="outlined"
         size="small"
         onClick={() => void handleRequest()}
-        disabled={!gateState.canRequest}
+        disabled={!isRequestActionable || !gateState.canRequest}
         endIcon={
+          !isRequestActionable ||
           requestLifecycle.requestInFlight ||
           gateState.isAwaitingExternalApproval ? undefined : (
             <OpenInNew />

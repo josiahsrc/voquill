@@ -224,6 +224,14 @@ describe("screen recording permission contract", () => {
       "not required to start",
     );
   });
+
+  it("keeps screen recording non-actionable until native support lands", async () => {
+    const { isPermissionRequestActionable } = await import("./permission.utils");
+
+    expect(isPermissionRequestActionable).toBeTypeOf("function");
+    expect(isPermissionRequestActionable("screen-recording")).toBe(false);
+    expect(isPermissionRequestActionable("microphone")).toBe(true);
+  });
 });
 
 describe("derivePermissionsDialogViewState", () => {
