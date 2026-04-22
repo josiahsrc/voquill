@@ -1486,6 +1486,9 @@ class VoquillIME : InputMethodService() {
         const val KEY_AI_TRANSCRIPTION_MODEL = "voquill_ai_transcription_model"
         const val KEY_AI_POST_PROCESSING_MODEL = "voquill_ai_post_processing_model"
         const val KEY_AI_TRANSCRIPTION_AZURE_REGION = "voquill_ai_transcription_azure_region"
+        const val KEY_KEYBOARD_LAYOUTS = "voquill_keyboard_layouts"
+        const val KEY_KEYBOARD_TOOLBAR = "voquill_keyboard_toolbar"
+        const val KEY_KEYBOARD_LANGUAGES = "voquill_keyboard_languages"
         const val EXTRA_SHOW_PAYWALL = "voquill_show_paywall"
 
         const val COLOR_BLUE = 0xFF3380FF.toInt()
