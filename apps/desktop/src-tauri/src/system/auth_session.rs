@@ -361,9 +361,12 @@ pub(crate) fn navigate_main_to_built_in(app: &AppHandle) -> Result<(), String> {
 }
 
 fn built_in_url(app: &AppHandle) -> Result<Url, String> {
+    #[cfg(debug_assertions)]
     if let Some(dev_url) = app.config().build.dev_url.as_ref() {
         return Ok(dev_url.clone());
     }
+    #[cfg(not(debug_assertions))]
+    let _ = app;
     let fallback = if cfg!(target_os = "windows") {
         "http://tauri.localhost/index.html"
     } else {
