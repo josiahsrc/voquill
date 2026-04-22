@@ -176,6 +176,11 @@ export const INITIAL_APP_STATE: AppState = {
   permissions: {
     microphone: null,
     accessibility: null,
+    "screen-recording": {
+      kind: "screen-recording",
+      state: "not-determined",
+      promptShown: false,
+    },
   },
   permissionRequests: {
     microphone: {
@@ -183,6 +188,10 @@ export const INITIAL_APP_STATE: AppState = {
       awaitingExternalApproval: false,
     },
     accessibility: {
+      requestInFlight: false,
+      awaitingExternalApproval: false,
+    },
+    "screen-recording": {
       requestInFlight: false,
       awaitingExternalApproval: false,
     },

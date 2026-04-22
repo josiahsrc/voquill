@@ -26,6 +26,7 @@ import {
   resolvePermissionRequestLifecycle,
 } from "../../utils/permission-flow.utils";
 import {
+  ENHANCEMENT_PERMISSIONS,
   REQUIRED_PERMISSIONS,
   describePermissionState,
   getPermissionInstructions,
@@ -33,6 +34,7 @@ import {
   isPermissionAuthorized,
   requestAccessibilityPermission,
   requestMicrophonePermission,
+  requestScreenRecordingPermission,
 } from "../../utils/permission.utils";
 import { useLocation } from "react-router-dom";
 import { setGotStartedAtNow } from "../../actions/user.actions";
@@ -51,6 +53,10 @@ const getPurposeDescription = (
     accessibility: intl.formatMessage({
       defaultMessage:
         "Lets you trigger dictation hotkeys while using other applications.",
+    }),
+    "screen-recording": intl.formatMessage({
+      defaultMessage:
+        "Optional: enables future screen-capture OCR features from the dashboard.",
     }),
   };
   return descriptions[kind];
@@ -155,7 +161,9 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
       const requestFn =
         kind === "microphone"
           ? requestMicrophonePermission
-          : requestAccessibilityPermission;
+          : kind === "accessibility"
+            ? requestAccessibilityPermission
+            : requestScreenRecordingPermission;
       const result = await requestFn();
       produceAppState((draft) => {
         draft.permissions[kind] = result;
@@ -318,6 +326,16 @@ export const PermissionsDialog = () => {
             {REQUIRED_PERMISSIONS.map((kind) => (
               <PermissionRow key={kind} kind={kind} />
             ))}
+          </Stack>
+          <Stack spacing={1}>
+            <Typography variant="overline" color="text.secondary">
+              <FormattedMessage defaultMessage="Optional enhancements" />
+            </Typography>
+            <Stack>
+              {ENHANCEMENT_PERMISSIONS.map((kind) => (
+                <PermissionRow key={kind} kind={kind} />
+              ))}
+            </Stack>
           </Stack>
           {showRestartMessage && (
             <Alert

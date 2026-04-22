@@ -1,6 +1,9 @@
 import { Nullable } from "@voquill/types";
 
-export type PermissionKind = "microphone" | "accessibility";
+export type PermissionKind =
+  | "microphone"
+  | "accessibility"
+  | "screen-recording";
 
 export type PermissionState =
   | "authorized"

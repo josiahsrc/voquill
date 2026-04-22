@@ -158,3 +158,63 @@ describe("resolvePermissionRequestLifecycle", () => {
     });
   });
 });
+
+describe("screen recording permission contract", () => {
+  it("keeps screen recording optional while leaving it requestable", async () => {
+    const [
+      { INITIAL_APP_STATE },
+      { REQUIRED_PERMISSIONS, ENHANCEMENT_PERMISSIONS },
+      permissionFlowSubject,
+    ] = await Promise.all([
+      import("../state/app.state"),
+      import("./permission.utils"),
+      loadSubject(),
+    ]);
+
+    const derivePermissionGateState =
+      permissionFlowSubject.derivePermissionGateState as
+        | ((input: {
+            kind: string;
+            status: unknown;
+            requestInFlight: boolean;
+            awaitingExternalApproval: boolean;
+          }) => {
+            canRequest: boolean;
+            isAwaitingExternalApproval: boolean;
+            shouldOpenSettings: boolean;
+          })
+        | undefined;
+
+    const permissions = INITIAL_APP_STATE.permissions as Record<string, unknown>;
+    const permissionRequests = INITIAL_APP_STATE.permissionRequests as Record<
+      string,
+      { requestInFlight: boolean; awaitingExternalApproval: boolean }
+    >;
+
+    expect(REQUIRED_PERMISSIONS).not.toContain("screen-recording");
+    expect(ENHANCEMENT_PERMISSIONS).toContain("screen-recording");
+    expect(permissions).toHaveProperty("screen-recording");
+    expect(permissions["screen-recording"]).toMatchObject({
+      kind: "screen-recording",
+      state: "not-determined",
+      promptShown: false,
+    });
+    expect(permissionRequests).toHaveProperty("screen-recording");
+    expect(permissionRequests["screen-recording"]).toMatchObject({
+      requestInFlight: false,
+      awaitingExternalApproval: false,
+    });
+    expect(derivePermissionGateState).toBeTypeOf("function");
+    expect(
+      derivePermissionGateState?.({
+        kind: "screen-recording",
+        status: permissions["screen-recording"],
+        ...permissionRequests["screen-recording"],
+      }),
+    ).toMatchObject({
+      canRequest: true,
+      isAwaitingExternalApproval: false,
+      shouldOpenSettings: false,
+    });
+  });
+});
