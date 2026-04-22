@@ -1834,19 +1834,31 @@ fn get_process_name(pid: u32) -> Option<String> {
     path.rsplit('\\').next().map(|s| s.to_string())
 }
 
+/// Retrieve a process's executable path. Uses `QueryFullProcessImageNameW`
+/// rather than `GetModuleFileNameExW` because the former only needs
+/// `PROCESS_QUERY_LIMITED_INFORMATION` and works cleanly cross-bitness
+/// (critical for 64-bit Voquill enumerating JVM processes and vice versa).
 fn get_process_exe_path(pid: u32) -> Option<String> {
-    use windows::Win32::System::ProcessStatus::GetModuleFileNameExW;
-    use windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
+    use windows::Win32::System::Threading::{
+        OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32,
+        PROCESS_QUERY_LIMITED_INFORMATION,
+    };
 
     unsafe {
         let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
         let mut buf = [0u16; 1024];
-        let len = GetModuleFileNameExW(Some(handle), None, &mut buf);
+        let mut size: u32 = buf.len() as u32;
+        let result = QueryFullProcessImageNameW(
+            handle,
+            PROCESS_NAME_WIN32,
+            windows::core::PWSTR(buf.as_mut_ptr()),
+            &mut size,
+        );
         let _ = windows::Win32::Foundation::CloseHandle(handle);
-        if len == 0 {
+        if result.is_err() || size == 0 {
             return None;
         }
-        Some(String::from_utf16_lossy(&buf[..len as usize]))
+        Some(String::from_utf16_lossy(&buf[..size as usize]))
     }
 }
 
@@ -1868,8 +1880,14 @@ pub fn resolve_app_pids(
     let expected_path = identity.exe_path.as_deref().map(|s| s.to_lowercase());
     let expected_name = identity.exe_name.as_deref().map(|s| s.to_lowercase());
     if expected_path.is_none() && expected_name.is_none() {
+        log::warn!("resolve_app_pids: empty identity, returning no matches");
         return Vec::new();
     }
+    log::info!(
+        "resolve_app_pids: searching for path={:?} name={:?}",
+        expected_path,
+        expected_name
+    );
 
     let mut pid_buf = vec![0u32; 4096];
     let mut bytes_returned: u32 = 0;
@@ -1881,14 +1899,27 @@ pub fn resolve_app_pids(
         )
     };
     if ok.is_err() {
+        log::error!("resolve_app_pids: EnumProcesses failed");
         return Vec::new();
     }
     let pid_count = bytes_returned as usize / std::mem::size_of::<u32>();
     pid_buf.truncate(pid_count);
+    log::info!("resolve_app_pids: enumerated {} PIDs", pid_count);
 
     let titles_by_pid = enumerate_visible_window_titles();
 
-    let mut matches = Vec::new();
+    // Collect every process we could read a path for, remember which matched
+    // by full path and which only matched by basename. `None` == couldn't read
+    // the path (probably an access-denied PID).
+    struct Candidate {
+        pid: u32,
+        path: String,
+        name: String,
+        matched_path: bool,
+        matched_name: bool,
+    }
+    let mut candidates: Vec<Candidate> = Vec::new();
+    let mut name_only_hits = 0;
     for pid in pid_buf {
         if pid == 0 {
             continue;
@@ -1897,29 +1928,71 @@ pub fn resolve_app_pids(
             continue;
         };
         let path_lc = path.to_lowercase();
-        let name_lc = path.rsplit('\\').next().map(|s| s.to_lowercase());
-
-        let is_match = match (&expected_path, &expected_name, &name_lc) {
-            (Some(expected), _, _) => &path_lc == expected,
-            (None, Some(expected), Some(actual)) => actual == expected,
-            _ => false,
-        };
-        if !is_match {
+        let name_lc = path
+            .rsplit('\\')
+            .next()
+            .map(|s| s.to_lowercase())
+            .unwrap_or_default();
+        let matched_path = expected_path
+            .as_deref()
+            .map(|e| path_lc == e)
+            .unwrap_or(false);
+        let matched_name = expected_name
+            .as_deref()
+            .map(|e| name_lc == *e)
+            .unwrap_or(false);
+        if !matched_path && !matched_name {
             continue;
         }
+        if matched_name && !matched_path {
+            name_only_hits += 1;
+        }
+        candidates.push(Candidate {
+            pid,
+            path,
+            name: name_lc,
+            matched_path,
+            matched_name,
+        });
+    }
+    log::info!(
+        "resolve_app_pids: candidates: {} total, {} name-only hits",
+        candidates.len(),
+        name_only_hits
+    );
 
+    // Prefer full-path matches when we have any, else fall back to name-only
+    // matches. Keeps exe_path as the authoritative signal while tolerating a
+    // shifted install directory on a different machine.
+    let have_full_path_hit = candidates.iter().any(|c| c.matched_path);
+    let mut matches = Vec::new();
+    for c in candidates {
+        let keep = if have_full_path_hit {
+            c.matched_path
+        } else {
+            c.matched_name
+        };
+        if !keep {
+            continue;
+        }
         let window_title = titles_by_pid
-            .get(&pid)
+            .get(&c.pid)
             .and_then(|titles| titles.first().cloned());
-        let app_name = path.rsplit('\\').next().map(|s| s.to_string());
-
+        let app_name = Some(c.name.clone());
+        log::info!(
+            "resolve_app_pids: match pid={} path={} window={:?}",
+            c.pid,
+            c.path,
+            window_title
+        );
         matches.push(crate::commands::AppProcessMatch {
-            pid: pid as i32,
-            exe_path: Some(path),
+            pid: c.pid as i32,
+            exe_path: Some(c.path),
             app_name,
             window_title,
         });
     }
+    log::info!("resolve_app_pids: returning {} matches", matches.len());
     matches
 }
 
