@@ -66,6 +66,13 @@ pub fn read_field_values(fields: Vec<FieldValueRequest>) -> Vec<FieldValueResult
         .collect()
 }
 
+pub fn resolve_app_pids(
+    _identity: &crate::commands::AppIdentity,
+) -> Vec<crate::commands::AppProcessMatch> {
+    log::warn!("resolve_app_pids not implemented for Linux");
+    Vec::new()
+}
+
 pub fn check_focused_paste_target() -> crate::commands::PasteTargetState {
     crate::commands::PasteTargetState::Unknown
 }

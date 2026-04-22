@@ -1131,6 +1131,8 @@ unsafe fn get_focused_field_info_impl() -> Option<crate::commands::Accessibility
 
     CFRelease(focused_element);
 
+    let app_identity = app_pid.and_then(capture_app_identity);
+
     Some(crate::commands::AccessibilityFieldInfo {
         role,
         title,
@@ -1146,6 +1148,7 @@ unsafe fn get_focused_field_info_impl() -> Option<crate::commands::Accessibility
         can_paste: false,
         backend: None,
         jab_string_path: vec![],
+        app_identity,
     })
 }
 
@@ -1382,4 +1385,117 @@ pub fn read_field_values(
             error: Some("Not implemented for macOS".to_string()),
         })
         .collect()
+}
+
+pub fn capture_app_identity(pid: i32) -> Option<crate::commands::AppIdentity> {
+    use cocoa::base::{id, nil};
+    use objc::{class, msg_send, sel, sel_impl};
+    use std::ffi::CStr;
+    use std::os::raw::c_char;
+
+    catch_unwind(AssertUnwindSafe(|| unsafe {
+        let pool: id = msg_send![class!(NSAutoreleasePool), new];
+        let app: id = msg_send![
+            class!(NSRunningApplication),
+            runningApplicationWithProcessIdentifier: pid
+        ];
+        if app == nil {
+            let _: () = msg_send![pool, drain];
+            return None;
+        }
+
+        let bundle_id_ns: id = msg_send![app, bundleIdentifier];
+        let bundle_id = if bundle_id_ns == nil {
+            None
+        } else {
+            let utf8: *const c_char = msg_send![bundle_id_ns, UTF8String];
+            if utf8.is_null() {
+                None
+            } else {
+                Some(CStr::from_ptr(utf8).to_string_lossy().into_owned())
+            }
+        };
+
+        let _: () = msg_send![pool, drain];
+
+        if bundle_id.is_none() {
+            return None;
+        }
+
+        Some(crate::commands::AppIdentity {
+            exe_path: None,
+            exe_name: None,
+            bundle_id,
+        })
+    }))
+    .unwrap_or(None)
+}
+
+pub fn resolve_app_pids(
+    identity: &crate::commands::AppIdentity,
+) -> Vec<crate::commands::AppProcessMatch> {
+    use cocoa::base::{id, nil};
+    use objc::{class, msg_send, sel, sel_impl};
+    use std::ffi::CStr;
+    use std::os::raw::c_char;
+
+    let Some(expected_bundle) = identity.bundle_id.as_deref() else {
+        return Vec::new();
+    };
+
+    catch_unwind(AssertUnwindSafe(|| unsafe {
+        let pool: id = msg_send![class!(NSAutoreleasePool), new];
+        let workspace: id = msg_send![class!(NSWorkspace), sharedWorkspace];
+        let apps: id = msg_send![workspace, runningApplications];
+        if apps == nil {
+            let _: () = msg_send![pool, drain];
+            return Vec::new();
+        }
+
+        let count: usize = msg_send![apps, count];
+        let mut matches = Vec::new();
+        for i in 0..count {
+            let app: id = msg_send![apps, objectAtIndex: i];
+            if app == nil {
+                continue;
+            }
+
+            let bundle_ns: id = msg_send![app, bundleIdentifier];
+            if bundle_ns == nil {
+                continue;
+            }
+            let bundle_utf8: *const c_char = msg_send![bundle_ns, UTF8String];
+            if bundle_utf8.is_null() {
+                continue;
+            }
+            let bundle = CStr::from_ptr(bundle_utf8).to_string_lossy();
+            if bundle != expected_bundle {
+                continue;
+            }
+
+            let pid: i32 = msg_send![app, processIdentifier];
+            let name_ns: id = msg_send![app, localizedName];
+            let app_name = if name_ns == nil {
+                None
+            } else {
+                let utf8: *const c_char = msg_send![name_ns, UTF8String];
+                if utf8.is_null() {
+                    None
+                } else {
+                    Some(CStr::from_ptr(utf8).to_string_lossy().into_owned())
+                }
+            };
+
+            matches.push(crate::commands::AppProcessMatch {
+                pid,
+                exe_path: None,
+                app_name,
+                window_title: None,
+            });
+        }
+
+        let _: () = msg_send![pool, drain];
+        matches
+    }))
+    .unwrap_or_default()
 }

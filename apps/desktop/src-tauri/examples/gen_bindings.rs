@@ -83,6 +83,7 @@ fn main() {
         write_accessibility_fields,
         focus_accessibility_field,
         read_accessibility_field_values,
+        resolve_app_pids,
         check_focused_paste_target,
         read_enterprise_target,
         run_terminal_command,

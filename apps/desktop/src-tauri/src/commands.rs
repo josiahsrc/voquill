@@ -82,6 +82,42 @@ pub struct JabElementId {
     pub index_in_parent: usize,
 }
 
+/// Stable, relaunch-surviving identifier for a host application. PIDs change
+/// every launch; these fields do not. Populated by `get_focused_field_info`
+/// at capture time, then passed to `resolve_app_pids` on subsequent sessions
+/// to re-resolve the current PID.
+///
+/// Every field is optional because availability is platform-dependent and
+/// bindings captured on one OS must still deserialize on another.
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AppIdentity {
+    /// Windows: full absolute path to the process executable (e.g.
+    /// `C:\Program Files\LigoLab\LigoLab.exe`). Case-insensitive match.
+    #[serde(default)]
+    pub exe_path: Option<String>,
+    /// Windows: basename of `exe_path` (e.g. `LigoLab.exe`). Lossy fallback
+    /// used when the install directory differs across machines.
+    #[serde(default)]
+    pub exe_name: Option<String>,
+    /// macOS: `CFBundleIdentifier` of the application (e.g.
+    /// `com.ligolab.client`). The canonical stable id on that platform.
+    #[serde(default)]
+    pub bundle_id: Option<String>,
+}
+
+/// A currently-running process that matches an `AppIdentity`. Returned from
+/// `resolve_app_pids`; the caller (frontend) picks one, typically by
+/// matching `window_title` against the title recorded with the binding.
+#[derive(serde::Serialize, Clone, Debug, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AppProcessMatch {
+    pub pid: i32,
+    pub exe_path: Option<String>,
+    pub app_name: Option<String>,
+    pub window_title: Option<String>,
+}
+
 #[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AccessibilityFieldInfo {
@@ -104,6 +140,11 @@ pub struct AccessibilityFieldInfo {
     /// When present, resolvers prefer it over `element_index_path`.
     #[serde(default)]
     pub jab_string_path: Vec<JabElementId>,
+    /// Stable identity (exe path, bundle id, ...) captured at bind time.
+    /// Persisting this alongside the PID lets callers re-resolve the PID
+    /// after the host app restarts via `resolve_app_pids`.
+    #[serde(default)]
+    pub app_identity: Option<AppIdentity>,
 }
 
 #[derive(serde::Deserialize, specta::Type)]
@@ -1910,6 +1951,26 @@ pub async fn read_accessibility_field_values(
     )
     .await
     .map_err(|_| "read_accessibility_field_values timed out".to_string())?
+    .map_err(|err| err.to_string())
+}
+
+/// Enumerate currently-running processes matching `identity`. Returns every
+/// candidate so the caller (which knows the binding's `windowTitle` and other
+/// heuristics) can disambiguate when multiple instances are running. Returns
+/// an empty vec when the app is not running.
+#[tauri::command]
+#[specta::specta]
+pub async fn resolve_app_pids(
+    identity: AppIdentity,
+) -> Result<Vec<AppProcessMatch>, String> {
+    tokio::time::timeout(
+        std::time::Duration::from_secs(3),
+        tauri::async_runtime::spawn_blocking(move || {
+            crate::platform::accessibility::resolve_app_pids(&identity)
+        }),
+    )
+    .await
+    .map_err(|_| "resolve_app_pids timed out".to_string())?
     .map_err(|err| err.to_string())
 }
 
