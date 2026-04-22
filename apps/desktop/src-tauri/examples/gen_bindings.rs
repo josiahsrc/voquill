@@ -16,6 +16,8 @@ fn main() {
         get_monitor_at_cursor,
         check_microphone_permission,
         request_microphone_permission,
+        check_screen_recording_permission,
+        request_screen_recording_permission,
         check_accessibility_permission,
         request_accessibility_permission,
         get_current_app_info,

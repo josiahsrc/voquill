@@ -19,6 +19,8 @@ extern "C" {
     fn AXIsProcessTrusted() -> bool;
     fn AXIsProcessTrustedWithOptions(options: CFDictionaryRef) -> bool;
     static kAXTrustedCheckOptionPrompt: CFStringRef;
+    fn CGPreflightScreenCaptureAccess() -> bool;
+    fn CGRequestScreenCaptureAccess() -> bool;
 }
 
 #[link(name = "AVFoundation", kind = "framework")]
@@ -131,6 +133,31 @@ pub(crate) fn request_microphone_permission() -> Result<PermissionStatus, String
     }
 }
 
+pub(crate) fn check_screen_recording_permission() -> Result<PermissionStatus, String> {
+    unsafe {
+        let authorized = CGPreflightScreenCaptureAccess();
+        Ok(screen_recording_status(authorized, false))
+    }
+}
+
+pub(crate) fn request_screen_recording_permission() -> Result<PermissionStatus, String> {
+    unsafe {
+        log::debug!("request_screen_recording_permission invoked");
+        let initial_authorized = CGPreflightScreenCaptureAccess();
+        let prompt_shown = !initial_authorized;
+        if prompt_shown {
+            let request_result = CGRequestScreenCaptureAccess();
+            log::debug!(
+                "request_screen_recording_permission request_result={}",
+                request_result
+            );
+        }
+
+        let final_authorized = CGPreflightScreenCaptureAccess();
+        Ok(screen_recording_status(final_authorized, prompt_shown))
+    }
+}
+
 fn permission_state_from_authorization(status: i64) -> Result<PermissionState, String> {
     match status {
         AUTH_STATUS_AUTHORIZED => Ok(PermissionState::Authorized),
@@ -141,6 +168,22 @@ fn permission_state_from_authorization(status: i64) -> Result<PermissionState, S
             log::error!("Unexpected microphone authorization status={}", other);
             Err(format!("Unknown authorization status: {}", other))
         }
+    }
+}
+
+fn screen_recording_state_from_bool(authorized: bool) -> PermissionState {
+    if authorized {
+        PermissionState::Authorized
+    } else {
+        PermissionState::NotDetermined
+    }
+}
+
+fn screen_recording_status(authorized: bool, prompt_shown: bool) -> PermissionStatus {
+    PermissionStatus {
+        kind: PermissionKind::ScreenRecording,
+        state: screen_recording_state_from_bool(authorized),
+        prompt_shown,
     }
 }
 
@@ -216,5 +259,28 @@ pub(crate) fn request_accessibility_permission() -> Result<PermissionStatus, Str
             state: accessibility_state_from_bool(final_trusted),
             prompt_shown,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn screen_recording_status_uses_screen_recording_kind() {
+        let status = screen_recording_status(true, false);
+
+        assert_eq!(status.kind, PermissionKind::ScreenRecording);
+        assert_eq!(status.state, PermissionState::Authorized);
+        assert!(!status.prompt_shown);
+    }
+
+    #[test]
+    fn unresolved_screen_recording_request_stays_not_determined() {
+        let status = screen_recording_status(false, true);
+
+        assert_eq!(status.kind, PermissionKind::ScreenRecording);
+        assert_eq!(status.state, PermissionState::NotDetermined);
+        assert!(status.prompt_shown);
     }
 }

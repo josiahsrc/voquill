@@ -485,6 +485,18 @@ pub fn request_microphone_permission() -> Result<crate::domain::PermissionStatus
 
 #[tauri::command]
 #[specta::specta]
+pub fn check_screen_recording_permission() -> Result<crate::domain::PermissionStatus, String> {
+    crate::platform::permissions::check_screen_recording_permission()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn request_screen_recording_permission() -> Result<crate::domain::PermissionStatus, String> {
+    crate::platform::permissions::request_screen_recording_permission()
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn check_accessibility_permission() -> Result<crate::domain::PermissionStatus, String> {
     crate::platform::permissions::check_accessibility_permission()
 }

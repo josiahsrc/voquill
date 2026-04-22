@@ -27,20 +27,12 @@ export const requestMicrophonePermission =
 
 export const checkScreenRecordingPermission =
   async (): Promise<PermissionStatus> => {
-    return {
-      kind: "screen-recording",
-      state: "not-determined",
-      promptShown: false,
-    };
+    return invoke<PermissionStatus>("check_screen_recording_permission");
   };
 
 export const requestScreenRecordingPermission =
   async (): Promise<PermissionStatus> => {
-    return {
-      kind: "screen-recording",
-      state: "not-determined",
-      promptShown: false,
-    };
+    return invoke<PermissionStatus>("request_screen_recording_permission");
   };
 
 export const checkAccessibilityPermission =

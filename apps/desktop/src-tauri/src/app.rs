@@ -231,6 +231,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_monitor_at_cursor,
             crate::commands::check_microphone_permission,
             crate::commands::request_microphone_permission,
+            crate::commands::check_screen_recording_permission,
+            crate::commands::request_screen_recording_permission,
             crate::commands::check_accessibility_permission,
             crate::commands::request_accessibility_permission,
             crate::commands::get_current_app_info,
