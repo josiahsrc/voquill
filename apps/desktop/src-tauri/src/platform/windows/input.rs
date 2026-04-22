@@ -307,9 +307,15 @@ fn send_paste_keys(keybind: Option<&str>) {
 }
 
 fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
+    // Intentionally does NOT save/restore the user's prior clipboard.
+    // During batched writes (e.g. test-pasting into many bound fields), the
+    // previous restore mechanism raced with the next iteration: each call
+    // saved what the *previous* paste had just set, and the delayed restore
+    // thread would later overwrite the clipboard mid-paste, causing fields
+    // to receive values from earlier iterations instead of their own.
+    // Trading clipboard preservation for correctness here.
     let mut clipboard =
         arboard::Clipboard::new().map_err(|err| format!("clipboard unavailable: {err}"))?;
-    let previous = crate::platform::SavedClipboard::save(&mut clipboard);
     clipboard
         .set_text(text.to_string())
         .map_err(|err| format!("failed to store clipboard text: {err}"))?;
@@ -338,11 +344,6 @@ fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> 
     thread::sleep(Duration::from_millis(30));
 
     send_paste_keys(keybind);
-
-    thread::spawn(move || {
-        thread::sleep(Duration::from_millis(800));
-        previous.restore();
-    });
 
     Ok(())
 }
