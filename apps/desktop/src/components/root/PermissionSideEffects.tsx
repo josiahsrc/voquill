@@ -18,7 +18,13 @@ export const PermissionSideEffects = () => {
 
     checkingRef.current = true;
     try {
-      const [microphone, accessibility] = await Promise.all([
+  // NOTE: screen-recording permission is intentionally NOT polled here.
+  // Screen-recording is an optional, enhancement-only feature gated behind a "Coming soon"
+  // UI label.  Its permission state is seeded at startup (not-determined or authorized via
+  // the native check) and is updated only when the user interacts with the Permissions dialog.
+  // TODO: When the "Coming soon" gate is lifted, add checkScreenRecordingPermission() here
+  // alongside the microphone/accessibility calls so the status chip stays current.
+  const [microphone, accessibility] = await Promise.all([
         checkMicrophonePermission().catch((error) => {
           console.error("Failed to fetch microphone permission", error);
           return null;

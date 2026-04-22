@@ -466,7 +466,14 @@ unsafe fn perform_ocr(image: CGImageRef) -> Result<Option<String>, String> {
     if responds_to(request, sel!(setUsesLanguageCorrection:)) {
         let _: () = msg_send![request, setUsesLanguageCorrection: YES];
     }
+    // Use accurate recognition for better dictation context quality (VNRequestTextRecognitionLevelAccurate = 0).
+    // The small CPU overhead is acceptable since OCR runs in parallel with audio processing.
+    if responds_to(request, sel!(setRecognitionLevel:)) {
+        let _: () = msg_send![request, setRecognitionLevel: 0i64];
+    }
 
+    // arrayWithObject: and dictionary return autoreleased objects. They are safe here
+    // because the AutoreleasePoolGuard in the calling frame outlives performRequests:error:.
     let requests: id = msg_send![class!(NSArray), arrayWithObject: request];
     let options: id = msg_send![class!(NSDictionary), dictionary];
     let handler_alloc: id = msg_send![image_request_handler_class, alloc];

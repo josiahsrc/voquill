@@ -20,6 +20,13 @@ extern "C" {
     fn AXIsProcessTrusted() -> bool;
     fn AXIsProcessTrustedWithOptions(options: CFDictionaryRef) -> bool;
     static kAXTrustedCheckOptionPrompt: CFStringRef;
+}
+
+// CGPreflightScreenCaptureAccess and CGRequestScreenCaptureAccess are CoreGraphics
+// symbols declared separately to avoid depending on ApplicationServices umbrella re-exports,
+// which Apple has been progressively breaking in newer SDKs.
+#[link(name = "CoreGraphics", kind = "framework")]
+extern "C" {
     fn CGPreflightScreenCaptureAccess() -> bool;
     fn CGRequestScreenCaptureAccess() -> bool;
 }
