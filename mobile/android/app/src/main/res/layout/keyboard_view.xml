@@ -178,6 +178,12 @@
             </LinearLayout>
         </LinearLayout>
 
+        <FrameLayout
+            android:id="@+id/key_matrix_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
         <HorizontalScrollView
             android:id="@+id/tone_scroll"
             android:layout_width="match_parent"

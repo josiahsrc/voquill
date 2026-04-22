@@ -45,6 +45,7 @@ import java.util.TimeZone
 import java.util.UUID
 import java.net.HttpURLConnection
 import java.net.URL
+import com.voquill.mobile.keyboard.*
 import com.voquill.mobile.repos.*
 import java.util.concurrent.Executors
 import kotlin.math.max
@@ -130,6 +131,14 @@ class VoquillIME : InputMethodService() {
 
     private val executor = Executors.newSingleThreadExecutor()
 
+    // Full keyboard matrix
+    private var keyboardLayoutSpec: KeyboardLayoutSpec? = null
+    private val keyboardStateMachine = KeyboardStateMachine()
+    private val keyboardMatrixRenderer = KeyboardMatrixRenderer(this) { key -> onKeySpecTap(key) }
+    private lateinit var keyMatrixContainer: FrameLayout
+    private var currentMatrixView: View? = null
+    private var isFullKeyboardMode = false
+
     private var lastDebugLog = ""
     private var pendingErrorMessage = ""
 
@@ -176,6 +185,8 @@ class VoquillIME : InputMethodService() {
         toneScroll.isHorizontalFadingEdgeEnabled = true
         toneScroll.isVerticalFadingEdgeEnabled = false
         toneScroll.setFadingEdgeLength((18 * resources.displayMetrics.density).toInt())
+
+        keyMatrixContainer = view.findViewById(R.id.key_matrix_container)
 
         baseKeyboardHeightPx = keyboardContent.layoutParams.height
         baseKeyboardPaddingBottomPx = keyboardContent.paddingBottom
@@ -593,6 +604,7 @@ class VoquillIME : InputMethodService() {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         loadLanguageConfig(prefs)
         loadToneConfig(prefs)
+        loadKeyboardLayout(prefs)
         renderToneChips()
         updateStatusBanner()
     }
@@ -624,6 +636,66 @@ class VoquillIME : InputMethodService() {
         activeToneIds = loadStringList(prefs, KEY_ACTIVE_TONE_IDS)
         toneById = loadToneById(prefs)
         selectedToneId = prefs.getString(KEY_SELECTED_TONE_ID, null) ?: activeToneIds.firstOrNull()
+    }
+
+    private fun loadKeyboardLayout(prefs: android.content.SharedPreferences) {
+        val raw = prefs.getString(KEY_KEYBOARD_LAYOUTS, null) ?: return
+        try {
+            val json = JSONObject(raw)
+            val layouts = json.optJSONObject("layouts") ?: return
+            val activeLanguage = json.optString("activeLanguage", "en")
+            val layoutJson = layouts.optJSONObject(activeLanguage)
+                ?: layouts.optJSONObject(layouts.keys().next())
+                ?: return
+            keyboardLayoutSpec = KeyboardLayoutSpec.fromJson(layoutJson)
+            if (isFullKeyboardMode) renderKeyMatrix()
+        } catch (e: Exception) {
+            dbg("Failed to load keyboard layout: $e")
+        }
+    }
+
+    private fun onKeySpecTap(key: KeyboardKeySpec) {
+        val ic = currentInputConnection ?: return
+        when (key.role) {
+            KeyboardKeyRole.CHARACTER -> {
+                val ch = if (keyboardStateMachine.caseState != KeyboardCaseState.LOWER)
+                    (key.value ?: key.label).uppercase()
+                else key.value ?: key.label
+                ic.commitText(ch, 1)
+                keyboardStateMachine.onCharacterCommit()
+                currentMatrixView?.let { keyboardMatrixRenderer.updateShiftState(it, keyboardStateMachine) }
+            }
+            KeyboardKeyRole.SHIFT -> {
+                keyboardStateMachine.onShiftTap()
+                currentMatrixView?.let { keyboardMatrixRenderer.updateShiftState(it, keyboardStateMachine) }
+            }
+            KeyboardKeyRole.DELETE -> onDeleteDown()
+            KeyboardKeyRole.SPACE -> ic.commitText(" ", 1)
+            KeyboardKeyRole.ENTER -> onReturnTap()
+            KeyboardKeyRole.MODE -> {
+                keyboardStateMachine.onModeTap()
+                renderKeyMatrix()
+            }
+            KeyboardKeyRole.GLOBE -> switchToNextInputMethod()
+            KeyboardKeyRole.START_STOP -> onPillTap()
+            else -> {}
+        }
+    }
+
+    private fun renderKeyMatrix() {
+        val layout = keyboardLayoutSpec ?: return
+        currentMatrixView?.let { keyMatrixContainer.removeView(it) }
+        val view = keyboardMatrixRenderer.buildMatrixView(layout, keyboardStateMachine, isDarkMode)
+        keyMatrixContainer.addView(
+            view,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT,
+            ),
+        )
+        currentMatrixView = view
+        isFullKeyboardMode = true
+        keyMatrixContainer.visibility = View.VISIBLE
     }
 
     private fun renderToneChips() {

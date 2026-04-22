@@ -236,4 +236,23 @@ void main() {
       throwsA(isA<ArgumentError>()),
     );
   });
+
+  test('keyboard layout payload includes separate alpha, numeric, and symbol layers', () {
+    final layout = KeyboardLayoutModel.englishQwerty();
+    final payload = {
+      'languageCode': layout.languageCode,
+      'alphaRows': layout.alphaRows
+          .map((row) => row.map((k) => {'role': k.role.name}).toList())
+          .toList(),
+      'numericRows': layout.numericRows
+          .map((row) => row.map((k) => {'role': k.role.name}).toList())
+          .toList(),
+      'symbolRows': layout.symbolRows
+          .map((row) => row.map((k) => {'role': k.role.name}).toList())
+          .toList(),
+    };
+    expect(payload['alphaRows'], hasLength(3));
+    expect(payload['numericRows'], hasLength(greaterThan(0)));
+    expect(payload['symbolRows'], hasLength(greaterThan(0)));
+  });
 }
