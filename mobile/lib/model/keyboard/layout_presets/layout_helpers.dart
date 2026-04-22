@@ -2,9 +2,6 @@ import 'package:app/model/keyboard/keyboard_key_model.dart';
 import 'package:app/model/keyboard/keyboard_layout_model.dart';
 import 'package:app/utils/keyboard_layout_utils.dart';
 
-List<KeyboardKeyModel> keyRow(List<String> chars) =>
-    buildCharacterKeys(chars);
-
 List<List<KeyboardKeyModel>> standardNumericRows() => [
       buildCharacterKeys(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']),
       buildCharacterKeys(['-', '/', ':', ';', '(', ')', '\$', '&', '@', '"']),

@@ -63,12 +63,8 @@ void main() {
   test('toolbar exposes a distinct persistent language action', () {
     final toolbar = KeyboardToolbarModel.standard();
 
-    expect(toolbar.language.role, KeyboardKeyRole.language);
-    expect(toolbar.persistentActions.map((action) => action.role), [
-      KeyboardKeyRole.startStop,
-      KeyboardKeyRole.language,
-      KeyboardKeyRole.mode,
-    ]);
+    expect(toolbar.visibleActions, contains('language'));
+    expect(toolbar.visibleActions, containsAllInOrder(['startStop', 'language', 'mode']));
   });
 
   test('layout copyWith overrides shared contract fields', () {
@@ -101,27 +97,9 @@ void main() {
         label: 'go',
       ),
     );
-    final customToolbar = KeyboardToolbarModel(
-      startStop: KeyboardKeyModel.action(
-        id: 'custom-start-stop',
-        role: KeyboardKeyRole.startStop,
-        label: 'Start/Stop',
-      ),
-      language: KeyboardKeyModel.action(
-        id: 'custom-language',
-        role: KeyboardKeyRole.language,
-        label: 'Language',
-      ),
-      mode: KeyboardKeyModel.action(
-        id: 'custom-toolbar-mode',
-        role: KeyboardKeyRole.mode,
-        label: 'Mode',
-      ),
-      overflow: KeyboardKeyModel.action(
-        id: 'custom-overflow',
-        role: KeyboardKeyRole.overflow,
-        label: 'More',
-      ),
+    final customToolbar = const KeyboardToolbarModel(
+      visibleActions: ['startStop', 'language'],
+      activeMode: 'Manual',
     );
 
     final updatedLayout = layout.copyWith(

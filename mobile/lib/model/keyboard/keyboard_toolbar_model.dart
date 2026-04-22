@@ -1,46 +1,42 @@
-import 'package:app/model/keyboard/keyboard_key_model.dart';
 import 'package:equatable/equatable.dart';
 
+/// All action identifiers that can appear in the toolbar.
+const _knownActions = ['startStop', 'language', 'mode', 'addToDictionary'];
+
+/// Payload model for the keyboard toolbar, describing which actions are
+/// visible and what dictation mode is active.
 class KeyboardToolbarModel with EquatableMixin {
-  final KeyboardKeyModel startStop;
-  final KeyboardKeyModel language;
-  final KeyboardKeyModel mode;
-  final KeyboardKeyModel overflow;
+  final List<String> visibleActions;
+  final String activeMode;
 
   const KeyboardToolbarModel({
-    required this.startStop,
-    required this.language,
-    required this.mode,
-    required this.overflow,
+    required this.visibleActions,
+    required this.activeMode,
   });
 
   factory KeyboardToolbarModel.standard() {
-    return KeyboardToolbarModel(
-      startStop: KeyboardKeyModel.action(
-        id: 'toolbar-start-stop',
-        role: KeyboardKeyRole.startStop,
-        label: 'Start/Stop',
-      ),
-      language: KeyboardKeyModel.action(
-        id: 'toolbar-language',
-        role: KeyboardKeyRole.language,
-        label: 'Language',
-      ),
-      mode: KeyboardKeyModel.action(
-        id: 'toolbar-mode',
-        role: KeyboardKeyRole.mode,
-        label: 'Mode',
-      ),
-      overflow: KeyboardKeyModel.action(
-        id: 'toolbar-overflow',
-        role: KeyboardKeyRole.overflow,
-        label: 'More',
-      ),
+    return const KeyboardToolbarModel(
+      visibleActions: ['startStop', 'language', 'mode'],
+      activeMode: 'Auto',
     );
   }
 
-  List<KeyboardKeyModel> get persistentActions => [startStop, language, mode];
+  factory KeyboardToolbarModel.fromJson(Map<String, dynamic> json) {
+    return KeyboardToolbarModel(
+      visibleActions: List<String>.from(json['visibleActions'] as List),
+      activeMode: json['activeMode'] as String,
+    );
+  }
+
+  /// Returns known actions that are not already shown in [visibleActions].
+  List<String> get overflowActions =>
+      _knownActions.where((a) => !visibleActions.contains(a)).toList();
+
+  Map<String, dynamic> toJson() => {
+    'visibleActions': visibleActions,
+    'activeMode': activeMode,
+  };
 
   @override
-  List<Object?> get props => [startStop, language, mode, overflow];
+  List<Object?> get props => [visibleActions, activeMode];
 }

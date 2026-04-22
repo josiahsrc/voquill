@@ -153,6 +153,9 @@ Future<void> syncDictionaryToKeyboard() async {
   await _incrementAppCounter();
 }
 
+/// Called once on keyboard extension init to push all app state to the
+/// native keyboard extension. Must run before the keyboard accepts input
+/// to ensure layouts, toolbar config, tones, and user data are in sync.
 Future<void> syncKeyboardOnInit() async {
   await _refreshMainData();
   await syncLanguagesToKeyboard();

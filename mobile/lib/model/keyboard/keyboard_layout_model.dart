@@ -1,5 +1,6 @@
 import 'package:app/model/keyboard/keyboard_key_model.dart';
 import 'package:app/model/keyboard/keyboard_toolbar_model.dart';
+import 'package:app/model/keyboard/layout_presets/en_layout.dart';
 import 'package:app/utils/keyboard_layout_utils.dart';
 import 'package:equatable/equatable.dart';
 
@@ -53,64 +54,9 @@ class KeyboardLayoutModel with EquatableMixin {
     );
   }
 
-  factory KeyboardLayoutModel.englishQwerty() {
-    final alphaRows = [
-      buildCharacterKeyRow('qwertyuiop'),
-      buildCharacterKeyRow('asdfghjkl'),
-      buildCharacterKeyRow('zxcvbnm'),
-    ];
-    final numericRows = [
-      buildCharacterKeys(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']),
-      buildCharacterKeys(['-', '/', ':', ';', '(', ')', '\$', '&', '@', '"']),
-      buildCharacterKeys(['.', ',', '?', '!', "'"]),
-    ];
-    final symbolRows = [
-      buildCharacterKeys(['[', ']', '{', '}', '#', '%', '^', '*', '+', '=']),
-      buildCharacterKeys(['_', '\\', '|', '~', '<', '>', '€', '£', '¥', '•']),
-      buildCharacterKeys(['.', ',', '?', '!', "'"]),
-    ];
-
-    return KeyboardLayoutModel(
-      languageCode: 'en',
-      alphaRows: alphaRows,
-      numericRows: numericRows,
-      symbolRows: symbolRows,
-      shift: KeyboardKeyModel.action(
-        id: 'alpha-shift',
-        role: KeyboardKeyRole.shift,
-        label: 'shift',
-      ),
-      bottomRow: KeyboardBottomRowModel(
-        mode: KeyboardKeyModel.action(
-          id: 'bottom-mode',
-          role: KeyboardKeyRole.mode,
-          label: '123',
-        ),
-        globe: KeyboardKeyModel.action(
-          id: 'bottom-globe',
-          role: KeyboardKeyRole.globe,
-          label: '🌐',
-        ),
-        space: KeyboardKeyModel.action(
-          id: 'bottom-space',
-          role: KeyboardKeyRole.space,
-          label: 'space',
-          flex: 4,
-        ),
-        delete: KeyboardKeyModel.action(
-          id: 'bottom-delete',
-          role: KeyboardKeyRole.delete,
-          label: '⌫',
-        ),
-        enter: KeyboardKeyModel.action(
-          id: 'bottom-enter',
-          role: KeyboardKeyRole.enter,
-          label: 'return',
-        ),
-      ),
-      toolbar: KeyboardToolbarModel.standard(),
-    );
-  }
+  /// Delegates to [buildEnglishLayout] to avoid duplicating the English key
+  /// definitions that now live in the layout_presets package.
+  factory KeyboardLayoutModel.englishQwerty() => buildEnglishLayout();
 
   KeyboardLayoutModel copyWith({
     String? languageCode,
