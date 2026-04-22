@@ -77,6 +77,22 @@ void main() {
     );
   });
 
+  test('keyboard toolbar payload includes visible actions and active mode', () async {
+    final calls = <String, dynamic>{};
+    fakeSharedChannel.onInvoke = (method, args) {
+      if (method == 'setKeyboardToolbar') {
+        calls.addAll(Map<String, dynamic>.from(args as Map));
+      }
+      return null;
+    };
+    await syncKeyboardToolbar(
+      activeMode: 'Auto',
+      visibleActions: ['startStop', 'language', 'mode'],
+    );
+    expect(calls['activeMode'], 'Auto');
+    expect(calls['visibleActions'], containsAll(['startStop', 'language', 'mode']));
+  });
+
   test('syncKeyboardLanguages sends languages and active language', () async {
     await syncKeyboardLanguages(
       languages: <String>['en', 'fr'],

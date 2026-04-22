@@ -309,6 +309,8 @@ class KeyboardViewController: UIInputViewController {
     private lazy var matrixBuilder = KeyboardMatrixBuilder { [weak self] key in self?.handleKeyTap(key) }
     private var keyMatrixContainer: UIView?
     private var isFullKeyboardMode = false
+    private var toolbarView: UIView?
+    private var activeMode: String = "Auto"
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -363,8 +365,8 @@ class KeyboardViewController: UIInputViewController {
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         updateColorsForAppearance()
-        if keyboardLayoutSpec != nil {
-            renderKeyMatrix()
+        if isFullKeyboardMode {
+            renderKeyMatrix()  // rebuilds toolbar too
         }
     }
 
@@ -414,6 +416,108 @@ class KeyboardViewController: UIInputViewController {
         keyMatrixContainer = matrix
         isFullKeyboardMode = true
         pillButton?.isHidden = true
+        renderToolbar()
+    }
+
+    private func buildToolbar(isDark: Bool) -> UIView {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        var visibleActions = ["startStop", "language", "mode"]
+        var toolbarActiveMode = activeMode
+
+        if let data = defaults?.data(forKey: "voquill_keyboard_toolbar"),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            if let actions = json["visibleActions"] as? [String] { visibleActions = actions }
+            if let mode = json["activeMode"] as? String { toolbarActiveMode = mode }
+        }
+        activeMode = toolbarActiveMode
+
+        let stack = UIStackView()
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .horizontal
+        stack.spacing = 8
+        stack.alignment = .center
+        stack.layoutMargins = UIEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
+        stack.isLayoutMarginsRelativeArrangement = true
+
+        let chipBg: UIColor = isDark ? UIColor(white: 0.23, alpha: 1) : UIColor(white: 0.82, alpha: 1)
+        let textColor: UIColor = isDark ? .white : .black
+
+        func makeChip(title: String, action: @escaping () -> Void) -> UIButton {
+            let btn = UIButton(type: .custom)
+            btn.setTitle(title, for: .normal)
+            btn.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
+            btn.setTitleColor(textColor, for: .normal)
+            btn.backgroundColor = chipBg
+            btn.layer.cornerRadius = 8
+            btn.contentEdgeInsets = UIEdgeInsets(top: 4, left: 10, bottom: 4, right: 10)
+            btn.addAction(UIAction { _ in action() }, for: .touchUpInside)
+            return btn
+        }
+
+        // Start/Stop
+        if visibleActions.contains("startStop") {
+            let btn = makeChip(title: "⏺") { [weak self] in
+                guard let self = self else { return }
+                self.handleKeyTap(KeyboardKeySpec(id: "startStop", role: .startStop, label: "⏺", flex: 1, value: nil))
+            }
+            stack.addArrangedSubview(btn)
+        }
+
+        // Spacer
+        let spacer = UIView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        stack.addArrangedSubview(spacer)
+
+        // Language
+        if visibleActions.contains("language") {
+            let defaults2 = UserDefaults(suiteName: DictationConstants.appGroupId)
+            let langCode = (defaults2?.string(forKey: "voquill_dictation_language") ?? "en")
+                .components(separatedBy: "-").first?.uppercased() ?? "EN"
+            let btn = makeChip(title: langCode) { [weak self] in self?.onLanguageChipTap() }
+            btn.accessibilityIdentifier = "toolbar_language"
+            stack.addArrangedSubview(btn)
+        }
+
+        // Mode
+        if visibleActions.contains("mode") {
+            let btn = makeChip(title: toolbarActiveMode) { /* Task 7 */ }
+            btn.accessibilityIdentifier = "toolbar_mode"
+            stack.addArrangedSubview(btn)
+        }
+
+        // Overflow
+        let overflow = makeChip(title: "⋯") { /* Task 8 */ }
+        stack.addArrangedSubview(overflow)
+
+        return stack
+    }
+
+    private func renderToolbar() {
+        toolbarView?.removeFromSuperview()
+        let isDark = traitCollection.userInterfaceStyle == .dark
+        let toolbar = buildToolbar(isDark: isDark)
+        view.addSubview(toolbar)
+
+        if let matrix = keyMatrixContainer {
+            NSLayoutConstraint.activate([
+                toolbar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                toolbar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                toolbar.bottomAnchor.constraint(equalTo: matrix.topAnchor, constant: -4),
+                toolbar.heightAnchor.constraint(equalToConstant: 40),
+            ])
+        } else {
+            NSLayoutConstraint.activate([
+                toolbar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                toolbar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                toolbar.topAnchor.constraint(equalTo: view.topAnchor, constant: 4),
+                toolbar.heightAnchor.constraint(equalToConstant: 40),
+            ])
+        }
+        toolbarView = toolbar
+
+        // Hide existing top controls (logo, language chip)
+        logoButton?.isHidden = true
+        languageChip?.isHidden = true
     }
 
     private func handleKeyTap(_ key: KeyboardKeySpec) {
