@@ -2201,6 +2201,12 @@ pub async fn auth_sign_out(
 
 #[tauri::command]
 #[specta::specta]
+pub fn return_to_shell(app_handle: AppHandle) -> Result<(), String> {
+    crate::system::auth_session::navigate_main_to_built_in(&app_handle)
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn auth_is_signed_in(
     session: State<'_, crate::system::auth_session::AuthSession>,
 ) -> Result<bool, String> {

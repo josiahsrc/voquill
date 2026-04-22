@@ -325,6 +325,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::auth_mint_custom_token,
             crate::commands::auth_sign_out,
             crate::commands::auth_is_signed_in,
+            crate::commands::return_to_shell,
         ])
 }
 

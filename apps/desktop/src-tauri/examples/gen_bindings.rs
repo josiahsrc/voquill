@@ -109,6 +109,7 @@ fn main() {
         auth_mint_custom_token,
         auth_sign_out,
         auth_is_signed_in,
+        return_to_shell,
     ]);
 
     let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));

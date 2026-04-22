@@ -10,6 +10,7 @@ import LoginPage from "./components/login/LoginPage.tsx";
 import OnboardingPage from "./components/onboarding/OnboardingPage.tsx";
 import ErrorBoundary from "./components/root/ErrorBoundary.tsx";
 import { AppHeader } from "./components/root/Header.tsx";
+import { HeaderPortalProvider } from "./components/root/HeaderPortalContext.tsx";
 import Root from "./components/root/Root.tsx";
 import { Guard } from "./components/routing/Guard.tsx";
 import { Redirect } from "./components/routing/Redirectors.tsx";
@@ -136,5 +137,9 @@ export const browserRouter = createBrowserRouter([
 ]);
 
 export default function Router() {
-  return <RouterProvider router={browserRouter} />;
+  return (
+    <HeaderPortalProvider>
+      <RouterProvider router={browserRouter} />
+    </HeaderPortalProvider>
+  );
 }
