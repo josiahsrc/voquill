@@ -15,7 +15,7 @@ class KeyboardToolbarModel with EquatableMixin {
   });
 
   factory KeyboardToolbarModel.standard() {
-    return const KeyboardToolbarModel(
+    return KeyboardToolbarModel(
       startStop: KeyboardKeyModel.action(
         id: 'toolbar-start-stop',
         role: KeyboardKeyRole.startStop,

@@ -3,8 +3,6 @@ import 'package:app/model/keyboard/keyboard_toolbar_model.dart';
 import 'package:app/utils/keyboard_layout_utils.dart';
 import 'package:equatable/equatable.dart';
 
-export 'keyboard_key_model.dart';
-
 class KeyboardBottomRowModel with EquatableMixin {
   final KeyboardKeyModel mode;
   final KeyboardKeyModel globe;
@@ -77,12 +75,12 @@ class KeyboardLayoutModel with EquatableMixin {
       alphaRows: alphaRows,
       numericRows: numericRows,
       symbolRows: symbolRows,
-      shift: const KeyboardKeyModel.action(
+      shift: KeyboardKeyModel.action(
         id: 'alpha-shift',
         role: KeyboardKeyRole.shift,
         label: 'shift',
       ),
-      bottomRow: const KeyboardBottomRowModel(
+      bottomRow: KeyboardBottomRowModel(
         mode: KeyboardKeyModel.action(
           id: 'bottom-mode',
           role: KeyboardKeyRole.mode,

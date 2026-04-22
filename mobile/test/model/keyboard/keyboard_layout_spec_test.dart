@@ -73,7 +73,7 @@ void main() {
 
   test('layout copyWith overrides shared contract fields', () {
     final layout = KeyboardLayoutModel.englishQwerty();
-    const customBottomRow = KeyboardBottomRowModel(
+    final customBottomRow = KeyboardBottomRowModel(
       mode: KeyboardKeyModel.action(
         id: 'custom-mode',
         role: KeyboardKeyRole.mode,
@@ -101,7 +101,7 @@ void main() {
         label: 'go',
       ),
     );
-    const customToolbar = KeyboardToolbarModel(
+    final customToolbar = KeyboardToolbarModel(
       startStop: KeyboardKeyModel.action(
         id: 'custom-start-stop',
         role: KeyboardKeyRole.startStop,
@@ -155,7 +155,7 @@ void main() {
 
   test('layout snapshots nested rows immutably', () {
     final sourceRow = <KeyboardKeyModel>[
-      const KeyboardKeyModel.character(id: 'character-a', value: 'a'),
+      KeyboardKeyModel.character(id: 'character-a', value: 'a'),
     ];
     final sourceRows = <List<KeyboardKeyModel>>[sourceRow];
     final layout = KeyboardLayoutModel(
@@ -163,12 +163,12 @@ void main() {
       alphaRows: sourceRows,
       numericRows: const [],
       symbolRows: const [],
-      shift: const KeyboardKeyModel.action(
+      shift: KeyboardKeyModel.action(
         id: 'shift',
         role: KeyboardKeyRole.shift,
         label: 'shift',
       ),
-      bottomRow: const KeyboardBottomRowModel(
+      bottomRow: KeyboardBottomRowModel(
         mode: KeyboardKeyModel.action(
           id: 'mode',
           role: KeyboardKeyRole.mode,
@@ -198,9 +198,7 @@ void main() {
       toolbar: KeyboardToolbarModel.standard(),
     );
 
-    sourceRow.add(
-      const KeyboardKeyModel.character(id: 'character-b', value: 'b'),
-    );
+    sourceRow.add(KeyboardKeyModel.character(id: 'character-b', value: 'b'));
     sourceRows.add(<KeyboardKeyModel>[]);
 
     expect(layout.alphaRows, hasLength(1));
@@ -211,7 +209,7 @@ void main() {
     );
     expect(
       () => layout.alphaRows.first.add(
-        const KeyboardKeyModel.character(id: 'character-c', value: 'c'),
+        KeyboardKeyModel.character(id: 'character-c', value: 'c'),
       ),
       throwsUnsupportedError,
     );
@@ -224,7 +222,7 @@ void main() {
         role: KeyboardKeyRole.character,
         label: 'a',
       ),
-      throwsA(isA<AssertionError>()),
+      throwsA(isA<ArgumentError>()),
     );
   });
 
@@ -235,7 +233,7 @@ void main() {
         role: KeyboardKeyRole.character,
         label: 'a',
       ),
-      throwsA(isA<AssertionError>()),
+      throwsA(isA<ArgumentError>()),
     );
   });
 }
