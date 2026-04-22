@@ -8,6 +8,7 @@ import {
   REQUIRED_PERMISSIONS,
   isPermissionAuthorized,
   isPermissionDenied,
+  isPermissionRequestActionable,
   isPermissionRestricted,
 } from "./permission.utils";
 
@@ -66,6 +67,18 @@ export const resolvePermissionRequestLifecycle = ({
     requestInFlight: false,
     awaitingExternalApproval: shouldKeepAwaitingExternalApproval,
   };
+};
+
+type CanRequestPermissionInput = {
+  kind: PermissionGateStateInput["kind"];
+  gateState: PermissionGateState;
+};
+
+export const canRequestPermission = ({
+  kind,
+  gateState,
+}: CanRequestPermissionInput): boolean => {
+  return isPermissionRequestActionable(kind) && gateState.canRequest;
 };
 
 type PermissionsDialogViewStateInput = {

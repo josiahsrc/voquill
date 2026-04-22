@@ -23,6 +23,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
 import type { PermissionKind } from "../../types/permission.types";
 import {
+  canRequestPermission,
   derivePermissionsDialogViewState,
   derivePermissionGateState,
   resolvePermissionRequestLifecycle,
@@ -82,6 +83,7 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
     [kind, requestLifecycle, status],
   );
   const isRequestActionable = isPermissionRequestActionable(kind);
+  const canRequest = canRequestPermission({ kind, gateState });
 
   const { icon, color, chipColor, chipLabel } = useMemo(() => {
     if (!isRequestActionable) {
@@ -165,7 +167,7 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
         latestState.permissionRequests[kind].awaitingExternalApproval,
     });
 
-    if (!latestGateState.canRequest) {
+    if (!canRequestPermission({ kind, gateState: latestGateState })) {
       return;
     }
 
@@ -223,7 +225,7 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
         variant="outlined"
         size="small"
         onClick={() => void handleRequest()}
-        disabled={!isRequestActionable || !gateState.canRequest}
+        disabled={!canRequest}
         endIcon={
           !isRequestActionable ||
           requestLifecycle.requestInFlight ||

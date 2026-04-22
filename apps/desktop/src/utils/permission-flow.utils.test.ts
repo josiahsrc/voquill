@@ -232,6 +232,32 @@ describe("screen recording permission contract", () => {
     expect(isPermissionRequestActionable("screen-recording")).toBe(false);
     expect(isPermissionRequestActionable("microphone")).toBe(true);
   });
+
+  it("shares the same request guard for UI and handler checks", async () => {
+    const { canRequestPermission } = await loadSubject();
+
+    expect(canRequestPermission).toBeTypeOf("function");
+    expect(
+      canRequestPermission?.({
+        kind: "screen-recording",
+        gateState: {
+          canRequest: true,
+          isAwaitingExternalApproval: false,
+          shouldOpenSettings: false,
+        },
+      }),
+    ).toBe(false);
+    expect(
+      canRequestPermission?.({
+        kind: "microphone",
+        gateState: {
+          canRequest: true,
+          isAwaitingExternalApproval: false,
+          shouldOpenSettings: false,
+        },
+      }),
+    ).toBe(true);
+  });
 });
 
 describe("derivePermissionsDialogViewState", () => {
