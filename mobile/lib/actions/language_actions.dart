@@ -1,11 +1,23 @@
 import 'package:app/api/counter_api.dart';
 import 'package:app/api/language_api.dart';
+import 'package:app/model/keyboard/keyboard.dart';
 import 'package:app/store/store.dart';
 import 'package:app/utils/language_utils.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:app/utils/user_utils.dart';
 
 final _logger = createNamedLogger('language_actions');
+
+Map<String, KeyboardLayoutModel> buildKeyboardLayoutsByLanguage(
+  List<String> languages,
+) {
+  return {
+    for (final language in languages)
+      language: KeyboardLayoutModel.englishQwerty().copyWith(
+        languageCode: language,
+      ),
+  };
+}
 
 List<String> _normalizeLanguageList(List<String> input) {
   final seen = <String>{};
@@ -56,6 +68,9 @@ Future<void> loadDictationLanguages() async {
     produceAppState((draft) {
       draft.dictationLanguages = languages;
       draft.activeDictationLanguage = active;
+      draft.keyboardLayoutsByLanguage = buildKeyboardLayoutsByLanguage(
+        languages,
+      );
     });
   } catch (e) {
     _logger.w('Failed to load dictation languages', e);
@@ -79,6 +94,9 @@ Future<void> setDictationLanguages(List<String> languages) async {
     produceAppState((draft) {
       draft.dictationLanguages = normalized;
       draft.activeDictationLanguage = active;
+      draft.keyboardLayoutsByLanguage = buildKeyboardLayoutsByLanguage(
+        normalized,
+      );
     });
 
     await IncrementKeyboardCounterApi().call(null);
