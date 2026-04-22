@@ -6,8 +6,12 @@ use std::{thread, time::Duration};
 
 static CLIPBOARD_HOLD: Mutex<Option<arboard::Clipboard>> = Mutex::new(None);
 
-pub fn paste_text(text: &str, keybind: Option<&str>) -> Result<(), String> {
-    paste_via_clipboard(text, keybind).or_else(|err| {
+pub fn paste_text(
+    text: &str,
+    keybind: Option<&str>,
+    skip_clipboard_restore: bool,
+) -> Result<(), String> {
+    paste_via_clipboard(text, keybind, skip_clipboard_restore).or_else(|err| {
         log::warn!("Clipboard paste failed ({err}), falling back to simulated typing");
         enigo_type_text(text)
     })
@@ -100,7 +104,11 @@ fn enigo_paste_keystroke(style: PasteKeystroke) -> Result<(), String> {
     Ok(())
 }
 
-fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
+fn paste_via_clipboard(
+    text: &str,
+    keybind: Option<&str>,
+    skip_clipboard_restore: bool,
+) -> Result<(), String> {
     let style = parse_paste_keystroke(keybind);
     let mut clipboard =
         arboard::Clipboard::new().map_err(|err| format!("clipboard unavailable: {err}"))?;
@@ -118,12 +126,16 @@ fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> 
 
     simulate_paste_keystroke(style)?;
 
-    thread::spawn(move || {
-        thread::sleep(Duration::from_millis(800));
-        let mut hold = CLIPBOARD_HOLD.lock().unwrap_or_else(|p| p.into_inner());
-        *hold = None;
-        previous.restore();
-    });
+    if skip_clipboard_restore {
+        drop(previous);
+    } else {
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(800));
+            let mut hold = CLIPBOARD_HOLD.lock().unwrap_or_else(|p| p.into_inner());
+            *hold = None;
+            previous.restore();
+        });
+    }
 
     Ok(())
 }

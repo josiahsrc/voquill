@@ -236,9 +236,9 @@ async surfaceMainWindow() : Promise<Result<null, string>> {
 async setPillWindowSize(size: PillWindowSize) : Promise<void> {
     await TAURI_INVOKE("set_pill_window_size", { size });
 },
-async paste(text: string, keybind: string | null) : Promise<Result<PasteOutcome, string>> {
+async paste(text: string, keybind: string | null, skipClipboardRestore: boolean | null) : Promise<Result<PasteOutcome, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("paste", { text, keybind }) };
+    return { status: "ok", data: await TAURI_INVOKE("paste", { text, keybind, skipClipboardRestore }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };

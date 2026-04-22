@@ -1,6 +1,7 @@
 pub(crate) fn paste_text_into_focused_field(
     text: &str,
     keybind: Option<&str>,
+    skip_clipboard_restore: bool,
 ) -> Result<(), String> {
     if text.trim().is_empty() {
         return Ok(());
@@ -15,8 +16,8 @@ pub(crate) fn paste_text_into_focused_field(
 
     if super::detect::is_wayland() {
         log::info!("Wayland session detected");
-        super::wl::input::paste_text(target, keybind)
+        super::wl::input::paste_text(target, keybind, skip_clipboard_restore)
     } else {
-        super::x11::input::paste_text(target, keybind)
+        super::x11::input::paste_text(target, keybind, skip_clipboard_restore)
     }
 }

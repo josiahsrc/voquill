@@ -1530,6 +1530,7 @@ pub fn write_accessibility_fields(
                                     super::input::paste_text_into_focused_field(
                                         &entry.value,
                                         None,
+                                        false,
                                     )
                                     .map(|_| ())
                                 })
@@ -1826,7 +1827,7 @@ unsafe fn try_write_via_paste(element: &IUIAutomationElement, value: &str) -> Re
     super::input::select_all_keystroke();
     std::thread::sleep(std::time::Duration::from_millis(50));
 
-    super::input::paste_text_into_focused_field(value, None).map(|_| ())
+    super::input::paste_text_into_focused_field(value, None, false).map(|_| ())
 }
 
 fn get_process_name(pid: u32) -> Option<String> {

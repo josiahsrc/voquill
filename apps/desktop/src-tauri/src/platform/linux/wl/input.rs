@@ -146,16 +146,28 @@ pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
 
 // --- Public API ---
 
-pub fn paste_text(text: &str, keybind: Option<&str>) -> Result<(), String> {
-    paste_via_clipboard(text, keybind).or_else(|err| {
+pub fn paste_text(
+    text: &str,
+    keybind: Option<&str>,
+    skip_clipboard_restore: bool,
+) -> Result<(), String> {
+    paste_via_clipboard(text, keybind, skip_clipboard_restore).or_else(|err| {
         log::warn!("Wayland paste via keystroke failed ({err}), leaving text on clipboard");
         clipboard_set(text)
     })
 }
 
-fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
+fn paste_via_clipboard(
+    text: &str,
+    keybind: Option<&str>,
+    skip_clipboard_restore: bool,
+) -> Result<(), String> {
     let style = parse_paste_keystroke(keybind);
-    let previous = clipboard_get().ok();
+    let previous = if skip_clipboard_restore {
+        None
+    } else {
+        clipboard_get().ok()
+    };
 
     clipboard_set(text)?;
     thread::sleep(Duration::from_millis(40));

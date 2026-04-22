@@ -1512,7 +1512,11 @@ pub fn copy_to_clipboard(text: String) -> Result<(), String> {
 
 #[tauri::command]
 #[specta::specta]
-pub async fn paste(text: String, keybind: Option<String>) -> Result<PasteOutcome, String> {
+pub async fn paste(
+    text: String,
+    keybind: Option<String>,
+    skip_clipboard_restore: Option<bool>,
+) -> Result<PasteOutcome, String> {
     // Probe the focused target first. If it clearly can't accept text, write
     // the transcript to the clipboard and skip the paste keystroke entirely —
     // that avoids the race where paste's delayed clipboard-restore overwrites
@@ -1553,8 +1557,9 @@ pub async fn paste(text: String, keybind: Option<String>) -> Result<PasteOutcome
         };
     }
 
+    let skip_clipboard_restore = skip_clipboard_restore.unwrap_or(false);
     let join_result = tauri::async_runtime::spawn_blocking(move || {
-        platform_paste_text(&text, keybind.as_deref())
+        platform_paste_text(&text, keybind.as_deref(), skip_clipboard_restore)
     })
     .await;
 
