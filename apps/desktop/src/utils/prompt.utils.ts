@@ -59,6 +59,7 @@ export type BuildDictationContextInput = {
   currentEditor?: DictationContextTarget | null;
   selectedText?: string | null;
   screenContext?: string | null;
+  clipboardContext?: string | null;
 };
 
 export const buildDictationContext = ({
@@ -69,6 +70,7 @@ export const buildDictationContext = ({
   currentEditor = null,
   selectedText = null,
   screenContext = null,
+  clipboardContext = null,
 }: BuildDictationContextInput): DictationContext =>
   assembleDictationContext({
     intent,
@@ -78,6 +80,7 @@ export const buildDictationContext = ({
     currentEditor,
     selectedText,
     screenContext,
+    clipboardContext,
   });
 
 export const collectDictionaryTerms = (
@@ -175,10 +178,10 @@ RULES:
 2. Add proper punctuation (periods, commas, question marks) where they are missing
 3. Capitalize the first word of each sentence and proper nouns
 4. Remove filler words (um, uh, like, you know, I mean) unless they carry meaning
-5. Do NOT add information that was not spoken
-6. Do NOT remove content that was spoken (except filler words per rule 4)
-7. Do NOT paraphrase or summarize — preserve the original phrasing as closely as possible
-8. Do NOT change technical terms, names, or specialized vocabulary
+5. Never ADD or REMOVE words from the transcript (except filler words per rule 4)
+6. Correct obvious Whisper phonetic substitutions (e.g., "parched"→"parsed", "there"→"their", "two"→"to") when the surrounding context makes the correct word unambiguous. Use custom vocabulary and glossary terms as primary signals.
+7. Apply ALL replacement map entries from <CUSTOM_VOCABULARY> — these are user-defined corrections that MUST be applied.
+8. Do NOT paraphrase or summarize — preserve the original phrasing as closely as possible
 9. Format lists naturally if the speaker enumerated items
 10. Keep the same language as the original transcript
 11. Return ONLY the corrected transcript text — no explanations, no preamble
@@ -231,7 +234,16 @@ const buildPostProcessingContextSections = (
     const replacements = Object.entries(context.replacementMap ?? {})
       .map(([source, destination]) => `${source} → ${destination}`)
       .join("\n");
-    sections.push(`<CUSTOM_VOCABULARY>\n${replacements}\n</CUSTOM_VOCABULARY>`);
+    sections.push(
+      `The following words must be corrected if phonetically confused by Whisper. When these words or similar-sounding words appear in the <TRANSCRIPT>, ensure they are spelled EXACTLY as listed:\n<CUSTOM_VOCABULARY>\n${replacements}\n</CUSTOM_VOCABULARY>`,
+    );
+  }
+
+  if (context?.glossaryTerms && context.glossaryTerms.length > 0) {
+    const terms = context.glossaryTerms.join(", ");
+    sections.push(
+      `These proper nouns and technical terms must be spelled correctly — fix any phonetic variants Whisper may have produced:\n<GLOSSARY_TERMS>\n${terms}\n</GLOSSARY_TERMS>`,
+    );
   }
 
   return sections.join("\n\n");
