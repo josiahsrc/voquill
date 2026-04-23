@@ -179,16 +179,6 @@ export type TranscriptionMetadata = TranscribeAudioMetadata &
     rawTranscript?: string | null;
   };
 
-const STT_HINT_LIMITS = {
-  appName: 60,
-  editorName: 60,
-  selectedText: 160,
-  screenContext: 220,
-} as const;
-
-const truncatePromptHint = (value: string, limit: number): string =>
-  value.length <= limit ? value : `${value.slice(0, limit - 1).trimEnd()}…`;
-
 const buildPromptDictionaryEntries = (
   context: DictationContext,
 ): Parameters<typeof buildLocalizedTranscriptionPrompt>[0]["entries"] => ({
@@ -207,49 +197,16 @@ const buildContextAwareTranscriptionPrompt = (args: {
     typeof buildLocalizedTranscriptionPrompt
   >[0]["dictationLanguage"];
   state: ReturnType<typeof getAppState>;
-  supportsPromptHints: boolean;
 }): string => {
-  const glossaryPrompt = buildLocalizedTranscriptionPrompt({
+  // Whisper's initial_prompt is prior-transcript text, not an instruction channel.
+  // Vocabulary terms (glossary + replacement destinations) are sufficient for
+  // phonetic biasing. Context hints with labelled keys ("App: X", "Screen: Y")
+  // read as instruction text and risk hallucination — omit them entirely.
+  return buildLocalizedTranscriptionPrompt({
     entries: buildPromptDictionaryEntries(args.context),
     dictationLanguage: args.dictationLanguage,
     state: args.state,
   });
-
-  if (!args.supportsPromptHints) {
-    return glossaryPrompt;
-  }
-
-  const contextHints: string[] = [];
-
-  if (args.context.currentApp?.name) {
-    contextHints.push(
-      `Current app: ${truncatePromptHint(args.context.currentApp.name, STT_HINT_LIMITS.appName)}`,
-    );
-  }
-
-  if (args.context.currentEditor?.name) {
-    contextHints.push(
-      `Current editor: ${truncatePromptHint(args.context.currentEditor.name, STT_HINT_LIMITS.editorName)}`,
-    );
-  }
-
-  if (args.context.selectedText) {
-    contextHints.push(
-      `Selected text: ${truncatePromptHint(args.context.selectedText, STT_HINT_LIMITS.selectedText)}`,
-    );
-  }
-
-  if (args.context.screenContext) {
-    contextHints.push(
-      `Screen context: ${truncatePromptHint(args.context.screenContext, STT_HINT_LIMITS.screenContext)}`,
-    );
-  }
-
-  if (contextHints.length === 0) {
-    return glossaryPrompt;
-  }
-
-  return `${glossaryPrompt}\n\nContext hints:\n${contextHints.join("\n")}`;
 };
 
 /**

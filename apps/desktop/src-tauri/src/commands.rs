@@ -1874,15 +1874,20 @@ pub async fn get_screen_context() -> Result<ScreenContextInfo, String> {
 pub async fn get_screen_capture_context() -> Result<Option<String>, String> {
     #[cfg(target_os = "macos")]
     {
-        Ok(tokio::time::timeout(
+        let result = tokio::time::timeout(
             std::time::Duration::from_secs(20),
             tauri::async_runtime::spawn_blocking(
                 crate::platform::macos::screen_capture::get_screen_capture_context,
             ),
         )
         .await
-        .map_err(|_| "get_screen_capture_context timed out".to_string())?
-        .map_err(|err| err.to_string())??)
+        .map_err(|_| {
+            log::warn!("get_screen_capture_context command timed out after 20s");
+            "get_screen_capture_context timed out".to_string()
+        })?
+        .map_err(|err| err.to_string())??;
+
+        Ok(result)
     }
 
     #[cfg(not(target_os = "macos"))]

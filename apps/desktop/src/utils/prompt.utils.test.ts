@@ -152,6 +152,54 @@ describe("buildSystemPostProcessingTonePrompt", () => {
     expect(result).toContain("<CURRENT_WINDOW_CONTEXT>");
     expect(result).toContain("Browser tab release dashboard");
   });
+
+  it("includes CURRENT_WINDOW_CONTEXT when only screenContext is provided", () => {
+    const result = buildSystemPostProcessingTonePrompt(
+      makeInput(
+        { kind: "style", stylePrompt: "Be formal" },
+        {
+          context: buildDictationContext({
+            dictationLanguage: "en",
+            screenContext: "Ghostty terminal with some text",
+          } as Parameters<typeof buildDictationContext>[0] & {
+            screenContext: string;
+          }),
+        },
+      ),
+    );
+
+    expect(result).toContain("<CURRENT_WINDOW_CONTEXT>");
+    expect(result).toContain("Ghostty terminal with some text");
+    expect(result).not.toContain("<ACTIVE_APP>");
+  });
+
+  it("includes ACTIVE_APP when only currentApp is provided", () => {
+    const result = buildSystemPostProcessingTonePrompt(
+      makeInput(
+        { kind: "style", stylePrompt: "Be formal" },
+        {
+          context: buildDictationContext({
+            dictationLanguage: "en",
+            currentApp: { id: "ghostty", name: "Ghostty" },
+          }),
+        },
+      ),
+    );
+
+    expect(result).toContain("<ACTIVE_APP>");
+    expect(result).toContain("Ghostty");
+    expect(result).not.toContain("<CURRENT_WINDOW_CONTEXT>");
+  });
+
+  it("omits context sections when no context is provided", () => {
+    const result = buildSystemPostProcessingTonePrompt(
+      makeInput({ kind: "style", stylePrompt: "Be formal" }),
+    );
+
+    expect(result).not.toContain("<ACTIVE_APP>");
+    expect(result).not.toContain("<CURRENT_WINDOW_CONTEXT>");
+    expect(result).not.toContain("<CURRENTLY_SELECTED_TEXT>");
+  });
 });
 
 describe("buildPostProcessingPrompt", () => {

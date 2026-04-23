@@ -100,13 +100,16 @@ impl Drop for AutoreleasePoolGuard {
 }
 
 pub fn get_screen_capture_context() -> Result<Option<String>, String> {
-    catch_unwind(AssertUnwindSafe(|| unsafe {
+    log::info!("get_screen_capture_context: starting OCR screen capture");
+    let result = catch_unwind(AssertUnwindSafe(|| unsafe {
         let pool = AutoreleasePoolGuard::new(msg_send![class!(NSAutoreleasePool), new]);
         let result = get_screen_capture_context_impl();
         drop(pool);
         result
     }))
-    .map_err(|_| "get_screen_capture_context panicked".to_string())?
+    .map_err(|_| "get_screen_capture_context panicked".to_string())?;
+    log::info!("get_screen_capture_context: result={:?}", result);
+    result
 }
 
 unsafe fn get_screen_capture_context_impl() -> Result<Option<String>, String> {

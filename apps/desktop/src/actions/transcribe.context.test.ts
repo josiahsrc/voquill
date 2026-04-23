@@ -158,9 +158,12 @@ describe("desktop dictation context", () => {
     expect(generateTextMock).toHaveBeenCalledTimes(1);
 
     const [call] = generateTextMock.mock.calls;
-    expect(call[0].system).toContain("Current app: Notion");
-    expect(call[0].system).toContain("Current editor: Focused text field");
-    expect(call[0].system).toContain("Selected text: launch");
-    expect(call[0].system).toContain("Screen context: Release checklist");
+    expect(call[0].system).toContain("<ACTIVE_APP>");
+    expect(call[0].system).toContain("Notion");
+    expect(call[0].system).toContain("Focused text field");
+    expect(call[0].system).toContain("<CURRENTLY_SELECTED_TEXT>");
+    expect(call[0].system).toContain("launch");
+    expect(call[0].system).toContain("<CURRENT_WINDOW_CONTEXT>");
+    expect(call[0].system).toContain("Release checklist");
   });
 });

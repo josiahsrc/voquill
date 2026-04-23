@@ -1,6 +1,7 @@
 import type { ApiKey } from "@voquill/types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppState, INITIAL_APP_STATE } from "../state/app.state";
+import { mergeScreenContexts } from "../utils/prompt.utils";
 import {
   planDesktopTranscriptionSelection,
   storeTranscription,
@@ -80,8 +81,7 @@ vi.mock("./user.actions", () => ({
 }));
 
 vi.mock("../utils/user.utils", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("../utils/user.utils")>();
+  const actual = await importOriginal<typeof import("../utils/user.utils")>();
 
   return {
     ...actual,
@@ -89,7 +89,9 @@ vi.mock("../utils/user.utils", async (importOriginal) => {
   };
 });
 
-const makeApiKey = (overrides: Partial<ApiKey> & Pick<ApiKey, "id" | "provider">): ApiKey => ({
+const makeApiKey = (
+  overrides: Partial<ApiKey> & Pick<ApiKey, "id" | "provider">,
+): ApiKey => ({
   id: overrides.id,
   name: overrides.name ?? overrides.id,
   provider: overrides.provider,
@@ -119,7 +121,9 @@ describe("planDesktopTranscriptionSelection", () => {
       filePath: "/audio/transcription.wav",
       durationMs: 250,
     });
-    createTranscriptionMock.mockImplementation(async (transcription) => transcription);
+    createTranscriptionMock.mockImplementation(
+      async (transcription) => transcription,
+    );
     purgeStaleAudioMock.mockResolvedValue([]);
     addWordsToCurrentUserMock.mockResolvedValue(undefined);
   });
@@ -221,7 +225,7 @@ describe("transcribeAudio", () => {
     });
   });
 
-  it("adds bounded editor and screen context only for provider paths that support prompt hints", async () => {
+  it("uses vocabulary-only conversation-primer prompt regardless of supportsPromptHints", async () => {
     getTranscribeAudioRepoMock.mockReturnValue({
       repo: {
         transcribeAudio: transcribeAudioRepoMock,
@@ -241,31 +245,30 @@ describe("transcribeAudio", () => {
         "This selected text should be bounded before it reaches the provider. ".repeat(
           4,
         ),
-      screenContext:
-        "This screen context should also be bounded before it reaches the provider prompt. ".repeat(
-          5,
-        ),
+      screenContext: mergeScreenContexts({
+        accessibilityContext:
+          "Browser tab release dashboard showing launch blockers and owners.",
+        screenCaptureContext:
+          "OCR sees draft launch checklist and pending summary details.",
+      }),
     });
 
     expect(transcribeAudioRepoMock).toHaveBeenCalledTimes(1);
-    expect(transcribeAudioRepoMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        prompt: expect.stringContaining("Context hints:"),
-      }),
-    );
 
     const repoInput = transcribeAudioRepoMock.mock.calls[0]?.[0] as {
       prompt: string;
     };
-    expect(repoInput.prompt).toContain("Current app: Notes");
-    expect(repoInput.prompt).toContain("Current editor: Document Body");
-    expect(repoInput.prompt).toContain("Selected text:");
-    expect(repoInput.prompt).toContain("Screen context:");
-    expect(repoInput.prompt).toContain("…");
+    // Prompt uses the VoiceInk-style conversation primer (no instruction text)
+    expect(repoInput.prompt).toContain("Hello, how are you doing?");
+    // Context hints must NOT appear — they read as instructions to Whisper
+    expect(repoInput.prompt).not.toContain("Context hints:");
+    expect(repoInput.prompt).not.toContain("Current app:");
+    expect(repoInput.prompt).not.toContain("Current editor:");
+    expect(repoInput.prompt).not.toContain("Screen context:");
     expect(result.metadata.transcriptionPrompt).toBe(repoInput.prompt);
   });
 
-  it("preserves the existing glossary prompt when the provider path does not support prompt hints", async () => {
+  it("uses conversation-primer prompt when the provider path does not support prompt hints", async () => {
     getTranscribeAudioRepoMock.mockReturnValue({
       repo: {
         transcribeAudio: transcribeAudioRepoMock,
@@ -288,7 +291,8 @@ describe("transcribeAudio", () => {
     const repoInput = transcribeAudioRepoMock.mock.calls[0]?.[0] as {
       prompt: string;
     };
-    expect(repoInput.prompt).toContain("Glossary:");
+    expect(repoInput.prompt).toContain("Hello, how are you doing?");
+    expect(repoInput.prompt).not.toContain("Glossary:");
     expect(repoInput.prompt).not.toContain("Context hints:");
     expect(repoInput.prompt).not.toContain("Current editor:");
     expect(repoInput.prompt).not.toContain("Screen context:");
@@ -306,7 +310,9 @@ describe("storeTranscription", () => {
       filePath: "/audio/transcription.wav",
       durationMs: 250,
     });
-    createTranscriptionMock.mockImplementation(async (transcription) => transcription);
+    createTranscriptionMock.mockImplementation(
+      async (transcription) => transcription,
+    );
     purgeStaleAudioMock.mockResolvedValue([]);
     addWordsToCurrentUserMock.mockResolvedValue(undefined);
   });
