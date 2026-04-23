@@ -463,19 +463,22 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
     const noKeyRequired = provider
       ? NO_KEY_REQUIRED_PROVIDERS.includes(provider)
       : false;
-    if (apiKey || noKeyRequired) {
-      return {
-        mode: "api",
-        provider: provider ?? "groq",
-        apiKeyId: selectedApiKey?.id ?? config.selectedApiKeyId!,
-        apiKeyValue: apiKey ?? "",
-        transcriptionModel:
-          plannedSelection?.model ?? selectedApiKey?.transcriptionModel ?? null,
-        warnings,
-      };
-    } else {
+
+    // Return API mode even if key is missing - respect user's configured mode
+    // Let transcription fail later with clear error instead of silently falling back to local
+    if (!apiKey && !noKeyRequired) {
       warnings.push("No API key configured for API transcription.");
     }
+
+    return {
+      mode: "api",
+      provider: provider ?? "groq",
+      apiKeyId: selectedApiKey?.id ?? config.selectedApiKeyId!,
+      apiKeyValue: apiKey ?? "",
+      transcriptionModel:
+        plannedSelection?.model ?? selectedApiKey?.transcriptionModel ?? null,
+      warnings,
+    };
   }
 
   return {

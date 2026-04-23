@@ -434,6 +434,7 @@ export const AppSideEffects = () => {
 
     const prefs = getTranscriptionPrefs(getAppState());
     if (prefs.mode !== "local") {
+      getLogger().info(`Skipping STT warmup in ${prefs.mode} mode`);
       return;
     }
 
