@@ -16,8 +16,8 @@ import { PostProcessingMode, TranscriptionMode } from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
 import { StopRecordingResponse } from "../types/transcription-session.types";
 import {
-  extractJsonFromMarkdown,
-  unwrapNestedLlmResponse,
+  parseStructuredJsonResponse,
+  recoverPlainTextFromLLMResponse,
 } from "../utils/ai.utils";
 import { createId } from "../utils/id.utils";
 import {
@@ -29,7 +29,8 @@ import {
   buildLocalizedTranscriptionPrompt,
   buildPostProcessingPrompt,
   buildSystemPostProcessingTonePrompt,
-  collectDictionaryEntries,
+  collectDictionaryTerms,
+  mergeScreenContexts,
   PostProcessingPromptInput,
   PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
   PROCESSED_TRANSCRIPTION_SCHEMA,
@@ -83,6 +84,71 @@ export type PostProcessResult = {
   warnings: string[];
   metadata: PostProcessMetadata;
 };
+
+export type ResolveDesktopDictationContextInput = {
+  currentApp?: DictationContextTarget | null;
+  currentEditor?: DictationContextTarget | null;
+  a11yInfo?: TextFieldInfo | null;
+  screenContext?: string | null;
+};
+
+export type ResolvedDesktopDictationContext = {
+  currentApp: DictationContextTarget | null;
+  currentEditor: DictationContextTarget | null;
+  selectedText: string | null;
+  screenContext: string | null;
+};
+
+const FOCUSED_TEXT_FIELD_TARGET: DictationContextTarget = {
+  id: "focused-text-field",
+  name: "Focused text field",
+};
+
+const hasFocusedTextFieldInfo = (a11yInfo?: TextFieldInfo | null): boolean =>
+  Boolean(
+    a11yInfo &&
+    (typeof a11yInfo.cursorPosition === "number" ||
+      typeof a11yInfo.selectionLength === "number" ||
+      a11yInfo.textContent),
+  );
+
+const deriveSelectedTextFromA11yInfo = (
+  a11yInfo?: TextFieldInfo | null,
+): string | null => {
+  if (!a11yInfo?.textContent) {
+    return null;
+  }
+
+  const { cursorPosition, selectionLength, textContent } = a11yInfo;
+  if (
+    cursorPosition == null ||
+    selectionLength == null ||
+    selectionLength <= 0
+  ) {
+    return null;
+  }
+
+  const start = Math.max(0, Math.min(cursorPosition, textContent.length));
+  const end = Math.max(
+    start,
+    Math.min(start + selectionLength, textContent.length),
+  );
+  return textContent.slice(start, end) || null;
+};
+
+export const resolveDesktopDictationContext = ({
+  currentApp = null,
+  currentEditor = null,
+  a11yInfo = null,
+  screenContext = null,
+}: ResolveDesktopDictationContextInput): ResolvedDesktopDictationContext => ({
+  currentApp,
+  currentEditor:
+    currentEditor ??
+    (hasFocusedTextFieldInfo(a11yInfo) ? FOCUSED_TEXT_FIELD_TARGET : null),
+  selectedText: deriveSelectedTextFromA11yInfo(a11yInfo),
+  screenContext: mergeScreenContexts({ accessibilityContext: screenContext }),
+});
 
 // Combined metadata type for storage compatibility
 export type TranscriptionMetadata = TranscribeAudioMetadata &
@@ -167,6 +233,8 @@ export const transcribeAudio = async ({
     metadata,
   };
 };
+
+
 
 /**
  * Post-process a raw transcript using LLM.
@@ -260,9 +328,22 @@ export const postProcessTranscript = async ({
           "Post-processing validation failed:",
           validationResult.error.message,
         );
-        warnings.push(
-          `Post-processing response validation failed: ${validationResult.error.message}`,
-        );
+        // Attempt a plain-text rescue: if the LLM returned text without valid JSON,
+        // use it directly rather than silently falling back to the raw STT transcript.
+        const rescued = recoverPlainTextFromLLMResponse(genOutput.text);
+        if (rescued) {
+          getLogger().warning(
+            "Post-processing JSON parse failed, recovered plain text from LLM response",
+          );
+          processedTranscript = rescued;
+        } else {
+          getLogger().error(
+            "Post-processing completely failed, using raw STT transcript",
+          );
+          warnings.push(
+            `Post-processing response validation failed: ${validationResult.error.message}`,
+          );
+        }
       } else {
         processedTranscript = validationResult.data.result.trim();
         getLogger().verbose(
@@ -272,9 +353,22 @@ export const postProcessTranscript = async ({
       }
     } catch (e) {
       getLogger().error("Failed to parse post-processing response:", e);
-      warnings.push(
-        `Failed to parse post-processing response: ${(e as Error).message}`,
-      );
+      // Last-resort rescue: treat the entire raw LLM output as the cleaned transcript
+      // (it may just be plain text that didn't wrap in JSON).
+      const rescued = recoverPlainTextFromLLMResponse(genOutput.text);
+      if (rescued) {
+        getLogger().warning(
+          "Post-processing JSON parse failed, recovered plain text from LLM response",
+        );
+        processedTranscript = rescued;
+      } else {
+        getLogger().error(
+          "Post-processing completely failed, using raw STT transcript",
+        );
+        warnings.push(
+          `Failed to parse post-processing response: ${(e as Error).message}`,
+        );
+      }
     }
 
     metadata.postProcessPrompt = ppPrompt;
