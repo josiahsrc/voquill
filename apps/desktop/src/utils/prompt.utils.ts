@@ -499,12 +499,7 @@ ${transcript}
 
 Execute the command and provide your response in ${languageName}.
 `;
-    console.log(
-      "[Agent Prompt] Using tone template, result length:",
-      base.length,
-    );
   } else {
-    console.log("[Agent Prompt] Using default prompt (no tone template)");
     base = intl.formatMessage(
       {
         defaultMessage: `
@@ -531,6 +526,5 @@ Return ONLY the requested output, nothing else. The output will be pasted direct
     );
   }
 
-  console.log("Agent prompt", prompt);
   return base;
 };
