@@ -260,7 +260,6 @@ export const transcribeAudio = async ({
     context,
     dictationLanguage,
     state,
-    supportsPromptHints: transcribeRepo.supportsPromptHints(),
   });
 
   getLogger().verbose(
