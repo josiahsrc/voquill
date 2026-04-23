@@ -111,7 +111,7 @@ final class KeyboardMatrixBuilder {
     private func shiftLabel(_ state: KeyboardStateMachine) -> String {
         switch state.caseState {
         case .lower: return "⇧"
-        case .shift: return "⇧"
+        case .shift: return "⬆"
         case .capsLock: return "⇪"
         }
     }
