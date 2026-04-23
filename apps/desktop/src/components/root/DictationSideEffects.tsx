@@ -323,7 +323,12 @@ export const DictationSideEffects = () => {
                 return null;
               }),
             getScreenCaptureContext(),
-            navigator.clipboard.readText().catch((error) => {
+            Promise.race([
+              navigator.clipboard.readText().catch(() => null),
+              new Promise<null>((resolve) =>
+                setTimeout(() => resolve(null), 500),
+              ),
+            ]).catch((error) => {
               getLogger().verbose(`Failed to read clipboard: ${error}`);
               return null;
             }),
