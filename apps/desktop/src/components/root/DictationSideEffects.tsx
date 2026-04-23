@@ -1,5 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import { AppTarget } from "@voquill/types";
 import { delayed } from "@voquill/utilities";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIntl } from "react-intl";
@@ -279,66 +278,91 @@ export const DictationSideEffects = () => {
     clearRecordingTimers();
     restoreSystemVolume();
 
-    const [audio, a11yInfo, appTarget] = await getLogger().stopwatch(
-      "stopRecording",
-      async () => {
-        let audio: StopRecordingResponse | null = null;
-        let a11yInfo: TextFieldInfo | null = null;
-        let appTarget: AppTarget | null = null;
-        try {
-          tryPlayAudioChime("stop_recording_clip");
+    const perfStartTime = Date.now();
 
-          getLogger().verbose("Invoking stop_recording and fetching a11y info");
-          const [, outAudio, outA11yInfo, outAppTarget] = await Promise.all([
-            strategyRef.current?.setPhase("loading"),
-            invoke<StopRecordingResponse>("stop_recording"),
-            invoke<TextFieldInfo>("get_text_field_info").catch((error) => {
-              getLogger().verbose(`Failed to get text field info: ${error}`);
-              return null;
-            }),
-            invoke<ScreenContextInfo>("get_screen_context")
-              .then((result) => result.screenContext)
-              .catch((error) => {
-                getLogger().verbose(`Failed to get screen context: ${error}`);
-                return null;
-              }),
-            getScreenCaptureContext(),
-            Promise.race([
-              navigator.clipboard.readText().catch(() => null),
-              new Promise<null>((resolve) =>
-                setTimeout(() => resolve(null), 500),
-              ),
-            ]).catch((error) => {
-              getLogger().verbose(`Failed to read clipboard: ${error}`);
-              return null;
-            }),
-            tryRegisterCurrentAppTarget().catch((error) => {
-              getLogger().verbose(`Failed to get current app target: ${error}`);
-              return null;
-            }),
-          ]);
+    // Start audio recording stop and context collection in parallel
+    // Audio is fast (~100ms), context is slow (6-10s)
+    const audioPromise = (async () => {
+      try {
+        tryPlayAudioChime("stop_recording_clip");
+        await strategyRef.current?.setPhase("loading");
+        const audio = await invoke<StopRecordingResponse>("stop_recording");
+        getLogger().verbose(
+          `Recording stopped (hasSamples=${!!audio?.samples})`,
+        );
+        return audio;
+      } catch (error) {
+        getLogger().error(`Failed to stop recording: ${error}`);
+        showToast({
+          message: intl.formatMessage({
+            defaultMessage: "Failed to stop recording",
+          }),
+          toastType: "error",
+          duration: 8_000,
+        });
+        return null;
+      }
+    })();
 
-          audio = outAudio;
-          a11yInfo = outA11yInfo;
-          appTarget = outAppTarget;
-          getLogger().verbose(
-            `Recording stopped (hasSamples=${!!audio?.samples})`,
-          );
-        } catch (error) {
-          getLogger().error(`Failed to stop recording: ${error}`);
-          showToast({
-            message: intl.formatMessage({
-              defaultMessage: "Failed to stop recording",
-            }),
-            toastType: "error",
-            duration: 8_000,
-          });
-        }
+    // Context collection happens in parallel - doesn't block STT
+    const contextPromise = (async () => {
+      getLogger().verbose("Fetching finalize-time context (parallel)");
+      const [
+        a11yInfo,
+        accessibilityScreenContext,
+        screenCaptureContext,
+        clipboardText,
+        appTarget,
+      ] = await Promise.all([
+        invoke<TextFieldInfo>("get_text_field_info").catch((error) => {
+          getLogger().verbose(`Failed to get text field info: ${error}`);
+          return null;
+        }),
+        invoke<ScreenContextInfo>("get_screen_context")
+          .then((result) => result.screenContext)
+          .catch((error) => {
+            getLogger().verbose(`Failed to get screen context: ${error}`);
+            return null;
+          }),
+        getScreenCaptureContext(),
+        Promise.race([
+          navigator.clipboard.readText().catch(() => null),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 500)),
+        ]).catch((error) => {
+          getLogger().verbose(`Failed to read clipboard: ${error}`);
+          return null;
+        }),
+        tryRegisterCurrentAppTarget().catch((error) => {
+          getLogger().verbose(`Failed to get current app target: ${error}`);
+          return null;
+        }),
+      ]);
 
-        return [audio, a11yInfo, appTarget];
-      },
-    );
+      getLogger().verbose(
+        `[context] screenCaptureContext=${screenCaptureContext ? `${screenCaptureContext.length} chars` : "null"}`,
+      );
+      getLogger().verbose(
+        `[context] accessibilityScreenContext=${accessibilityScreenContext ? `${accessibilityScreenContext.length} chars` : "null"}`,
+      );
 
+      const screenContext = mergeScreenContexts({
+        accessibilityContext: accessibilityScreenContext,
+        screenCaptureContext,
+      });
+
+      getLogger().verbose(
+        `[context] screenContext (merged)=${screenContext ? `${screenContext.length} chars` : "null"}`,
+      );
+      getLogger().verbose(`[context] appTarget=${appTarget?.name ?? "null"}`);
+
+      const contextElapsed = Date.now() - perfStartTime;
+      getLogger().info(`[perf] Context ready at +${contextElapsed}ms`);
+
+      return { a11yInfo, screenContext, clipboardText, appTarget };
+    })();
+
+    // Wait for audio first (fast path)
+    const audio = await audioPromise;
     if (!audio) {
       getLogger().warning("stopRecordingRaw: no audio data received");
       return {
@@ -347,25 +371,34 @@ export const DictationSideEffects = () => {
       };
     }
 
-    getLogger().info("Finalizing transcription session");
-    trackAppUsed(appTarget?.name ?? "Unknown");
+    const audioElapsed = Date.now() - perfStartTime;
+    getLogger().info(`[perf] Audio stopped at +${audioElapsed}ms`);
 
-    if (appTarget) {
-      saveManualStyleForApp(appTarget);
-    }
+    // Start transcription immediately with audio only
+    // Context will be applied later in handleTranscript
+    getLogger().info(
+      "Finalizing transcription session (STT starting immediately)",
+    );
 
-    const toneId = getToneIdToUse(getAppState(), {
-      currentAppToneId: appTarget?.toneId ?? null,
-    });
+    const sttStartElapsed = Date.now() - perfStartTime;
+    getLogger().info(`[perf] STT started at +${sttStartElapsed}ms`);
 
     const transcribeResult = await sessionRef.current?.finalize(audio, {
-      toneId,
-      a11yInfo,
+      toneId: null, // Will be resolved with context
+      a11yInfo: null,
+      currentApp: null,
+      currentEditor: null,
+      selectedText: null,
+      screenContext: null,
     });
     const rawTranscript = transcribeResult?.rawTranscript;
+
+    const sttDoneElapsed = Date.now() - perfStartTime;
+    getLogger().info(`[perf] STT completed at +${sttDoneElapsed}ms`);
     getLogger().verbose(
-      `Transcription result: rawTranscript=${rawTranscript ? `${rawTranscript.length} chars` : "empty"}, toneId=${toneId ?? "none"}, app=${appTarget?.name ?? "unknown"}`,
+      `Transcription result: rawTranscript=${rawTranscript ? `${rawTranscript.length} chars` : "empty"}`,
     );
+
     if (!rawTranscript) {
       getLogger().warning("stopRecordingRaw: no rawTranscript from finalize");
       return {
@@ -384,11 +417,26 @@ export const DictationSideEffects = () => {
       };
     }
 
+    // Now wait for context (if not already ready)
+    getLogger().verbose("Waiting for context to apply to transcript");
+    const { a11yInfo, screenContext, clipboardText, appTarget } =
+      await contextPromise;
+
+    trackAppUsed(appTarget?.name ?? "Unknown");
+
+    if (appTarget) {
+      saveManualStyleForApp(appTarget);
+    }
+
+    const toneId = getToneIdToUse(getAppState(), {
+      currentAppToneId: appTarget?.toneId ?? null,
+    });
+
     if (getAppState().activeRecordingMode === "agent") {
       await strategy.setPhase("idle");
     }
 
-    getLogger().info("Post-processing transcript");
+    getLogger().info("Post-processing transcript with context");
     const result = await strategy.handleTranscript({
       rawTranscript,
       processedTranscript: transcribeResult.processedTranscript,
