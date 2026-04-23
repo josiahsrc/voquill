@@ -421,6 +421,32 @@ export const AppSideEffects = () => {
     }
   }, [streamReady, initReady, initialized, enterpriseReady]);
 
+  useEffect(() => {
+    if (!initialized) {
+      return;
+    }
+
+    const prefs = getTranscriptionPrefs(getAppState());
+    if (prefs.mode !== "local") {
+      getLogger().info(`Skipping STT warmup in ${prefs.mode} mode`);
+      return;
+    }
+
+    const model = normalizeLocalWhisperModel(prefs.transcriptionModelSize);
+    const preferGpu = isGpuPreferredTranscriptionDevice(
+      prefs.transcriptionDevice ?? null,
+    );
+
+    getLogger().info(
+      `Pre-warming local STT model (${model}, gpu=${preferGpu})`,
+    );
+    void getLocalTranscriptionSidecarManager()
+      .warmupModel({ model, preferGpu })
+      .catch((err) => {
+        getLogger().warning(`Model warmup failed (non-critical): ${err}`);
+      });
+  }, [initialized]);
+
   const isMigratingLocalUserRef = useRef(false);
   const memberPlan = member?.plan;
   useEffect(() => {

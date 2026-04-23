@@ -247,24 +247,32 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   }
 
   if (mode === "api") {
-    const selectedApiKey = getRec(state.apiKeyById, config.selectedApiKeyId);
-    const provider = selectedApiKey?.provider;
-    const noKeyRequired =
-      provider === "speaches" ||
-      provider === "ollama" ||
-      provider === "openai-compatible";
-    if (apiKey || noKeyRequired) {
-      return {
-        mode: "api",
-        provider: provider ?? "groq",
-        apiKeyId: config.selectedApiKeyId!,
-        apiKeyValue: apiKey ?? "",
-        transcriptionModel: selectedApiKey?.transcriptionModel ?? null,
-        warnings,
-      };
-    } else {
+    const plannedSelection = planDesktopTranscriptionSelection(state);
+    const selectedApiKey = getRec(
+      state.apiKeyById,
+      plannedSelection?.apiKeyId ?? config.selectedApiKeyId,
+    );
+    const provider = plannedSelection?.provider ?? selectedApiKey?.provider;
+    const apiKey = selectedApiKey?.keyFull;
+    const noKeyRequired = provider
+      ? NO_KEY_REQUIRED_PROVIDERS.includes(provider)
+      : false;
+
+    // Return API mode even if key is missing - respect user's configured mode
+    // Let transcription fail later with clear error instead of silently falling back to local
+    if (!apiKey && !noKeyRequired) {
       warnings.push("No API key configured for API transcription.");
     }
+
+    return {
+      mode: "api",
+      provider: provider ?? "groq",
+      apiKeyId: selectedApiKey?.id ?? config.selectedApiKeyId!,
+      apiKeyValue: apiKey ?? "",
+      transcriptionModel:
+        plannedSelection?.model ?? selectedApiKey?.transcriptionModel ?? null,
+      warnings,
+    };
   }
 
   return {
