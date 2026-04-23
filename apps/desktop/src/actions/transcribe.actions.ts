@@ -163,7 +163,13 @@ export const resolveDesktopDictationContext = ({
     currentEditor ??
     (hasFocusedTextFieldInfo(a11yInfo) ? FOCUSED_TEXT_FIELD_TARGET : null),
   selectedText: deriveSelectedTextFromA11yInfo(a11yInfo),
-  screenContext: mergeScreenContexts({ accessibilityContext: screenContext }),
+  screenContext: mergeScreenContexts({
+    accessibilityContext: screenContext,
+    // TODO: pass screenCaptureContext (OCR) here once callers collect it.
+    // The finalize-time path in DictationSideEffects.tsx already passes it
+    // via the direct session.finalize() call; this utility path is used by
+    // server-side transcription sessions which do not have OCR available.
+  }),
 });
 
 // Combined metadata type for storage compatibility
@@ -443,20 +449,18 @@ export const postProcessTranscript = async ({
       const validationResult = PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(parsed);
       if (!validationResult.success) {
         getLogger().warning(
-          "Post-processing validation failed:",
+          "Post-processing Zod validation failed:",
           validationResult.error.message,
         );
-        // Attempt a plain-text rescue: if the LLM returned text without valid JSON,
-        // use it directly rather than silently falling back to the raw STT transcript.
         const rescued = recoverPlainTextFromLLMResponse(genOutput.text);
         if (rescued) {
           getLogger().warning(
-            "Post-processing JSON parse failed, recovered plain text from LLM response",
+            "Post-processing Zod validation failed: recovered plain text from LLM response",
           );
           processedTranscript = rescued;
         } else {
           getLogger().error(
-            "Post-processing completely failed, using raw STT transcript",
+            "Post-processing Zod validation failed: no rescue possible, using raw STT transcript",
           );
           warnings.push(
             `Post-processing response validation failed: ${validationResult.error.message}`,
@@ -470,18 +474,16 @@ export const postProcessTranscript = async ({
         );
       }
     } catch (e) {
-      getLogger().error("Failed to parse post-processing response:", e);
-      // Last-resort rescue: treat the entire raw LLM output as the cleaned transcript
-      // (it may just be plain text that didn't wrap in JSON).
+      getLogger().error("Post-processing JSON parse exception:", e);
       const rescued = recoverPlainTextFromLLMResponse(genOutput.text);
       if (rescued) {
         getLogger().warning(
-          "Post-processing JSON parse failed, recovered plain text from LLM response",
+          "Post-processing JSON parse exception: recovered plain text from LLM response",
         );
         processedTranscript = rescued;
       } else {
         getLogger().error(
-          "Post-processing completely failed, using raw STT transcript",
+          "Post-processing JSON parse exception: no rescue possible, using raw STT transcript",
         );
         warnings.push(
           `Failed to parse post-processing response: ${(e as Error).message}`,

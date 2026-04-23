@@ -106,7 +106,12 @@ impl TranscriptionEngine {
             return Err("unable to resample audio".to_string());
         }
 
-        let processed = trim_silence(&resampled, 16_000, 0.01, 20, 200).to_vec();
+        let processed = {
+            const SILENCE_THRESHOLD: f32 = 0.01; // RMS energy below which a frame is silent
+            const SILENCE_FRAME_MS: u32 = 20; // analysis frame size in milliseconds
+            const SILENCE_PAD_MS: u32 = 200; // context padding to preserve each side
+            trim_silence(&resampled, 16_000, SILENCE_THRESHOLD, SILENCE_FRAME_MS, SILENCE_PAD_MS).to_vec()
+        };
 
         let device = self.resolve_device_blocking(input.device_id.as_deref())?;
         let context = self.context_for_model(&input.model_path, &device)?;
@@ -373,7 +378,9 @@ fn trim_silence(samples: &[f32], sample_rate: u32, threshold: f32, frame_ms: u32
         .map(|i| i + 1)
         .unwrap_or(total_frames);
 
-    let pad_frames = (sample_rate as u64 * pad_ms as u64 / 1000) as usize;
+    // Compute pad in frames (same unit as start_frame/end_frame), not samples.
+    // Example: 200 ms / 20 ms per frame = 10 frames of padding each side.
+    let pad_frames = (pad_ms / frame_ms) as usize;
     let padded_start = start_frame.saturating_sub(pad_frames);
     let padded_end = (end_frame + pad_frames).min(total_frames);
 
@@ -545,8 +552,8 @@ mod tests {
 
     #[test]
     fn trim_silence_preserves_padding() {
-        let frame = RATE as usize * 20 / 1000;
-        let silence = silent_frame(frame * 15); // 300 ms silence
+        let frame = RATE as usize * 20 / 1000; // 320 samples per 20 ms frame
+        let silence = silent_frame(frame * 15); // 300 ms silence (15 frames)
         let speech = sine_frame(frame * 25, 0.5); // 500 ms speech
         let mut audio = silence.clone();
         audio.extend_from_slice(&speech);
@@ -554,7 +561,13 @@ mod tests {
 
         let no_pad = trim_silence(&audio, RATE, 0.01, 20, 0).len();
         let with_pad = trim_silence(&audio, RATE, 0.01, 20, 200).len();
-        assert!(with_pad > no_pad, "padding should extend trimmed window");
+
+        // 200 ms / 20 ms per frame = 10 frames each side = 20 frames * 320 samples = 6400 extra samples
+        let pad_frames = 200 / 20;
+        let expected_extra = pad_frames * 2 * frame;
+        assert!(with_pad >= no_pad + expected_extra, "padding should add ~200 ms each side");
+        // Padded result must still be shorter than the full audio (trimming actually happened)
+        assert!(with_pad < audio.len(), "padded result should still be shorter than full audio");
     }
 
     #[test]

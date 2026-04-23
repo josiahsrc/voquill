@@ -926,17 +926,22 @@ mod cpal_impl {
         default_config: &cpal::SupportedStreamConfig,
     ) -> StreamConfig {
         const PREFERRED_RATE: cpal::SampleRate = cpal::SampleRate(16_000);
+        let desired_channels = default_config.channels();
 
         if let Ok(supported) = device.supported_input_configs() {
             for range in supported {
-                if range.min_sample_rate() <= PREFERRED_RATE
+                // Also verify channel count matches: a device can expose separate ranges
+                // for different channel counts, and using the wrong count causes stream failure.
+                if range.channels() == desired_channels
+                    && range.min_sample_rate() <= PREFERRED_RATE
                     && range.max_sample_rate() >= PREFERRED_RATE
                 {
                     log::debug!(
-                        "device supports 16 kHz; requesting Whisper-native sample rate"
+                        "device supports 16 kHz at {} ch; requesting Whisper-native sample rate",
+                        desired_channels
                     );
                     return StreamConfig {
-                        channels: default_config.channels(),
+                        channels: desired_channels,
                         sample_rate: PREFERRED_RATE,
                         buffer_size: cpal::BufferSize::Default,
                     };
