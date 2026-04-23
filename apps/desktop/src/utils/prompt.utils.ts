@@ -231,7 +231,7 @@ const buildPostProcessingContextSections = (
   }
 
   if (Object.keys(context?.replacementMap ?? {}).length > 0) {
-    const replacements = Object.entries(context.replacementMap ?? {})
+    const replacements = Object.entries(context?.replacementMap ?? {})
       .map(([source, destination]) => `${source} → ${destination}`)
       .join("\n");
     sections.push(
