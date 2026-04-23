@@ -27,6 +27,7 @@ export type HandleTranscriptParams = {
   currentEditor?: DictationContextTarget | null;
   selectedText?: string | null;
   screenContext?: string | null;
+  clipboardContext?: string | null;
   loadingToken: symbol | null;
   audio: StopRecordingResponse;
   transcriptionMetadata: TranscribeAudioMetadata;

@@ -56,6 +56,24 @@ export const buildWaveFile = (
 export const normalizeSamples = (samples: AudioSamples): number[] =>
   Array.isArray(samples) ? samples : Array.from(samples ?? []);
 
+export const resampleTo16kHz = (
+  samples: Float32Array,
+  fromRate: number,
+): Float32Array => {
+  if (fromRate === 16000) return samples;
+  const ratio = fromRate / 16000;
+  const outputLength = Math.floor(samples.length / ratio);
+  const output = new Float32Array(outputLength);
+  for (let i = 0; i < outputLength; i++) {
+    const srcIdx = i * ratio;
+    const srcFloor = Math.floor(srcIdx);
+    const srcCeil = Math.min(srcFloor + 1, samples.length - 1);
+    const frac = srcIdx - srcFloor;
+    output[i] = (samples[srcFloor] ?? 0) * (1 - frac) + (samples[srcCeil] ?? 0) * frac;
+  }
+  return output;
+};
+
 export type AudioClip =
   | "start_recording_clip"
   | "stop_recording_clip"

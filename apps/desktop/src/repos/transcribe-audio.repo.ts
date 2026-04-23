@@ -21,6 +21,7 @@ import {
   buildWaveFile,
   ensureFloat32Array,
   normalizeSamples,
+  resampleTo16kHz,
 } from "../utils/audio.utils";
 import { getEffectiveAuth } from "../utils/auth.utils";
 import { invokeEnterprise } from "../utils/enterprise.utils";
@@ -105,6 +106,14 @@ export abstract class BaseTranscribeAudioRepo extends BaseRepo {
   ): Promise<TranscribeAudioOutput>;
 
   /**
+   * Whether to resample audio to 16kHz before transcription.
+   * API-based repos benefit from smaller payloads; local sidecar resamples internally.
+   */
+  protected shouldResampleTo16kHz(): boolean {
+    return true;
+  }
+
+  /**
    * Transcribes audio, automatically splitting long audio into segments
    * and merging the results.
    */
@@ -112,22 +121,28 @@ export abstract class BaseTranscribeAudioRepo extends BaseRepo {
     input: TranscribeAudioInput,
   ): Promise<TranscribeAudioOutput> {
     const normalizedSamples = normalizeSamples(input.samples);
-    const floatSamples = ensureFloat32Array(normalizedSamples);
+    let floatSamples = ensureFloat32Array(normalizedSamples);
+    let sampleRate = input.sampleRate;
 
     if (floatSamples.length === 0) {
       return { text: "", metadata: null };
     }
 
+    if (this.shouldResampleTo16kHz() && sampleRate !== 16000) {
+      floatSamples = resampleTo16kHz(floatSamples, sampleRate);
+      sampleRate = 16000;
+    }
+
     const segmentDurationSec = this.getSegmentDurationSec();
     const segmentSampleCount = Math.floor(
-      input.sampleRate * segmentDurationSec,
+      sampleRate * segmentDurationSec,
     );
 
     // If audio fits in a single segment, transcribe directly
     if (floatSamples.length <= segmentSampleCount) {
       return this.transcribeSegment({
         samples: floatSamples,
-        sampleRate: input.sampleRate,
+        sampleRate,
         prompt: input.prompt,
         language: input.language,
       });
@@ -135,7 +150,7 @@ export abstract class BaseTranscribeAudioRepo extends BaseRepo {
 
     // Split into overlapping segments
     const segments = splitAudioTranscription({
-      sampleRate: input.sampleRate,
+      sampleRate,
       samples: floatSamples,
       segmentDurationSec,
       overlapDurationSec: this.getOverlapDurationSec(),
@@ -146,7 +161,7 @@ export abstract class BaseTranscribeAudioRepo extends BaseRepo {
       (segmentSamples) => () =>
         this.transcribeSegment({
           samples: segmentSamples,
-          sampleRate: input.sampleRate,
+          sampleRate,
           prompt: input.prompt,
           language: input.language,
         }),
@@ -175,6 +190,11 @@ export abstract class BaseTranscribeAudioRepo extends BaseRepo {
 export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
   override supportsPromptHints(): boolean {
     return true;
+  }
+
+  // Local sidecar resamples internally in Rust; skip JS-side resampling.
+  protected override shouldResampleTo16kHz(): boolean {
+    return false;
   }
 
   // Local whisper can handle longer segments, but 60s is a safe default

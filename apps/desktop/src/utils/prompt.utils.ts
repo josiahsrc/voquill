@@ -234,6 +234,13 @@ const buildPostProcessingContextSections = (
     );
   }
 
+  if (context?.clipboardContext) {
+    const truncated = context.clipboardContext.slice(0, 500);
+    sections.push(
+      `<CLIPBOARD_CONTEXT>\n${truncated}\n</CLIPBOARD_CONTEXT>`,
+    );
+  }
+
   if (Object.keys(context?.replacementMap ?? {}).length > 0) {
     const replacements = Object.entries(context?.replacementMap ?? {})
       .map(([source, destination]) => `${source} → ${destination}`)

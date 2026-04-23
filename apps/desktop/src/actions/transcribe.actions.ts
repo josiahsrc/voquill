@@ -85,6 +85,7 @@ export type PostProcessInput = {
   currentEditor?: DictationContextTarget | null;
   selectedText?: string | null;
   screenContext?: string | null;
+  clipboardContext?: string | null;
 };
 
 export type PostProcessMetadata = {
@@ -359,6 +360,7 @@ export const postProcessTranscript = async ({
   currentEditor = null,
   selectedText = null,
   screenContext = null,
+  clipboardContext = null,
 }: PostProcessInput): Promise<PostProcessResult> => {
   const state = getAppState();
 
@@ -400,6 +402,7 @@ export const postProcessTranscript = async ({
       currentEditor,
       selectedText,
       screenContext,
+      clipboardContext,
     });
     getLogger().verbose(
       "Post-process language:",
@@ -422,6 +425,12 @@ export const postProcessTranscript = async ({
       ppPrompt.length,
       "system length:",
       ppSystem.length,
+    );
+    getLogger().verbose(
+      `[postprocess] system prompt length=${ppSystem.length}, prompt length=${ppPrompt.length}`,
+    );
+    getLogger().verbose(
+      `[postprocess] context.screenContext=${context.screenContext ? `${context.screenContext.length} chars` : "null"}, context.currentApp=${context.currentApp?.name ?? "null"}`,
     );
 
     const postprocessStart = performance.now();

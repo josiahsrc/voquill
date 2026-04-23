@@ -298,6 +298,7 @@ export class DictationStrategy extends BaseStrategy {
             currentEditor: args.currentEditor ?? null,
             selectedText: args.selectedText ?? null,
             screenContext: args.screenContext ?? null,
+            clipboardContext: args.clipboardContext ?? null,
           });
 
           transcript = result.transcript;

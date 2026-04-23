@@ -30,6 +30,7 @@ export type DictationContext = {
   currentEditor: DictationContextTarget | null;
   selectedText: string | null;
   screenContext: string | null;
+  clipboardContext: string | null;
 };
 
 export type SharedTermPayload = Pick<

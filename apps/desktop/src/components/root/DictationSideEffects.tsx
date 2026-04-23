@@ -81,6 +81,8 @@ import {
   syncHotkeyCombosToNative,
 } from "../../utils/keyboard.utils";
 import { getLogger } from "../../utils/log.utils";
+import { mergeScreenContexts } from "../../utils/prompt.utils";
+import { getScreenCaptureContext } from "../../utils/screen-context-provider";
 import {
   getActiveManualToneIds,
   getManuallySelectedToneId,
@@ -285,12 +287,13 @@ export const DictationSideEffects = () => {
     clearRecordingTimers();
     restoreSystemVolume();
 
-    const [audio, a11yInfo, screenContext, appTarget] = await getLogger().stopwatch(
-      "stopRecording",
-      async () => {
+    const [audio, a11yInfo, screenContext, clipboardText, appTarget] =
+      await getLogger().stopwatch("stopRecording", async () => {
         let audio: StopRecordingResponse | null = null;
         let a11yInfo: TextFieldInfo | null = null;
-        let screenContext: string | null = null;
+        let accessibilityScreenContext: string | null = null;
+        let screenCaptureContext: string | null = null;
+        let clipboardText: string | null = null;
         let appTarget: AppTarget | null = null;
         try {
           tryPlayAudioChime("stop_recording_clip");
@@ -298,32 +301,52 @@ export const DictationSideEffects = () => {
           getLogger().verbose(
             "Invoking stop_recording and fetching finalize-time context",
           );
-          const [, outAudio, outA11yInfo, outScreenContext, outAppTarget] =
-            await Promise.all([
-              strategyRef.current?.setPhase("loading"),
-              invoke<StopRecordingResponse>("stop_recording"),
-              invoke<TextFieldInfo>("get_text_field_info").catch((error) => {
-                getLogger().verbose(`Failed to get text field info: ${error}`);
+          const [
+            ,
+            outAudio,
+            outA11yInfo,
+            outScreenContext,
+            outScreenCaptureContext,
+            outClipboardText,
+            outAppTarget,
+          ] = await Promise.all([
+            strategyRef.current?.setPhase("loading"),
+            invoke<StopRecordingResponse>("stop_recording"),
+            invoke<TextFieldInfo>("get_text_field_info").catch((error) => {
+              getLogger().verbose(`Failed to get text field info: ${error}`);
+              return null;
+            }),
+            invoke<ScreenContextInfo>("get_screen_context")
+              .then((result) => result.screenContext)
+              .catch((error) => {
+                getLogger().verbose(`Failed to get screen context: ${error}`);
                 return null;
               }),
-              invoke<ScreenContextInfo>("get_screen_context")
-                .then((result) => result.screenContext)
-                .catch((error) => {
-                  getLogger().verbose(`Failed to get screen context: ${error}`);
-                  return null;
-                }),
-              tryRegisterCurrentAppTarget().catch((error) => {
-                getLogger().verbose(`Failed to get current app target: ${error}`);
-                return null;
-              }),
-            ]);
+            getScreenCaptureContext(),
+            navigator.clipboard.readText().catch((error) => {
+              getLogger().verbose(`Failed to read clipboard: ${error}`);
+              return null;
+            }),
+            tryRegisterCurrentAppTarget().catch((error) => {
+              getLogger().verbose(`Failed to get current app target: ${error}`);
+              return null;
+            }),
+          ]);
 
           audio = outAudio;
           a11yInfo = outA11yInfo;
-          screenContext = outScreenContext;
+          accessibilityScreenContext = outScreenContext;
+          screenCaptureContext = outScreenCaptureContext;
+          clipboardText = outClipboardText;
           appTarget = outAppTarget;
           getLogger().verbose(
             `Recording stopped (hasSamples=${!!audio?.samples})`,
+          );
+          getLogger().verbose(
+            `[context] screenCaptureContext=${screenCaptureContext ? `${screenCaptureContext.length} chars` : "null"}`,
+          );
+          getLogger().verbose(
+            `[context] accessibilityScreenContext=${accessibilityScreenContext ? `${accessibilityScreenContext.length} chars` : "null"}`,
           );
         } catch (error) {
           getLogger().error(`Failed to stop recording: ${error}`);
@@ -336,9 +359,22 @@ export const DictationSideEffects = () => {
           });
         }
 
-        return [audio, a11yInfo, screenContext, appTarget];
-      },
+        return [
+          audio,
+          a11yInfo,
+          mergeScreenContexts({
+            accessibilityContext: accessibilityScreenContext,
+            screenCaptureContext,
+          }),
+          clipboardText,
+          appTarget,
+        ];
+      });
+
+    getLogger().verbose(
+      `[context] screenContext (merged)=${screenContext ? `${screenContext.length} chars` : "null"}`,
     );
+    getLogger().verbose(`[context] appTarget=${appTarget?.name ?? "null"}`);
 
     if (!audio) {
       getLogger().warning("stopRecordingRaw: no audio data received");
@@ -368,6 +404,12 @@ export const DictationSideEffects = () => {
       a11yInfo,
       screenContext,
     });
+    getLogger().verbose(
+      `[context] desktopContext.screenContext=${desktopContext.screenContext ? `${desktopContext.screenContext.length} chars` : "null"}`,
+    );
+    getLogger().verbose(
+      `[context] desktopContext.currentApp=${desktopContext.currentApp?.name ?? "null"}`,
+    );
 
     const transcribeResult = await sessionRef.current?.finalize(audio, {
       toneId,
@@ -414,6 +456,7 @@ export const DictationSideEffects = () => {
       currentEditor: desktopContext.currentEditor,
       selectedText: desktopContext.selectedText,
       screenContext: desktopContext.screenContext,
+      clipboardContext: clipboardText,
       loadingToken: null,
       audio,
       transcriptionMetadata: transcribeResult.metadata,

@@ -19,6 +19,7 @@ export type AssembleDictationContextInput = {
   currentEditor?: DictationContextTarget | null;
   selectedText?: string | null;
   screenContext?: string | null;
+  clipboardContext?: string | null;
 };
 
 const sanitizeValue = (value: string): string =>
@@ -42,6 +43,7 @@ export const assembleDictationContext = ({
   currentEditor = null,
   selectedText = null,
   screenContext = null,
+  clipboardContext = null,
 }: AssembleDictationContextInput): DictationContext => {
   const glossaryByKey = new Map<string, string>();
   const replacementMap: Record<string, string> = {};
@@ -78,5 +80,6 @@ export const assembleDictationContext = ({
     currentEditor,
     selectedText: sanitizeOptionalText(selectedText),
     screenContext: sanitizeOptionalText(screenContext),
+    clipboardContext: sanitizeOptionalText(clipboardContext),
   };
 };
