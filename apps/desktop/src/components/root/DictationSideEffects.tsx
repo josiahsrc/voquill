@@ -296,6 +296,22 @@ export const DictationSideEffects = () => {
               getLogger().verbose(`Failed to get text field info: ${error}`);
               return null;
             }),
+            invoke<ScreenContextInfo>("get_screen_context")
+              .then((result) => result.screenContext)
+              .catch((error) => {
+                getLogger().verbose(`Failed to get screen context: ${error}`);
+                return null;
+              }),
+            getScreenCaptureContext(),
+            Promise.race([
+              navigator.clipboard.readText().catch(() => null),
+              new Promise<null>((resolve) =>
+                setTimeout(() => resolve(null), 500),
+              ),
+            ]).catch((error) => {
+              getLogger().verbose(`Failed to read clipboard: ${error}`);
+              return null;
+            }),
             tryRegisterCurrentAppTarget().catch((error) => {
               getLogger().verbose(`Failed to get current app target: ${error}`);
               return null;
