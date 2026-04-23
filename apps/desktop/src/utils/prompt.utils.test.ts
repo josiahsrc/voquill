@@ -3,6 +3,7 @@ import {
   buildDictationContext,
   buildPostProcessingPrompt,
   buildSystemPostProcessingTonePrompt,
+  mergeScreenContexts,
   PostProcessingPromptInput,
 } from "./prompt.utils";
 import { StyleToneConfig, TemplateToneConfig } from "./tone.utils";
@@ -57,6 +58,28 @@ describe("buildDictationContext", () => {
   });
 });
 
+describe("mergeScreenContexts", () => {
+  it("merges accessibility and screen capture context into a single payload", () => {
+    const result = mergeScreenContexts({
+      accessibilityContext: "  Browser tab \n release dashboard  ",
+      screenCaptureContext: "\0Draft launch checklist  ",
+    });
+
+    expect(result).toBe(
+      "Accessibility context: Browser tab release dashboard\nScreen capture OCR: Draft launch checklist",
+    );
+  });
+
+  it("falls back to accessibility context when screen capture is unavailable", () => {
+    const result = mergeScreenContexts({
+      accessibilityContext: "  Release dashboard  ",
+      screenCaptureContext: null,
+    });
+
+    expect(result).toBe("Release dashboard");
+  });
+});
+
 describe("buildSystemPostProcessingTonePrompt", () => {
   it("returns default system prompt for style config", () => {
     const result = buildSystemPostProcessingTonePrompt(
@@ -99,7 +122,7 @@ describe("buildSystemPostProcessingTonePrompt", () => {
         promptTemplate: "Process: <transcript/>",
       }),
     );
-    expect(result).toContain("Clean up the provided transcript");
+    expect(result).toContain("TRANSCRIPTION ENHANCER");
     expect(result).toContain("English");
   });
 
@@ -122,10 +145,12 @@ describe("buildSystemPostProcessingTonePrompt", () => {
       ),
     );
 
-    expect(result).toContain("Current app: Notes");
-    expect(result).toContain("Current editor: Document Body");
-    expect(result).toContain("Selected text: Pending launch notes");
-    expect(result).toContain("Screen context: Browser tab release dashboard");
+    expect(result).toContain("<ACTIVE_APP>");
+    expect(result).toContain("Notes");
+    expect(result).toContain("<CURRENTLY_SELECTED_TEXT>");
+    expect(result).toContain("Pending launch notes");
+    expect(result).toContain("<CURRENT_WINDOW_CONTEXT>");
+    expect(result).toContain("Browser tab release dashboard");
   });
 });
 
@@ -158,10 +183,8 @@ describe("buildPostProcessingPrompt", () => {
     const result = buildPostProcessingPrompt(
       makeInput({ kind: "style", stylePrompt: "Be formal" }),
     );
-    expect(result).toContain("<transcript>");
+    expect(result).toContain("<TRANSCRIPT>");
     expect(result).toContain("Hello world");
-    expect(result).toContain(
-      "Process the transcript according to the instructions",
-    );
+    expect(result).toContain("</TRANSCRIPT>");
   });
 });
