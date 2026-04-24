@@ -81,6 +81,22 @@ async requestMicrophonePermission() : Promise<Result<PermissionStatus, string>> 
     else return { status: "error", error: e  as any };
 }
 },
+async checkScreenRecordingPermission() : Promise<Result<PermissionStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("check_screen_recording_permission") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async requestScreenRecordingPermission() : Promise<Result<PermissionStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("request_screen_recording_permission") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async checkAccessibilityPermission() : Promise<Result<PermissionStatus, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("check_accessibility_permission") };
@@ -539,6 +555,14 @@ async getScreenContext() : Promise<Result<ScreenContextInfo, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async getScreenCaptureContext() : Promise<Result<string | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_screen_capture_context") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getSelectedText() : Promise<Result<string | null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_selected_text") };
@@ -957,7 +981,7 @@ export type PairedRemoteDeviceUpsertArgs = { id: string; name: string; platform:
 export type PasteKeybindSupport = "disabled" | "per-app" | "global"
 export type PasteOutcome = "pasted" | "copied_to_clipboard"
 export type PasteTargetState = "editable" | "not_editable" | "unknown"
-export type PermissionKind = "microphone" | "accessibility"
+export type PermissionKind = "microphone" | "accessibility" | "screen-recording"
 export type PermissionState = "authorized" | "denied" | "restricted" | "not-determined"
 export type PermissionStatus = { kind: PermissionKind; state: PermissionState; promptShown: boolean }
 export type PillWindowSize = "dictation" | "assistant_compact" | "assistant_expanded" | "assistant_typing"
