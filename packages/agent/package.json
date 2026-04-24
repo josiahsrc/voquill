@@ -1,6 +1,6 @@
 {
   "name": "@repo/agent",
-  "version": "0.3.15",
+  "version": "0.3.16",
   "description": "Provider-agnostic agentic loop with tool support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

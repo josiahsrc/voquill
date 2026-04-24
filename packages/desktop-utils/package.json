@@ -1,6 +1,6 @@
 {
   "name": "@voquill/desktop-utils",
-  "version": "0.3.15",
+  "version": "0.3.16",
   "description": "Shared React hooks and logic for Voquill desktop-style clients.",
   "repository": {
     "type": "git",

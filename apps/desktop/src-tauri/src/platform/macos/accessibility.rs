@@ -1045,6 +1045,7 @@ unsafe fn get_focused_field_info_impl() -> Option<crate::commands::Accessibility
     }
 
     let mut element_index_path: Vec<usize> = Vec::new();
+    let mut fingerprint_chain: Vec<crate::commands::ElementFingerprint> = Vec::new();
     let mut app_name: Option<String> = None;
     let mut window_title: Option<String> = None;
 
@@ -1069,7 +1070,7 @@ unsafe fn get_focused_field_info_impl() -> Option<crate::commands::Accessibility
         if children_result == AX_ERROR_SUCCESS && !children_ref.is_null() {
             let arr = children_ref as core_foundation::array::CFArrayRef;
             let count = CFArrayGetCount(arr);
-            let mut found = false;
+            let mut chosen_index: Option<usize> = None;
             for i in 0..count {
                 let child = CFArrayGetValueAtIndex(arr, i);
                 let mut child_pid: i32 = 0;
@@ -1083,19 +1084,22 @@ unsafe fn get_focused_field_info_impl() -> Option<crate::commands::Accessibility
                     && child_pid == current_pid
                     && core_foundation::base::CFEqual(child, current) != 0
                 {
-                    element_index_path.push(i as usize);
-                    found = true;
+                    chosen_index = Some(i as usize);
                     break;
                 }
             }
-            if !found {
+            if chosen_index.is_none() {
                 for i in 0..count {
                     let child = CFArrayGetValueAtIndex(arr, i);
                     if child == current {
-                        element_index_path.push(i as usize);
+                        chosen_index = Some(i as usize);
                         break;
                     }
                 }
+            }
+            if let Some(idx) = chosen_index {
+                element_index_path.push(idx);
+                fingerprint_chain.push(capture_macos_fingerprint(current, idx));
             }
             CFRelease(children_ref);
         }
@@ -1128,6 +1132,7 @@ unsafe fn get_focused_field_info_impl() -> Option<crate::commands::Accessibility
     }
 
     element_index_path.reverse();
+    fingerprint_chain.reverse();
 
     CFRelease(focused_element);
 
@@ -1144,23 +1149,129 @@ unsafe fn get_focused_field_info_impl() -> Option<crate::commands::Accessibility
         window_title,
         is_settable,
         element_index_path,
-        fingerprint_chain: vec![],
+        fingerprint_chain,
         can_paste: false,
         backend: None,
         jab_string_path: vec![],
         app_identity,
+        details: None,
     })
+}
+
+/// Snapshot the identifying attributes of a macOS AX element. Captured at
+/// bind time and used at sync time to verify we land on the same element
+/// even when the AX tree shifts (Java Swing in particular reorders/inserts
+/// helper nodes between bind and sync).
+unsafe fn capture_macos_fingerprint(
+    element: CFTypeRef,
+    child_index: usize,
+) -> crate::commands::ElementFingerprint {
+    let role = get_string_attribute(element, CFString::new("AXRole").as_concrete_TypeRef());
+    let subrole = get_string_attribute(element, CFString::new("AXSubrole").as_concrete_TypeRef());
+    let title = get_string_attribute(element, CFString::new("AXTitle").as_concrete_TypeRef());
+    let description =
+        get_string_attribute(element, CFString::new("AXDescription").as_concrete_TypeRef());
+    let identifier =
+        get_string_attribute(element, CFString::new("AXIdentifier").as_concrete_TypeRef());
+
+    crate::commands::ElementFingerprint {
+        automation_id: None,
+        class_name: None,
+        control_type: 0,
+        name: None,
+        framework_id: None,
+        child_index,
+        ax_role: role,
+        ax_subrole: subrole,
+        ax_title: title,
+        ax_description: description,
+        ax_identifier: identifier,
+        details: None,
+    }
+}
+
+/// Score how well `element` matches `fp`. Returns 0 when the element is
+/// definitely the wrong one (mismatched role or identifier); otherwise
+/// returns a positive score weighted by how many attributes agree.
+unsafe fn fingerprint_score(
+    element: CFTypeRef,
+    fp: &crate::commands::ElementFingerprint,
+    actual_index: usize,
+) -> u32 {
+    let mut score: u32 = 0;
+
+    if let Some(ref expected) = fp.ax_identifier {
+        match get_string_attribute(element, CFString::new("AXIdentifier").as_concrete_TypeRef()) {
+            Some(a) if &a == expected => score += 200,
+            Some(_) => return 0,
+            None => {}
+        }
+    }
+
+    if let Some(ref expected) = fp.ax_role {
+        match get_string_attribute(element, CFString::new("AXRole").as_concrete_TypeRef()) {
+            Some(a) if &a == expected => score += 50,
+            _ => return 0,
+        }
+    }
+
+    if let Some(ref expected) = fp.ax_subrole {
+        if let Some(a) = get_string_attribute(element, CFString::new("AXSubrole").as_concrete_TypeRef())
+        {
+            if &a == expected {
+                score += 30;
+            }
+        }
+    }
+
+    if let Some(ref expected) = fp.ax_title {
+        if let Some(a) = get_string_attribute(element, CFString::new("AXTitle").as_concrete_TypeRef())
+        {
+            if &a == expected {
+                score += 40;
+            }
+        }
+    }
+
+    if let Some(ref expected) = fp.ax_description {
+        if let Some(a) =
+            get_string_attribute(element, CFString::new("AXDescription").as_concrete_TypeRef())
+        {
+            if &a == expected {
+                score += 20;
+            }
+        }
+    }
+
+    if actual_index == fp.child_index {
+        score += 5;
+    }
+
+    // Legacy bindings have no fingerprint signal at all — accept by index.
+    if score == 0 {
+        let any_signal = fp.ax_identifier.is_some()
+            || fp.ax_role.is_some()
+            || fp.ax_subrole.is_some()
+            || fp.ax_title.is_some()
+            || fp.ax_description.is_some();
+        if !any_signal {
+            return 1;
+        }
+    }
+
+    score
 }
 
 pub fn focus_accessibility_field(
     app_pid: i32,
     element_index_path: &[usize],
-    _fingerprint_chain: Option<&[crate::commands::ElementFingerprint]>,
+    fingerprint_chain: Option<&[crate::commands::ElementFingerprint]>,
     _backend: Option<&str>,
     _jab_string_path: Option<&[crate::commands::JabElementId]>,
 ) -> Result<(), String> {
+    let chain = fingerprint_chain.map(|c| c.to_vec());
     catch_unwind(AssertUnwindSafe(|| unsafe {
-        focus_accessibility_field_impl(app_pid, element_index_path)
+        focus_accessibility_field_impl(app_pid, element_index_path, chain.as_deref())
     }))
     .unwrap_or_else(|_| {
         log::error!("focus_accessibility_field panicked");
@@ -1171,6 +1282,7 @@ pub fn focus_accessibility_field(
 unsafe fn focus_accessibility_field_impl(
     app_pid: i32,
     element_index_path: &[usize],
+    fingerprint_chain: Option<&[crate::commands::ElementFingerprint]>,
 ) -> Result<(), String> {
     let ax_focused = CFString::new("AXFocused");
     let ax_value = CFString::new("AXValue");
@@ -1190,7 +1302,7 @@ unsafe fn focus_accessibility_field_impl(
     );
     CFRelease(app_element);
 
-    let element = resolve_element_by_path(app_pid, element_index_path)
+    let element = resolve_element(app_pid, element_index_path, fingerprint_chain)
         .ok_or_else(|| "Could not resolve element by path".to_string())?;
 
     let cf_true = core_foundation::boolean::CFBoolean::true_value();
@@ -1253,7 +1365,19 @@ pub fn write_accessibility_fields(
     })
 }
 
-unsafe fn resolve_element_by_path(app_pid: i32, index_path: &[usize]) -> Option<CFTypeRef> {
+/// Resolve an element by walking the index path from the application root,
+/// using `fingerprint_chain` (when present) to verify each level and to
+/// recover when the recorded index now points at a different element. The
+/// AX tree shifts in Java Swing apps between bind and sync; without a
+/// fingerprint check we'd silently land on the wrong field.
+///
+/// `fingerprint_chain[i]` describes the element at `index_path[..=i]` —
+/// they're built in the same order at bind time.
+unsafe fn resolve_element(
+    app_pid: i32,
+    index_path: &[usize],
+    fingerprint_chain: Option<&[crate::commands::ElementFingerprint]>,
+) -> Option<CFTypeRef> {
     let app_element = AXUIElementCreateApplication(app_pid);
     if app_element.is_null() {
         return None;
@@ -1262,7 +1386,9 @@ unsafe fn resolve_element_by_path(app_pid: i32, index_path: &[usize]) -> Option<
     let ax_children = CFString::new("AXChildren");
     let mut current = app_element;
 
-    for &index in index_path {
+    for (depth, &recorded_index) in index_path.iter().enumerate() {
+        let fp = fingerprint_chain.and_then(|c| c.get(depth));
+
         let mut children_ref: CFTypeRef = ptr::null();
         let result = AXUIElementCopyAttributeValue(
             current,
@@ -1279,16 +1405,55 @@ unsafe fn resolve_element_by_path(app_pid: i32, index_path: &[usize]) -> Option<
 
         let arr = children_ref as core_foundation::array::CFArrayRef;
         let count = CFArrayGetCount(arr) as usize;
-        if index >= count {
+
+        let mut chosen: Option<usize> = None;
+
+        // Fast path: try the recorded index first, accept it if there's
+        // either no fingerprint to check or the fingerprint scores > 0.
+        if recorded_index < count {
+            let candidate = CFArrayGetValueAtIndex(arr, recorded_index as isize);
+            if !candidate.is_null() {
+                let accept = match fp {
+                    Some(fp) => fingerprint_score(candidate, fp, recorded_index) > 0,
+                    None => true,
+                };
+                if accept {
+                    chosen = Some(recorded_index);
+                }
+            }
+        }
+
+        // Fallback: scan siblings for the best fingerprint match. Only
+        // runs when we have a fingerprint to score against.
+        if chosen.is_none() {
+            if let Some(fp) = fp {
+                let mut best: Option<(u32, usize)> = None;
+                for i in 0..count {
+                    let candidate = CFArrayGetValueAtIndex(arr, i as isize);
+                    if candidate.is_null() {
+                        continue;
+                    }
+                    let score = fingerprint_score(candidate, fp, i);
+                    if score > 0 && best.map_or(true, |(s, _)| score > s) {
+                        best = Some((score, i));
+                    }
+                }
+                chosen = best.map(|(_, i)| i);
+            } else if recorded_index < count {
+                chosen = Some(recorded_index);
+            }
+        }
+
+        let Some(idx) = chosen else {
             CFRelease(children_ref);
             if current != app_element {
                 CFRelease(current);
             }
             CFRelease(app_element);
             return None;
-        }
+        };
 
-        let child = CFArrayGetValueAtIndex(arr, index as isize);
+        let child = CFArrayGetValueAtIndex(arr, idx as isize);
         if child.is_null() {
             CFRelease(children_ref);
             if current != app_element {
@@ -1325,7 +1490,11 @@ unsafe fn write_accessibility_fields_impl(
     let mut errors: Vec<String> = Vec::new();
 
     for entry in &entries {
-        let element = resolve_element_by_path(entry.app_pid, &entry.element_index_path);
+        let element = resolve_element(
+            entry.app_pid,
+            &entry.element_index_path,
+            entry.fingerprint_chain.as_deref(),
+        );
         let Some(element) = element else {
             failed += 1;
             errors.push(format!(
@@ -1338,33 +1507,56 @@ unsafe fn write_accessibility_fields_impl(
         let mut settable = false;
         AXUIElementIsAttributeSettable(element, ax_value.as_concrete_TypeRef(), &mut settable);
 
-        if !settable {
-            CFRelease(element);
-            failed += 1;
-            errors.push(format!(
-                "AXValue not settable for PID {} path {:?}",
-                entry.app_pid, entry.element_index_path
-            ));
-            continue;
-        }
+        let mut wrote = false;
+        let mut ax_set_error: Option<String> = None;
 
-        let cf_text = CFString::new(&entry.value);
-        let set_result = AXUIElementSetAttributeValue(
-            element,
-            ax_value.as_concrete_TypeRef(),
-            cf_text.as_CFTypeRef(),
-        );
+        if settable {
+            let cf_text = CFString::new(&entry.value);
+            let set_result = AXUIElementSetAttributeValue(
+                element,
+                ax_value.as_concrete_TypeRef(),
+                cf_text.as_CFTypeRef(),
+            );
+            if set_result == AX_ERROR_SUCCESS {
+                wrote = true;
+            } else {
+                ax_set_error = Some(format!(
+                    "AXUIElementSetAttributeValue failed with {}",
+                    set_result
+                ));
+            }
+        }
 
         CFRelease(element);
 
-        if set_result != AX_ERROR_SUCCESS {
-            failed += 1;
-            errors.push(format!(
-                "AXUIElementSetAttributeValue failed with {} for PID {} path {:?}",
-                set_result, entry.app_pid, entry.element_index_path
-            ));
-        } else {
+        // Java Swing (and a handful of other toolkits) report AXValue as
+        // not-settable even when the field is editable. Fall back to a
+        // focus + Cmd+A + Cmd+V clipboard paste — same approach Windows
+        // uses for JAB ClipboardPaste.
+        if !wrote {
+            match clipboard_paste_into_element(
+                entry.app_pid,
+                &entry.element_index_path,
+                entry.fingerprint_chain.as_deref(),
+                &entry.value,
+            ) {
+                Ok(()) => wrote = true,
+                Err(err) => {
+                    let prefix = ax_set_error
+                        .map(|e| format!("{e}; "))
+                        .unwrap_or_else(|| "AXValue not settable; ".to_string());
+                    errors.push(format!(
+                        "{}clipboard paste failed for PID {} path {:?}: {}",
+                        prefix, entry.app_pid, entry.element_index_path, err
+                    ));
+                }
+            }
+        }
+
+        if wrote {
             succeeded += 1;
+        } else {
+            failed += 1;
         }
     }
 
@@ -1375,14 +1567,121 @@ unsafe fn write_accessibility_fields_impl(
     }
 }
 
+/// Paste `value` into the element at `element_index_path` via Cmd+A + Cmd+V.
+///
+/// Re-resolves the element fresh after raising the app, because raising
+/// invalidates any AXUIElement reference taken before activation (you'll see
+/// kAXErrorInvalidUIElement / -25202 if you reuse the old handle).
+///
+/// Deliberately does NOT save/restore the clipboard: when multiple writes are
+/// batched, a delayed restore would race with subsequent entries. The caller
+/// (the JS layer) owns clipboard state.
+unsafe fn clipboard_paste_into_element(
+    app_pid: i32,
+    element_index_path: &[usize],
+    fingerprint_chain: Option<&[crate::commands::ElementFingerprint]>,
+    value: &str,
+) -> Result<(), String> {
+    let app_element = AXUIElementCreateApplication(app_pid);
+    if app_element.is_null() {
+        return Err("could not create application element".to_string());
+    }
+    let raise_attr = CFString::new("AXFrontmost");
+    let cf_true = core_foundation::boolean::CFBoolean::true_value();
+    AXUIElementSetAttributeValue(
+        app_element,
+        raise_attr.as_concrete_TypeRef(),
+        cf_true.as_CFTypeRef(),
+    );
+    CFRelease(app_element);
+
+    // Let the activation propagate — the AX tree is rebuilt on raise, so any
+    // pre-raise element reference is now stale.
+    std::thread::sleep(std::time::Duration::from_millis(150));
+
+    let element = resolve_element(app_pid, element_index_path, fingerprint_chain)
+        .ok_or_else(|| "could not re-resolve element after raise".to_string())?;
+
+    let ax_focused = CFString::new("AXFocused");
+    let cf_true = core_foundation::boolean::CFBoolean::true_value();
+    let focus_result = AXUIElementSetAttributeValue(
+        element,
+        ax_focused.as_concrete_TypeRef(),
+        cf_true.as_CFTypeRef(),
+    );
+    CFRelease(element);
+    // Don't fail hard on focus error — Java Swing returns errors here even
+    // when the field is the active text component. Cmd+A / Cmd+V will land
+    // wherever focus actually ended up.
+    if focus_result != AX_ERROR_SUCCESS {
+        log::warn!(
+            "AXFocused set returned AX error {focus_result}; proceeding with paste anyway"
+        );
+    }
+
+    let mut clipboard = arboard::Clipboard::new()
+        .map_err(|err| format!("clipboard unavailable: {err}"))?;
+    clipboard
+        .set_text(value.to_string())
+        .map_err(|err| format!("failed to set clipboard: {err}"))?;
+
+    std::thread::sleep(std::time::Duration::from_millis(80));
+    crate::platform::macos::input::simulate_cmd_a()
+        .map_err(|err| format!("Cmd+A failed: {err}"))?;
+    std::thread::sleep(std::time::Duration::from_millis(30));
+    crate::platform::macos::input::simulate_cmd_v()
+        .map_err(|err| format!("Cmd+V failed: {err}"))?;
+    std::thread::sleep(std::time::Duration::from_millis(60));
+
+    Ok(())
+}
+
 pub fn read_field_values(
     fields: Vec<crate::commands::FieldValueRequest>,
 ) -> Vec<crate::commands::FieldValueResult> {
+    let len = fields.len();
+    catch_unwind(AssertUnwindSafe(|| unsafe {
+        read_field_values_impl(fields)
+    }))
+    .unwrap_or_else(|_| {
+        log::error!("read_field_values panicked");
+        (0..len)
+            .map(|_| crate::commands::FieldValueResult {
+                value: None,
+                error: Some("read_field_values panicked".to_string()),
+            })
+            .collect()
+    })
+}
+
+unsafe fn read_field_values_impl(
+    fields: Vec<crate::commands::FieldValueRequest>,
+) -> Vec<crate::commands::FieldValueResult> {
+    let ax_value = CFString::new("AXValue");
     fields
-        .iter()
-        .map(|_| crate::commands::FieldValueResult {
-            value: None,
-            error: Some("Not implemented for macOS".to_string()),
+        .into_iter()
+        .map(|field| {
+            let Some(element) = resolve_element(
+                field.app_pid,
+                &field.element_index_path,
+                field.fingerprint_chain.as_deref(),
+            ) else {
+                return crate::commands::FieldValueResult {
+                    value: None,
+                    error: Some(format!(
+                        "Could not resolve element for PID {} path {:?}",
+                        field.app_pid, field.element_index_path
+                    )),
+                };
+            };
+
+            let value = get_string_attribute(element, ax_value.as_concrete_TypeRef());
+            CFRelease(element);
+
+            crate::commands::FieldValueResult {
+                value: Some(value.unwrap_or_default()),
+                error: None,
+            }
         })
         .collect()
 }

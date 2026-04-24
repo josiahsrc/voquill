@@ -770,6 +770,12 @@ fn build_element_fingerprint(
         name,
         framework_id,
         child_index,
+        ax_role: None,
+        ax_subrole: None,
+        ax_title: None,
+        ax_description: None,
+        ax_identifier: None,
+        details: None,
     }
 }
 
@@ -1221,6 +1227,7 @@ fn try_get_focused_field_info(
             backend: None,
             jab_string_path: vec![],
             app_identity,
+            details: None,
         }))
     })
 }

@@ -69,6 +69,29 @@ pub struct ElementFingerprint {
     pub name: Option<String>,
     pub framework_id: Option<String>,
     pub child_index: usize,
+    /// macOS only. AXRole of the element at this depth (e.g. "AXTextArea").
+    /// Required match at resolve time when present.
+    #[serde(default)]
+    pub ax_role: Option<String>,
+    /// macOS only. AXSubrole if any (e.g. "AXSecureTextField").
+    #[serde(default)]
+    pub ax_subrole: Option<String>,
+    /// macOS only. AXTitle.
+    #[serde(default)]
+    pub ax_title: Option<String>,
+    /// macOS only. AXDescription / AXHelp text.
+    #[serde(default)]
+    pub ax_description: Option<String>,
+    /// macOS only. AXIdentifier (developer-assigned) when present — strongest
+    /// stable signal and a hard disqualifier when mismatched.
+    #[serde(default)]
+    pub ax_identifier: Option<String>,
+    /// Free-form escape hatch for future fingerprint metadata. Persisted
+    /// round-trip through the frontend / Firestore so we can extend
+    /// fingerprinting later without bumping the type schema. Convention:
+    /// JSON string keyed by feature name when there's something to store.
+    #[serde(default)]
+    pub details: Option<String>,
 }
 
 /// Canonical string identifier for a JAB element at one level of the tree.
@@ -145,6 +168,11 @@ pub struct AccessibilityFieldInfo {
     /// after the host app restarts via `resolve_app_pids`.
     #[serde(default)]
     pub app_identity: Option<AppIdentity>,
+    /// Free-form escape hatch for future field metadata. See the matching
+    /// field on `ElementFingerprint` — same purpose: lets us extend the
+    /// payload later without shipping a new schema version.
+    #[serde(default)]
+    pub details: Option<String>,
 }
 
 #[derive(serde::Deserialize, specta::Type)]

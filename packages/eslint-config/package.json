@@ -1,6 +1,6 @@
 {
   "name": "@voquill/eslint-config",
-  "version": "0.3.15",
+  "version": "0.3.16",
   "type": "module",
   "repository": {
     "type": "git",

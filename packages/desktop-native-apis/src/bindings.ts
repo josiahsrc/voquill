@@ -853,7 +853,13 @@ jabStringPath?: JabElementId[];
  * Persisting this alongside the PID lets callers re-resolve the PID
  * after the host app restarts via `resolve_app_pids`.
  */
-appIdentity?: AppIdentity | null }
+appIdentity?: AppIdentity | null; 
+/**
+ * Free-form escape hatch for future field metadata. See the matching
+ * field on `ElementFingerprint` — same purpose: lets us extend the
+ * payload later without shipping a new schema version.
+ */
+details?: string | null }
 export type AccessibilityFocusTarget = { appPid: number; elementIndexPath: number[]; fingerprintChain: ElementFingerprint[] | null; backend?: string | null; jabStringPath?: JabElementId[] | null }
 export type AccessibilityWriteEntry = { appPid: number; elementIndexPath: number[]; fingerprintChain: ElementFingerprint[] | null; value: string; backend?: string | null; jabWriteMethod?: JabWriteMethod; jabStringPath?: JabElementId[] | null }
 export type AccessibilityWriteResult = { succeeded: number; failed: number; errors: string[] }
@@ -898,7 +904,36 @@ export type ChatMessage = { id: string; conversationId: string; role: string; co
 export type CompositorBinding = { actionName: string; keys: string[] }
 export type Conversation = { id: string; title: string; createdAt: number; updatedAt: number }
 export type CurrentAppInfoResponse = { appName: string; iconBase64: string }
-export type ElementFingerprint = { automationId: string | null; className: string | null; controlType: number; name: string | null; frameworkId: string | null; childIndex: number }
+export type ElementFingerprint = { automationId: string | null; className: string | null; controlType: number; name: string | null; frameworkId: string | null; childIndex: number; 
+/**
+ * macOS only. AXRole of the element at this depth (e.g. "AXTextArea").
+ * Required match at resolve time when present.
+ */
+axRole?: string | null; 
+/**
+ * macOS only. AXSubrole if any (e.g. "AXSecureTextField").
+ */
+axSubrole?: string | null; 
+/**
+ * macOS only. AXTitle.
+ */
+axTitle?: string | null; 
+/**
+ * macOS only. AXDescription / AXHelp text.
+ */
+axDescription?: string | null; 
+/**
+ * macOS only. AXIdentifier (developer-assigned) when present — strongest
+ * stable signal and a hard disqualifier when mismatched.
+ */
+axIdentifier?: string | null; 
+/**
+ * Free-form escape hatch for future fingerprint metadata. Persisted
+ * round-trip through the frontend / Firestore so we can extend
+ * fingerprinting later without bumping the type schema. Convention:
+ * JSON string keyed by feature name when there's something to store.
+ */
+details?: string | null }
 export type FieldValueRequest = { appPid: number; elementIndexPath: number[]; fingerprintChain: ElementFingerprint[] | null; backend?: string | null; jabStringPath?: JabElementId[] | null }
 export type FieldValueResult = { value: string | null; error: string | null }
 export type GoogleAuthEventPayload = { idToken: string; accessToken: string; refreshToken: string | null; expiresIn: number; tokenType: string; user: GoogleUserInfo }

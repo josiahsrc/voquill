@@ -810,6 +810,7 @@ pub fn jab_get_focused_field_info(
             backend: Some("jab".to_string()),
             jab_string_path: string_path,
             app_identity: None,
+            details: None,
         })
     }
 }
