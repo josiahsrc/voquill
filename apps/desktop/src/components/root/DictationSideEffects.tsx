@@ -404,6 +404,8 @@ export const DictationSideEffects = () => {
       };
     }
 
+    // Ensure temp file cleanup on all exit paths (success, error, early return)
+    try {
     const t1 = performance.now();
     getLogger().info(`[perf] audio-stop: ${(t1 - t0).toFixed(0)}ms`);
 
@@ -430,8 +432,6 @@ export const DictationSideEffects = () => {
 
     if (!rawTranscript) {
       getLogger().warning("stopRecordingRaw: no rawTranscript from finalize");
-      // Clean up temp recording file
-      if (audio.filePath) cleanupAudioFile(audio.filePath);
       return {
         shouldContinue: false,
       };
@@ -443,7 +443,6 @@ export const DictationSideEffects = () => {
       getLogger().warning(
         `stopRecordingRaw: refs cleared (session=${!!session}, strategy=${!!strategy})`,
       );
-      if (audio.filePath) cleanupAudioFile(audio.filePath);
       return {
         shouldContinue: false,
       };
@@ -533,9 +532,6 @@ export const DictationSideEffects = () => {
       });
     }
 
-    // Clean up temp recording file after storage
-    if (audio.filePath) cleanupAudioFile(audio.filePath);
-
     const t4 = performance.now();
     getLogger().info(`[perf] paste: ${(t4 - t3).toFixed(0)}ms`);
     getLogger().info(`[perf] total: ${(t4 - t0).toFixed(0)}ms`);
@@ -544,6 +540,10 @@ export const DictationSideEffects = () => {
     return {
       shouldContinue: result.shouldContinue,
     };
+    } finally {
+      // Clean up temp recording file on all paths (success + error)
+      if (audio.filePath) cleanupAudioFile(audio.filePath);
+    }
   }, [restoreSystemVolume]);
 
   const stopRecording = useCallback(async () => {

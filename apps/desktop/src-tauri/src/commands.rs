@@ -28,7 +28,7 @@ pub struct StopRecordingResponse {
 }
 
 fn resample_to_16khz(samples: &[f32], from_rate: u32) -> Vec<f32> {
-    if from_rate <= 16000 {
+    if samples.is_empty() || from_rate <= 16000 {
         return samples.to_vec();
     }
     let ratio = from_rate as f64 / 16000.0;

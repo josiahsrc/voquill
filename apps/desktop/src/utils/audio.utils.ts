@@ -148,6 +148,12 @@ function parseWavBuffer(buffer: ArrayBuffer): {
   samples: Float32Array;
   sampleRate: number;
 } {
+  if (buffer.byteLength < 44) {
+    throw new Error(
+      `Invalid WAV file: too small (${buffer.byteLength} bytes, minimum 44)`,
+    );
+  }
+
   const view = new DataView(buffer);
   const sampleRate = view.getUint32(24, true);
   const bitsPerSample = view.getUint16(34, true);
@@ -161,6 +167,13 @@ function parseWavBuffer(buffer: ArrayBuffer): {
 
   const bytesPerSample = bitsPerSample / 8;
   const sampleCount = Math.floor(dataSize / bytesPerSample);
+  const requiredSize = 44 + dataSize;
+  if (buffer.byteLength < requiredSize) {
+    throw new Error(
+      `WAV data truncated: expected ${requiredSize} bytes, got ${buffer.byteLength}`,
+    );
+  }
+
   const samples = new Float32Array(sampleCount);
   const dataOffset = 44;
 
