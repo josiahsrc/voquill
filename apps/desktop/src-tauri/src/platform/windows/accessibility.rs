@@ -1527,10 +1527,13 @@ pub fn write_accessibility_fields(
                                     std::thread::sleep(std::time::Duration::from_millis(100));
                                     super::input::select_all_keystroke();
                                     std::thread::sleep(std::time::Duration::from_millis(50));
+                                    // write_accessibility_fields must never restore the
+                                    // clipboard — the caller owns clipboard state and a
+                                    // delayed restore races with subsequent writes.
                                     super::input::paste_text_into_focused_field(
                                         &entry.value,
                                         None,
-                                        false,
+                                        true,
                                     )
                                     .map(|_| ())
                                 })
@@ -1827,7 +1830,9 @@ unsafe fn try_write_via_paste(element: &IUIAutomationElement, value: &str) -> Re
     super::input::select_all_keystroke();
     std::thread::sleep(std::time::Duration::from_millis(50));
 
-    super::input::paste_text_into_focused_field(value, None, false).map(|_| ())
+    // write_accessibility_fields must never restore the clipboard — the caller
+    // owns clipboard state and a delayed restore races with subsequent writes.
+    super::input::paste_text_into_focused_field(value, None, true).map(|_| ())
 }
 
 fn get_process_name(pid: u32) -> Option<String> {
