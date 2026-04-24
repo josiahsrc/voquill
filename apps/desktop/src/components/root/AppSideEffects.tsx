@@ -155,6 +155,9 @@ export const AppSideEffects = () => {
   );
 
   const hotkeyStrategy = useAppStore((state) => state.hotkeyStrategy);
+  const transcriptionMode = useAppStore(
+    (state) => getTranscriptionPrefs(state).mode,
+  );
 
   useAsyncEffect(async () => {
     const [strategy, appDetection, pasteKeybinds] = await Promise.all([
@@ -451,7 +454,7 @@ export const AppSideEffects = () => {
       .catch((err) => {
         getLogger().warning(`Model warmup failed (non-critical): ${err}`);
       });
-  }, [initialized]);
+  }, [initialized, transcriptionMode]);
 
   const isMigratingLocalUserRef = useRef(false);
   const memberPlan = member?.plan;

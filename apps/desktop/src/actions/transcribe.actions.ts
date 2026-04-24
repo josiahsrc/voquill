@@ -166,10 +166,9 @@ export const resolveDesktopDictationContext = ({
   selectedText: deriveSelectedTextFromA11yInfo(a11yInfo),
   screenContext: mergeScreenContexts({
     accessibilityContext: screenContext,
-    // TODO: pass screenCaptureContext (OCR) here once callers collect it.
-    // The finalize-time path in DictationSideEffects.tsx already passes it
-    // via the direct session.finalize() call; this utility path is used by
-    // server-side transcription sessions which do not have OCR available.
+    // screenCaptureContext (OCR) is collected by callers at finalize-time
+    // via DictationSideEffects.tsx; this utility path serves server-side
+    // transcription sessions which do not have OCR available.
   }),
 });
 

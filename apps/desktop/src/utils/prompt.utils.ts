@@ -173,6 +173,7 @@ const buildPostProcessingTemplateVars = (
     ["currentEditor", input.context?.currentEditor?.name ?? ""],
     ["selectedText", input.context?.selectedText ?? ""],
     ["screenContext", input.context?.screenContext ?? ""],
+    ["clipboardContext", input.context?.clipboardContext ?? ""],
   ];
 };
 
