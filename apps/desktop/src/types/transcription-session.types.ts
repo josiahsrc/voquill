@@ -5,8 +5,9 @@ import {
 } from "../actions/transcribe.actions";
 
 export type StopRecordingResponse = {
-  samples: number[] | Float32Array;
-  sampleRate?: number;
+  filePath: string;
+  sampleRate: number;
+  sampleCount: number;
 };
 
 export type TranscriptionSessionResult = {

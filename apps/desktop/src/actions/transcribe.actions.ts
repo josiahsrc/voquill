@@ -503,22 +503,7 @@ export const storeTranscription = async (
 ): Promise<StoreTranscriptionOutput> => {
   getLogger().verbose("Storing transcription record");
   const rate = input.audio.sampleRate;
-
-  const sampleCount = (() => {
-    const samples = input.audio.samples as unknown;
-    if (Array.isArray(samples)) {
-      return samples.length;
-    }
-
-    if (
-      samples &&
-      typeof (samples as { length?: number }).length === "number"
-    ) {
-      return (samples as { length: number }).length;
-    }
-
-    return 0;
-  })();
+  const sampleCount = input.audio.sampleCount ?? 0;
 
   if (rate == null || Number.isNaN(rate)) {
     getLogger().error("Received audio payload without sample rate");
@@ -553,25 +538,16 @@ export const storeTranscription = async (
     return { transcription: null, wordCount: wordsAdded };
   }
 
-  const payloadSamples = Array.isArray(input.audio.samples)
-    ? input.audio.samples
-    : Array.from(input.audio.samples ?? []);
-
-  if (rate <= 0 || payloadSamples.length === 0) {
-    return { transcription: null, wordCount: 0 };
-  }
-
   const transcriptionId = createId();
 
   let audioSnapshot: TranscriptionAudioSnapshot | undefined;
-  if (!incognitoEnabled) {
+  if (!incognitoEnabled && input.audio.filePath) {
     try {
       audioSnapshot = await invoke<TranscriptionAudioSnapshot>(
-        "store_transcription_audio",
+        "store_transcription_audio_from_file",
         {
           id: transcriptionId,
-          samples: payloadSamples,
-          sampleRate: rate,
+          filePath: input.audio.filePath,
         },
       );
     } catch (error) {

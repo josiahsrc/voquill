@@ -60,7 +60,11 @@ import {
   trackDictationStart,
 } from "../../utils/analytics.utils";
 import { getIsAssistantModeEnabled } from "../../utils/assistant-mode.utils";
-import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
+import {
+  cleanupAudioFile,
+  playAlertSound,
+  tryPlayAudioChime,
+} from "../../utils/audio.utils";
 import {
   DEFAULT_DICTATION_LIMIT_MINUTES,
   getDictationRecordingTimerDurations,
@@ -123,6 +127,10 @@ export const DictationSideEffects = () => {
   const recordingAutoStopTimerRef = useRef<NodeJS.Timeout | null>(null);
   const cancelPromptTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isStoppingRef = useRef(false);
+  const earlyOcrRef = useRef<{
+    ocrText: string | null;
+    startedAt: number;
+  } | null>(null);
   const [isStopping, setIsStopping] = useState(false);
   const assistantModeEnabled = useAppStore(getIsAssistantModeEnabled);
 
@@ -286,17 +294,16 @@ export const DictationSideEffects = () => {
     clearRecordingTimers();
     restoreSystemVolume();
 
-    const perfStartTime = Date.now();
+    const t0 = performance.now();
 
     // Start audio recording stop and context collection in parallel
-    // Audio is fast (~100ms), context is slow (6-10s)
     const audioPromise = (async () => {
       try {
         tryPlayAudioChime("stop_recording_clip");
         await strategyRef.current?.setPhase("loading");
         const audio = await invoke<StopRecordingResponse>("stop_recording");
         getLogger().verbose(
-          `Recording stopped (hasSamples=${!!audio?.samples})`,
+          `Recording stopped (filePath=${audio?.filePath ? "yes" : "none"})`,
         );
         return audio;
       } catch (error) {
@@ -312,9 +319,25 @@ export const DictationSideEffects = () => {
       }
     })();
 
-    // Context collection happens in parallel - doesn't block STT
+    // Context collection in parallel — use cached OCR if available (Fix 3)
     const contextPromise = (async () => {
       getLogger().verbose("Fetching finalize-time context (parallel)");
+
+      const OCR_STALE_MS = 30_000;
+      const cachedOcr = earlyOcrRef.current;
+      const ocrIsFresh =
+        cachedOcr != null && Date.now() - cachedOcr.startedAt < OCR_STALE_MS;
+
+      const screenCapturePromise = ocrIsFresh
+        ? Promise.resolve(cachedOcr.ocrText)
+        : getScreenCaptureContext();
+
+      if (ocrIsFresh) {
+        getLogger().verbose(
+          `[perf] using cached OCR (age=${Date.now() - cachedOcr.startedAt}ms)`,
+        );
+      }
+
       const [
         a11yInfo,
         accessibilityScreenContext,
@@ -332,7 +355,7 @@ export const DictationSideEffects = () => {
             getLogger().verbose(`Failed to get screen context: ${error}`);
             return null;
           }),
-        getScreenCaptureContext(),
+        screenCapturePromise,
         Promise.race([
           navigator.clipboard.readText().catch(() => null),
           new Promise<null>((resolve) => setTimeout(() => resolve(null), 500)),
@@ -345,6 +368,8 @@ export const DictationSideEffects = () => {
           return null;
         }),
       ]);
+
+      earlyOcrRef.current = null;
 
       getLogger().verbose(
         `[context] screenCaptureContext=${screenCaptureContext ? `${screenCaptureContext.length} chars` : "null"}`,
@@ -363,8 +388,8 @@ export const DictationSideEffects = () => {
       );
       getLogger().verbose(`[context] appTarget=${appTarget?.name ?? "null"}`);
 
-      const contextElapsed = Date.now() - perfStartTime;
-      getLogger().info(`[perf] Context ready at +${contextElapsed}ms`);
+      const t1 = performance.now();
+      getLogger().info(`[perf] context: ${(t1 - t0).toFixed(0)}ms`);
 
       return { a11yInfo, screenContext, clipboardText, appTarget };
     })();
@@ -379,20 +404,16 @@ export const DictationSideEffects = () => {
       };
     }
 
-    const audioElapsed = Date.now() - perfStartTime;
-    getLogger().info(`[perf] Audio stopped at +${audioElapsed}ms`);
+    const t1 = performance.now();
+    getLogger().info(`[perf] audio-stop: ${(t1 - t0).toFixed(0)}ms`);
 
     // Start transcription immediately with audio only
-    // Context will be applied later in handleTranscript
     getLogger().info(
       "Finalizing transcription session (STT starting immediately)",
     );
 
-    const sttStartElapsed = Date.now() - perfStartTime;
-    getLogger().info(`[perf] STT started at +${sttStartElapsed}ms`);
-
     const transcribeResult = await sessionRef.current?.finalize(audio, {
-      toneId: null, // Will be resolved with context
+      toneId: null,
       a11yInfo: null,
       currentApp: null,
       currentEditor: null,
@@ -401,14 +422,16 @@ export const DictationSideEffects = () => {
     });
     const rawTranscript = transcribeResult?.rawTranscript;
 
-    const sttDoneElapsed = Date.now() - perfStartTime;
-    getLogger().info(`[perf] STT completed at +${sttDoneElapsed}ms`);
+    const t2 = performance.now();
+    getLogger().info(`[perf] stt: ${(t2 - t1).toFixed(0)}ms`);
     getLogger().verbose(
       `Transcription result: rawTranscript=${rawTranscript ? `${rawTranscript.length} chars` : "empty"}`,
     );
 
     if (!rawTranscript) {
       getLogger().warning("stopRecordingRaw: no rawTranscript from finalize");
+      // Clean up temp recording file
+      if (audio.filePath) cleanupAudioFile(audio.filePath);
       return {
         shouldContinue: false,
       };
@@ -420,6 +443,7 @@ export const DictationSideEffects = () => {
       getLogger().warning(
         `stopRecordingRaw: refs cleared (session=${!!session}, strategy=${!!strategy})`,
       );
+      if (audio.filePath) cleanupAudioFile(audio.filePath);
       return {
         shouldContinue: false,
       };
@@ -478,6 +502,9 @@ export const DictationSideEffects = () => {
       transcriptionWarnings: transcribeResult.warnings,
     });
 
+    const t3 = performance.now();
+    getLogger().info(`[perf] post-process: ${(t3 - t2).toFixed(0)}ms`);
+
     const transcript = result.transcript;
     const sanitizedTranscript = result.sanitizedTranscript;
     const postProcessMetadata = result.postProcessMetadata;
@@ -505,6 +532,13 @@ export const DictationSideEffects = () => {
         remoteDeviceId: result.remoteDeviceId,
       });
     }
+
+    // Clean up temp recording file after storage
+    if (audio.filePath) cleanupAudioFile(audio.filePath);
+
+    const t4 = performance.now();
+    getLogger().info(`[perf] paste: ${(t4 - t3).toFixed(0)}ms`);
+    getLogger().info(`[perf] total: ${(t4 - t0).toFixed(0)}ms`);
 
     refreshMember();
     return {
@@ -673,6 +707,17 @@ export const DictationSideEffects = () => {
           abortRecording();
           return;
         }
+
+        // Pre-collect OCR context while recording (Fix 3: saves 670-3700ms at stop time)
+        earlyOcrRef.current = null;
+        getScreenCaptureContext()
+          .then((ocrText) => {
+            earlyOcrRef.current = { ocrText, startedAt: Date.now() };
+            getLogger().verbose(
+              `[perf] early OCR collected: ${ocrText ? `${ocrText.length} chars` : "null"}`,
+            );
+          })
+          .catch(() => {});
 
         startRecordingTimers();
         dimSystemVolume();

@@ -117,8 +117,9 @@ describe("DictationStrategy", () => {
       currentApp: null,
       loadingToken: null,
       audio: {
-        samples: [],
+        filePath: "",
         sampleRate: 16_000,
+        sampleCount: 0,
       },
       transcriptionMetadata: {},
       transcriptionWarnings: [],
@@ -164,8 +165,9 @@ describe("DictationStrategy", () => {
       currentApp: null,
       loadingToken: null,
       audio: {
-        samples: [],
+        filePath: "",
         sampleRate: 16_000,
+        sampleCount: 0,
       },
       transcriptionMetadata: {},
       transcriptionWarnings: [],

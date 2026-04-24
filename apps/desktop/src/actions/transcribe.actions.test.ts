@@ -320,8 +320,9 @@ describe("storeTranscription", () => {
   it("stores the shared authoritative transcript contract fields", async () => {
     const result = await storeTranscription({
       audio: {
-        samples: [0.1, -0.1, 0.2],
+        filePath: "/mock/audio.wav",
         sampleRate: 16_000,
+        sampleCount: 3,
       },
       rawTranscript: "raw hello world",
       sanitizedTranscript: "raw hello world",
