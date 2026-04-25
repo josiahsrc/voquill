@@ -54,6 +54,8 @@ export const setAppTargetTone = async (
       toneId,
       iconPath: existing.iconPath ?? null,
       pasteKeybind: existing.pasteKeybind ?? null,
+      insertionMethod: existing.insertionMethod ?? null,
+      typingSpeedMs: existing.typingSpeedMs ?? null,
     });
   } catch (error) {
     console.error("Failed to update app target tone", error);
@@ -82,6 +84,8 @@ export const setAppTargetPasteKeybind = async (
       toneId: existing.toneId ?? null,
       iconPath: existing.iconPath ?? null,
       pasteKeybind,
+      insertionMethod: existing.insertionMethod ?? null,
+      typingSpeedMs: existing.typingSpeedMs ?? null,
     });
   } catch (error) {
     console.error("Failed to update app target paste keybind", error);
@@ -89,6 +93,66 @@ export const setAppTargetPasteKeybind = async (
       error instanceof Error
         ? error.message
         : "Failed to update app target paste keybind.",
+    );
+  }
+};
+
+export const setAppTargetInsertionMethod = async (
+  id: string,
+  insertionMethod: string | null,
+): Promise<void> => {
+  const existing = getAppState().appTargetById[id];
+  if (!existing) {
+    showErrorSnackbar("App target is not registered.");
+    return;
+  }
+
+  try {
+    await upsertAppTarget({
+      id,
+      name: existing.name,
+      toneId: existing.toneId ?? null,
+      iconPath: existing.iconPath ?? null,
+      pasteKeybind: existing.pasteKeybind ?? null,
+      insertionMethod,
+      typingSpeedMs: existing.typingSpeedMs ?? null,
+    });
+  } catch (error) {
+    console.error("Failed to update app target insertion method", error);
+    showErrorSnackbar(
+      error instanceof Error
+        ? error.message
+        : "Failed to update app target insertion method.",
+    );
+  }
+};
+
+export const setAppTargetTypingSpeed = async (
+  id: string,
+  typingSpeedMs: number | null,
+): Promise<void> => {
+  const existing = getAppState().appTargetById[id];
+  if (!existing) {
+    showErrorSnackbar("App target is not registered.");
+    return;
+  }
+
+  try {
+    await upsertAppTarget({
+      id,
+      name: existing.name,
+      toneId: existing.toneId ?? null,
+      iconPath: existing.iconPath ?? null,
+      pasteKeybind: existing.pasteKeybind ?? null,
+      insertionMethod: existing.insertionMethod ?? null,
+      typingSpeedMs,
+    });
+  } catch (error) {
+    console.error("Failed to update app target typing speed", error);
+    showErrorSnackbar(
+      error instanceof Error
+        ? error.message
+        : "Failed to update app target typing speed.",
     );
   }
 };
@@ -137,6 +201,8 @@ export const tryRegisterCurrentAppTarget = async (): Promise<
           toneId: existingApp?.toneId ?? null,
           iconPath: iconPath ?? existingApp?.iconPath ?? null,
           pasteKeybind: existingApp?.pasteKeybind ?? defaultPasteKeybind,
+          insertionMethod: existingApp?.insertionMethod ?? null,
+          typingSpeedMs: existingApp?.typingSpeedMs ?? null,
         });
       });
     } catch (error) {

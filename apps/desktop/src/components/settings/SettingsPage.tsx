@@ -72,9 +72,6 @@ export default function SettingsPage() {
   const isEnterprise = useAppStore((state) => state.isEnterprise);
   const allowChangeTranscription = useAppStore(getAllowsChangeTranscription);
   const allowChangePostProcessing = useAppStore(getAllowsChangePostProcessing);
-  const supportsPasteKeybinds = useAppStore(
-    (state) => state.supportsPasteKeybinds,
-  );
   const [manageSubscriptionLoading, setManageSubscriptionLoading] =
     useState(false);
   const isSignedIn = useAppStore(getIsSignedIn);
@@ -149,12 +146,6 @@ export default function SettingsPage() {
   const openAppKeybindingsDialog = () => {
     produceAppState((draft) => {
       draft.settings.appKeybindingsDialogOpen = true;
-    });
-  };
-
-  const openGlobalPasteKeybindDialog = () => {
-    produceAppState((draft) => {
-      draft.settings.globalPasteKeybindDialogOpen = true;
     });
   };
 
@@ -266,20 +257,11 @@ export default function SettingsPage() {
         leading={<TroubleshootOutlined />}
         onClick={openDiagnosticsDialog}
       />
-      {supportsPasteKeybinds === "per-app" && (
-        <ListTile
-          title={<FormattedMessage defaultMessage="App paste bindings" />}
-          leading={<AppsOutlined />}
-          onClick={openAppKeybindingsDialog}
-        />
-      )}
-      {supportsPasteKeybinds === "global" && (
-        <ListTile
-          title={<FormattedMessage defaultMessage="Paste binding" />}
-          leading={<AppsOutlined />}
-          onClick={openGlobalPasteKeybindDialog}
-        />
-      )}
+      <ListTile
+        title={<FormattedMessage defaultMessage="Text insertion options" />}
+        leading={<AppsOutlined />}
+        onClick={openAppKeybindingsDialog}
+      />
       <ListTile
         title={<FormattedMessage defaultMessage="More settings" />}
         leading={<MoreVertOutlined />}

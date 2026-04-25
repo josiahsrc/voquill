@@ -37,6 +37,8 @@ fn main() {
         surface_main_window,
         set_pill_window_size,
         paste,
+        simulate_type,
+        cancel_typing,
         copy_to_clipboard,
         transcription_create,
         transcription_list,

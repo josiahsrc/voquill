@@ -213,7 +213,11 @@ export class DictationStrategy extends BaseStrategy {
           getLogger().info("Transcript output routed successfully");
         } catch (error) {
           getLogger().error(`Failed to route transcription output: ${error}`);
-          showErrorSnackbar("Unable to insert transcription.");
+          showErrorSnackbar(
+            error instanceof Error
+              ? error.message
+              : String(error) || "Unable to insert transcription.",
+          );
         }
       }
     } catch (error) {

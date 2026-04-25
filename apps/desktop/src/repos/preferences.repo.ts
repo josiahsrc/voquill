@@ -51,6 +51,8 @@ type LocalUserPreferences = {
   pasteKeybind: Nullable<string>;
   useNewBackend: boolean;
   menuBarIconHidden: boolean;
+  insertionMethod: Nullable<string>;
+  typingSpeedMs: Nullable<number>;
 };
 
 // Normalize post-processing mode for backwards compatibility
@@ -107,6 +109,8 @@ const fromLocalPreferences = (
   dictationAudioDim: preferences.dictationAudioDim ?? 1.0,
   pasteKeybind: preferences.pasteKeybind ?? null,
   menuBarIconHidden: preferences.menuBarIconHidden ?? false,
+  insertionMethod: preferences.insertionMethod ?? null,
+  typingSpeedMs: preferences.typingSpeedMs ?? null,
 });
 
 const toLocalPreferences = (
@@ -152,6 +156,8 @@ const toLocalPreferences = (
   pasteKeybind: preferences.pasteKeybind ?? null,
   useNewBackend: true,
   menuBarIconHidden: preferences.menuBarIconHidden ?? false,
+  insertionMethod: preferences.insertionMethod ?? null,
+  typingSpeedMs: preferences.typingSpeedMs ?? null,
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

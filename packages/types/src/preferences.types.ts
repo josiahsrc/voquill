@@ -38,6 +38,8 @@ export type UserPreferences = {
   dictationAudioDim: number;
   pasteKeybind: Nullable<string>;
   menuBarIconHidden: boolean;
+  insertionMethod: Nullable<string>;
+  typingSpeedMs: Nullable<number>;
 
   // deprecated
   isEnterprise: boolean;

@@ -9,6 +9,57 @@ const KEY_C: CGKeyCode = 8;
 const KEY_SPACE: CGKeyCode = 49;
 const KEY_V: CGKeyCode = 9;
 
+pub(crate) fn type_text_into_focused_field(
+    text: &str,
+    delay_ms: u64,
+    cancel_flag: &std::sync::atomic::AtomicBool,
+) -> Result<(), String> {
+    if text.trim().is_empty() {
+        return Ok(());
+    }
+
+    log::info!(
+        "attempting to type text ({} chars) with {}ms delay",
+        text.chars().count(),
+        delay_ms
+    );
+
+    let source = CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
+        .map_err(|_| "failed to create event source")?;
+
+    for c in text.chars() {
+        if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+            log::info!("Typing cancelled by user");
+            return Err("Typing cancelled".into());
+        }
+
+        if c == '\n' {
+            let key_down = CGEvent::new_keyboard_event(source.clone(), 36, true)
+                .map_err(|_| "failed to create return key-down event")?;
+            key_down.post(CGEventTapLocation::HID);
+            thread::sleep(Duration::from_millis(10));
+            let key_up = CGEvent::new_keyboard_event(source.clone(), 36, false)
+                .map_err(|_| "failed to create return key-up event")?;
+            key_up.post(CGEventTapLocation::HID);
+        } else {
+            let event = CGEvent::new_keyboard_event(source.clone(), 0, true)
+                .map_err(|_| "failed to create key event")?;
+            event.set_string(&c.to_string());
+            event.post(CGEventTapLocation::HID);
+            thread::sleep(Duration::from_millis(10));
+            let key_up = CGEvent::new_keyboard_event(source.clone(), 0, false)
+                .map_err(|_| "failed to create key-up event")?;
+            key_up.post(CGEventTapLocation::HID);
+        }
+
+        if delay_ms > 0 {
+            thread::sleep(Duration::from_millis(delay_ms));
+        }
+    }
+
+    Ok(())
+}
+
 pub(crate) fn paste_text_into_focused_field(
     text: &str,
     _keybind: Option<&str>,

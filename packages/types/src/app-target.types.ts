@@ -7,4 +7,6 @@ export type AppTarget = {
   toneId: Nullable<string>;
   iconPath: Nullable<string>;
   pasteKeybind: Nullable<string>;
+  insertionMethod: Nullable<string>;
+  typingSpeedMs: Nullable<number>;
 };

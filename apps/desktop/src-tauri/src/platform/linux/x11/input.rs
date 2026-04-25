@@ -6,6 +6,43 @@ use std::{thread, time::Duration};
 
 static CLIPBOARD_HOLD: Mutex<Option<arboard::Clipboard>> = Mutex::new(None);
 
+pub fn type_text_into_focused_field(
+    text: &str,
+    delay_ms: u64,
+    cancel_flag: &std::sync::atomic::AtomicBool,
+) -> Result<(), String> {
+    if text.trim().is_empty() {
+        return Ok(());
+    }
+
+    log::info!(
+        "attempting to type text ({} chars) with {}ms delay",
+        text.chars().count(),
+        delay_ms
+    );
+
+    let mut enigo = Enigo::new();
+    enigo.key_up(Key::Shift);
+    enigo.key_up(Key::Control);
+    enigo.key_up(Key::Alt);
+    std::thread::sleep(std::time::Duration::from_millis(30));
+
+    for c in text.chars() {
+        if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+            log::info!("Typing cancelled by user");
+            return Err("Typing cancelled".into());
+        }
+
+        enigo.key_sequence(&c.to_string());
+
+        if delay_ms > 0 {
+            std::thread::sleep(std::time::Duration::from_millis(delay_ms));
+        }
+    }
+
+    Ok(())
+}
+
 pub fn paste_text(
     text: &str,
     keybind: Option<&str>,
