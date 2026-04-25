@@ -1618,10 +1618,7 @@ pub async fn paste(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn simulate_type(
-    text: String,
-    delay_ms: u64,
-) -> Result<(), String> {
+pub async fn simulate_type(text: String, delay_ms: u64) -> Result<(), String> {
     if text.trim().is_empty() {
         return Ok(());
     }
@@ -2041,9 +2038,7 @@ pub async fn read_accessibility_field_values(
 /// an empty vec when the app is not running.
 #[tauri::command]
 #[specta::specta]
-pub async fn resolve_app_pids(
-    identity: AppIdentity,
-) -> Result<Vec<AppProcessMatch>, String> {
+pub async fn resolve_app_pids(identity: AppIdentity) -> Result<Vec<AppProcessMatch>, String> {
     tokio::time::timeout(
         std::time::Duration::from_secs(3),
         tauri::async_runtime::spawn_blocking(move || {

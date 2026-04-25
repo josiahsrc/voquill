@@ -78,8 +78,6 @@ export type SettingsState = {
   multiDeviceDialogOpen: boolean;
   dictationLanguageDialogOpen: boolean;
   appKeybindingsDialogOpen: boolean;
-  globalPasteKeybindDialogOpen: boolean;
-  globalInsertionMethodDialogOpen: boolean;
   diagnosticsDialogOpen: boolean;
   mobileAppDialogOpen: boolean;
   aiTranscription: SettingsTranscriptionState;
@@ -133,8 +131,6 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   multiDeviceDialogOpen: false,
   dictationLanguageDialogOpen: false,
   appKeybindingsDialogOpen: false,
-  globalPasteKeybindDialogOpen: false,
-  globalInsertionMethodDialogOpen: false,
   diagnosticsDialogOpen: false,
   mobileAppDialogOpen: false,
   aiTranscription: {

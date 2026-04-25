@@ -4,10 +4,12 @@ use std::{
 };
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    GetAsyncKeyState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE, KEYBDINPUT,
-    KEYEVENTF_KEYUP, KEYEVENTF_UNICODE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEINPUT,
+    GetAsyncKeyState, MapVirtualKeyW, SendInput, VkKeyScanW, INPUT, INPUT_0, INPUT_KEYBOARD,
+    INPUT_MOUSE, KEYBDINPUT, KEYBD_EVENT_FLAGS, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE,
+    KEYEVENTF_UNICODE, MAPVK_VK_TO_VSC, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEINPUT,
     VIRTUAL_KEY, VK_A, VK_C, VK_CONTROL, VK_DELETE, VK_INSERT, VK_LCONTROL, VK_LMENU, VK_LSHIFT,
-    VK_LWIN, VK_MENU, VK_RCONTROL, VK_RIGHT, VK_RMENU, VK_RSHIFT, VK_RWIN, VK_SHIFT, VK_V,
+    VK_LWIN, VK_MENU, VK_RCONTROL, VK_RETURN, VK_RIGHT, VK_RMENU, VK_RSHIFT, VK_RWIN, VK_SHIFT,
+    VK_TAB, VK_V,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     GetClassNameW, GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW,
@@ -136,26 +138,8 @@ pub(crate) fn type_text_into_focused_field(
             return Err("Typing cancelled".into());
         }
 
-        if c == '\n' {
-            send_key_down(VIRTUAL_KEY(0x0D)); // VK_RETURN
-            thread::sleep(Duration::from_millis(10));
-            send_key_up(VIRTUAL_KEY(0x0D));
-        } else {
-            let input = INPUT {
-                r#type: INPUT_KEYBOARD,
-                Anonymous: INPUT_0 {
-                    ki: KEYBDINPUT {
-                        wVk: VIRTUAL_KEY(0),
-                        wScan: c as u16,
-                        dwFlags: KEYEVENTF_UNICODE,
-                        time: 0,
-                        dwExtraInfo: 0,
-                    },
-                },
-            };
-            unsafe {
-                SendInput(&[input], mem::size_of::<INPUT>() as i32);
-            }
+        if !type_char_as_physical_key(c) {
+            send_unicode_char(c);
         }
 
         if delay_ms > 0 {
@@ -291,6 +275,139 @@ fn send_key_up(vk: VIRTUAL_KEY) {
     };
     unsafe {
         SendInput(&[input], mem::size_of::<INPUT>() as i32);
+    }
+}
+
+fn type_char_as_physical_key(c: char) -> bool {
+    match c {
+        '\n' => return send_scancode_tap(VK_RETURN),
+        '\t' => return send_scancode_tap(VK_TAB),
+        _ => {}
+    }
+
+    let mut utf16 = [0u16; 2];
+    let encoded = c.encode_utf16(&mut utf16);
+    if encoded.len() != 1 {
+        return false;
+    }
+
+    let vk_scan = unsafe { VkKeyScanW(encoded[0]) };
+    if vk_scan == -1 {
+        return false;
+    }
+
+    let vk_scan = vk_scan as u16;
+    let vk = VIRTUAL_KEY(vk_scan & 0xff);
+    let shift_state = ((vk_scan >> 8) & 0xff) as u8;
+    if shift_state & !0x07 != 0 {
+        return false;
+    }
+
+    let modifiers = [
+        (shift_state & 0x01 != 0, VK_SHIFT),
+        (shift_state & 0x02 != 0, VK_CONTROL),
+        (shift_state & 0x04 != 0, VK_MENU),
+    ];
+
+    let mut pressed_modifiers = [VIRTUAL_KEY(0); 3];
+    let mut pressed_modifier_count = 0;
+
+    for &(needed, modifier) in &modifiers {
+        if needed {
+            if !send_scancode_key_down(modifier) {
+                for modifier in pressed_modifiers[..pressed_modifier_count].iter().rev() {
+                    send_scancode_key_up(*modifier);
+                }
+                return false;
+            }
+            pressed_modifiers[pressed_modifier_count] = modifier;
+            pressed_modifier_count += 1;
+        }
+    }
+
+    let sent = send_scancode_tap(vk);
+
+    for modifier in pressed_modifiers[..pressed_modifier_count].iter().rev() {
+        send_scancode_key_up(*modifier);
+    }
+
+    sent
+}
+
+fn send_scancode_tap(vk: VIRTUAL_KEY) -> bool {
+    if !send_scancode_key_down(vk) {
+        return false;
+    }
+    thread::sleep(Duration::from_millis(2));
+    send_scancode_key_up(vk)
+}
+
+fn send_scancode_key_down(vk: VIRTUAL_KEY) -> bool {
+    send_scancode_key(vk, Default::default())
+}
+
+fn send_scancode_key_up(vk: VIRTUAL_KEY) -> bool {
+    send_scancode_key(vk, KEYEVENTF_KEYUP)
+}
+
+fn send_scancode_key(vk: VIRTUAL_KEY, extra_flags: KEYBD_EVENT_FLAGS) -> bool {
+    let scan_code = unsafe { MapVirtualKeyW(vk.0 as u32, MAPVK_VK_TO_VSC) };
+    if scan_code == 0 {
+        return false;
+    }
+
+    let input = INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 {
+            ki: KEYBDINPUT {
+                wVk: VIRTUAL_KEY(0),
+                wScan: scan_code as u16,
+                dwFlags: KEYEVENTF_SCANCODE | extra_flags,
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+    unsafe {
+        SendInput(&[input], mem::size_of::<INPUT>() as i32);
+    }
+    true
+}
+
+fn send_unicode_char(c: char) {
+    let mut utf16 = [0u16; 2];
+    for unit in c.encode_utf16(&mut utf16) {
+        send_unicode_unit(*unit);
+    }
+}
+
+fn send_unicode_unit(unit: u16) {
+    let down = INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 {
+            ki: KEYBDINPUT {
+                wVk: VIRTUAL_KEY(0),
+                wScan: unit,
+                dwFlags: KEYEVENTF_UNICODE,
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+    let up = INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 {
+            ki: KEYBDINPUT {
+                wVk: VIRTUAL_KEY(0),
+                wScan: unit,
+                dwFlags: KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+    unsafe {
+        SendInput(&[down, up], mem::size_of::<INPUT>() as i32);
     }
 }
 

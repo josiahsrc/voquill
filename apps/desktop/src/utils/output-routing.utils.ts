@@ -46,7 +46,7 @@ export const routeTranscriptOutput = async (
   const insertionMethod =
     currentApp?.insertionMethod ?? prefs?.insertionMethod ?? "paste";
 
-  const typingSpeedMs = currentApp?.typingSpeedMs ?? prefs?.typingSpeedMs ?? 40;
+  const typingSpeedMs = currentApp?.typingSpeedMs ?? prefs?.typingSpeedMs ?? 5;
 
   if (insertionMethod === "type") {
     await insertLocalTranscriptOutputViaTyping(args.text, typingSpeedMs);

@@ -177,7 +177,9 @@ pub fn type_text_into_focused_field(
 
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
-                return Err(format!("ydotool type exited with non-zero status: {stderr}"));
+                return Err(format!(
+                    "ydotool type exited with non-zero status: {stderr}"
+                ));
             }
 
             if delay_ms > 0 {
