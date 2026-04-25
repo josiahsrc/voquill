@@ -115,6 +115,8 @@ export const createDefaultPreferences = (): UserPreferences => ({
   dictationAudioDim: 1.0,
   pasteKeybind: null,
   menuBarIconHidden: false,
+  insertionMethod: null,
+  typingSpeedMs: null,
 });
 
 export const updateUserPreferences = async (

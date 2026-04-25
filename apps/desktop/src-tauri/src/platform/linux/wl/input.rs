@@ -146,6 +146,53 @@ pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
 
 // --- Public API ---
 
+pub fn type_text_into_focused_field(
+    text: &str,
+    delay_ms: u64,
+    cancel_flag: &std::sync::atomic::AtomicBool,
+) -> Result<(), String> {
+    if text.trim().is_empty() {
+        return Ok(());
+    }
+
+    log::info!(
+        "attempting to type text ({} chars) with {}ms delay",
+        text.chars().count(),
+        delay_ms
+    );
+
+    if ydotool_available() {
+        for c in text.chars() {
+            if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+                log::info!("Typing cancelled by user");
+                return Err("Typing cancelled".into());
+            }
+
+            let c_str = c.to_string();
+            let output = Command::new("ydotool")
+                .arg("type")
+                .arg(&c_str)
+                .output()
+                .map_err(|err| format!("ydotool type failed: {err}"))?;
+
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(format!("ydotool type exited with non-zero status: {stderr}"));
+            }
+
+            if delay_ms > 0 {
+                thread::sleep(Duration::from_millis(delay_ms));
+            }
+        }
+        return Ok(());
+    }
+
+    Err(
+        "Simulated typing on Wayland requires ydotool. Switch text insertion to Paste or install and configure ydotool."
+            .to_string(),
+    )
+}
+
 pub fn paste_text(
     text: &str,
     keybind: Option<&str>,

@@ -1,7 +1,10 @@
 use std::convert::TryInto;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+static CANCEL_TYPING: AtomicBool = AtomicBool::new(false);
 use tauri::{AppHandle, Emitter, EventTarget, Manager, State};
 
 use crate::domain::{
@@ -269,6 +272,10 @@ pub struct AppTargetUpsertArgs {
     pub icon_path: Option<String>,
     #[serde(default)]
     pub paste_keybind: Option<String>,
+    #[serde(default)]
+    pub insertion_method: Option<String>,
+    #[serde(default)]
+    pub typing_speed_ms: Option<i64>,
 }
 
 #[derive(serde::Deserialize, specta::Type)]
@@ -554,6 +561,8 @@ pub async fn app_target_upsert(
         args.tone_id,
         args.icon_path,
         args.paste_keybind,
+        args.insertion_method,
+        args.typing_speed_ms,
     )
     .await
     .map_err(|err| err.to_string())
@@ -1605,6 +1614,45 @@ pub async fn paste(
             Err(message)
         }
     }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn simulate_type(
+    text: String,
+    delay_ms: u64,
+) -> Result<(), String> {
+    if text.trim().is_empty() {
+        return Ok(());
+    }
+
+    CANCEL_TYPING.store(false, Ordering::SeqCst);
+
+    let join_result = tauri::async_runtime::spawn_blocking(move || {
+        crate::platform::input::type_text_into_focused_field(&text, delay_ms, &CANCEL_TYPING)
+    })
+    .await;
+
+    match join_result {
+        Ok(result) => {
+            if let Err(ref err) = result {
+                log::error!("Simulated typing failed: {err}");
+            }
+            result
+        }
+        Err(err) => {
+            let message = format!("Simulate type task join error: {err}");
+            log::error!("{message}");
+            Err(message)
+        }
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn cancel_typing() -> Result<(), String> {
+    CANCEL_TYPING.store(true, Ordering::SeqCst);
+    Ok(())
 }
 
 #[tauri::command]

@@ -4,7 +4,7 @@ import { getTranscriptionRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import { createId } from "../utils/id.utils";
 import { getLogger } from "../utils/log.utils";
-import { insertLocalTranscriptOutput } from "../utils/output-routing.utils";
+import { insertLocalTranscriptOutputViaPaste } from "../utils/output-routing.utils";
 import {
   getMyEffectiveUserId,
   getMyUserPreferences,
@@ -76,7 +76,7 @@ export const handleRemoteFinalTextReceived = async (
   }
 
   await new Promise<void>((resolve) => setTimeout(resolve, 20));
-  await insertLocalTranscriptOutput(`${finalText} `, null);
+  await insertLocalTranscriptOutputViaPaste(`${finalText} `, null);
   await storeRemoteTranscription({
     senderDeviceId: payload.senderDeviceId,
     rawTranscript: finalText,

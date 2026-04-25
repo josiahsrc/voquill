@@ -43,12 +43,21 @@ export const routeTranscriptOutput = async (
     };
   }
 
-  const pasteKeybind =
-    state.supportsPasteKeybinds === "global"
-      ? (prefs?.pasteKeybind ?? null)
-      : (currentApp?.pasteKeybind ?? prefs?.pasteKeybind ?? null);
+  const insertionMethod =
+    currentApp?.insertionMethod ?? prefs?.insertionMethod ?? "paste";
 
-  await insertLocalTranscriptOutput(args.text, pasteKeybind);
+  const typingSpeedMs = currentApp?.typingSpeedMs ?? prefs?.typingSpeedMs ?? 40;
+
+  if (insertionMethod === "type") {
+    await insertLocalTranscriptOutputViaTyping(args.text, typingSpeedMs);
+  } else {
+    const pasteKeybind =
+      state.supportsPasteKeybinds === "global"
+        ? (prefs?.pasteKeybind ?? null)
+        : (currentApp?.pasteKeybind ?? prefs?.pasteKeybind ?? null);
+
+    await insertLocalTranscriptOutputViaPaste(args.text, pasteKeybind);
+  }
 
   return {
     delivered: true,
@@ -56,7 +65,7 @@ export const routeTranscriptOutput = async (
   };
 };
 
-export const insertLocalTranscriptOutput = async (
+export const insertLocalTranscriptOutputViaPaste = async (
   text: string,
   keybind: string | null,
 ): Promise<void> => {
@@ -76,5 +85,34 @@ export const insertLocalTranscriptOutput = async (
         defaultMessage: "Transcript copied to clipboard",
       }),
     );
+  }
+};
+
+export const insertLocalTranscriptOutputViaTyping = async (
+  text: string,
+  delayMs: number,
+): Promise<void> => {
+  const sanitized = sanitizeIndentation(text);
+
+  const handleCancel = () => {
+    void invoke("cancel_typing");
+  };
+
+  window.addEventListener("blur", handleCancel, { once: true });
+  const keydownHandler = (e: KeyboardEvent) => {
+    if (e.key === "Escape") {
+      handleCancel();
+    }
+  };
+  window.addEventListener("keydown", keydownHandler);
+
+  try {
+    await invoke("simulate_type", {
+      text: sanitized,
+      delayMs,
+    });
+  } finally {
+    window.removeEventListener("blur", handleCancel);
+    window.removeEventListener("keydown", keydownHandler);
   }
 };

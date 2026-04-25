@@ -5,9 +5,9 @@ use std::{
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE, KEYBDINPUT,
-    KEYEVENTF_KEYUP, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEINPUT, VIRTUAL_KEY, VK_A,
-    VK_C, VK_CONTROL, VK_DELETE, VK_INSERT, VK_LCONTROL, VK_LMENU, VK_LSHIFT, VK_LWIN, VK_MENU,
-    VK_RCONTROL, VK_RIGHT, VK_RMENU, VK_RSHIFT, VK_RWIN, VK_SHIFT, VK_V,
+    KEYEVENTF_KEYUP, KEYEVENTF_UNICODE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEINPUT,
+    VIRTUAL_KEY, VK_A, VK_C, VK_CONTROL, VK_DELETE, VK_INSERT, VK_LCONTROL, VK_LMENU, VK_LSHIFT,
+    VK_LWIN, VK_MENU, VK_RCONTROL, VK_RIGHT, VK_RMENU, VK_RSHIFT, VK_RWIN, VK_SHIFT, VK_V,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     GetClassNameW, GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW,
@@ -108,6 +108,62 @@ pub(crate) fn select_all_keystroke() {
     thread::sleep(Duration::from_millis(20));
     send_key_up(VK_A);
     send_key_up(VK_CONTROL);
+}
+
+pub(crate) fn type_text_into_focused_field(
+    text: &str,
+    delay_ms: u64,
+    cancel_flag: &std::sync::atomic::AtomicBool,
+) -> Result<(), String> {
+    if text.trim().is_empty() {
+        return Ok(());
+    }
+
+    let override_text = env::var("VOQUILL_DEBUG_PASTE_TEXT").ok();
+    let target = override_text.as_deref().unwrap_or(text);
+    log::info!(
+        "attempting to type text ({} chars) with {}ms delay",
+        target.chars().count(),
+        delay_ms
+    );
+
+    release_modifier_keys();
+    thread::sleep(Duration::from_millis(50));
+
+    for c in target.chars() {
+        if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+            log::info!("Typing cancelled by user");
+            return Err("Typing cancelled".into());
+        }
+
+        if c == '\n' {
+            send_key_down(VIRTUAL_KEY(0x0D)); // VK_RETURN
+            thread::sleep(Duration::from_millis(10));
+            send_key_up(VIRTUAL_KEY(0x0D));
+        } else {
+            let input = INPUT {
+                r#type: INPUT_KEYBOARD,
+                Anonymous: INPUT_0 {
+                    ki: KEYBDINPUT {
+                        wVk: VIRTUAL_KEY(0),
+                        wScan: c as u16,
+                        dwFlags: KEYEVENTF_UNICODE,
+                        time: 0,
+                        dwExtraInfo: 0,
+                    },
+                },
+            };
+            unsafe {
+                SendInput(&[input], mem::size_of::<INPUT>() as i32);
+            }
+        }
+
+        if delay_ms > 0 {
+            thread::sleep(Duration::from_millis(delay_ms));
+        }
+    }
+
+    Ok(())
 }
 
 pub(crate) fn type_text_via_keystrokes(text: &str) -> Result<(), String> {

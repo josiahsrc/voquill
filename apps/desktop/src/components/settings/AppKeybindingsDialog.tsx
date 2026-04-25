@@ -8,13 +8,18 @@ import {
   MenuItem,
   Select,
   SelectChangeEvent,
+  Slider,
   Stack,
   Typography,
 } from "@mui/material";
 import { AppTarget } from "@voquill/types";
 import { useMemo } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
-import { setAppTargetPasteKeybind } from "../../actions/app-target.actions";
+import {
+  setAppTargetInsertionMethod,
+  setAppTargetPasteKeybind,
+  setAppTargetTypingSpeed,
+} from "../../actions/app-target.actions";
 import { updateUserPreferences } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
 import { getMyUserPreferences } from "../../utils/user.utils";
@@ -25,6 +30,12 @@ export const AppKeybindingsDialog = () => {
   const appTargets = useAppStore((state) => state.appTargetById);
   const defaultPasteKeybind = useAppStore(
     (state) => getMyUserPreferences(state)?.pasteKeybind ?? "ctrl+v",
+  );
+  const defaultInsertionMethod = useAppStore(
+    (state) => getMyUserPreferences(state)?.insertionMethod ?? "paste",
+  );
+  const defaultTypingSpeedMs = useAppStore(
+    (state) => getMyUserPreferences(state)?.typingSpeedMs ?? 40,
   );
 
   const sortedTargets = useMemo(
@@ -45,6 +56,25 @@ export const AppKeybindingsDialog = () => {
     const value = event.target.value;
     void updateUserPreferences((prefs) => {
       prefs.pasteKeybind = value === "ctrl+v" ? null : value;
+    });
+  };
+
+  const handleDefaultInsertionMethodChange = (
+    event: SelectChangeEvent<string>,
+  ) => {
+    const value = event.target.value;
+    void updateUserPreferences((prefs) => {
+      prefs.insertionMethod = value === "paste" ? null : value;
+    });
+  };
+
+  const handleDefaultTypingSpeedChange = (
+    _: Event,
+    value: number | number[],
+  ) => {
+    const num = Array.isArray(value) ? value[0] : value;
+    void updateUserPreferences((prefs) => {
+      prefs.typingSpeedMs = num;
     });
   };
 
@@ -95,6 +125,68 @@ export const AppKeybindingsDialog = () => {
             </MenuItem>
           </Select>
         </Stack>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{
+            backgroundColor: "level1",
+            mb: 2,
+            borderRadius: 1,
+            px: 1.5,
+            py: 1,
+          }}
+        >
+          <Stack sx={{ minWidth: 0 }}>
+            <Typography variant="body2">
+              <FormattedMessage defaultMessage="Default insertion method" />
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              <FormattedMessage defaultMessage="How text is inserted into applications" />
+            </Typography>
+          </Stack>
+          <Select
+            value={defaultInsertionMethod}
+            onChange={handleDefaultInsertionMethodChange}
+            size="small"
+            variant="outlined"
+            sx={{ minWidth: 170, flexShrink: 0 }}
+          >
+            <MenuItem value="paste">
+              <FormattedMessage defaultMessage="Paste (clipboard)" />
+            </MenuItem>
+            <MenuItem value="type">
+              <FormattedMessage defaultMessage="Simulated typing" />
+            </MenuItem>
+          </Select>
+        </Stack>
+        {defaultInsertionMethod === "type" && (
+          <Stack
+            sx={{
+              backgroundColor: "level1",
+              mb: 2,
+              borderRadius: 1,
+              px: 1.5,
+              py: 1,
+            }}
+          >
+            <Typography variant="body2">
+              <FormattedMessage defaultMessage="Default typing speed" />
+            </Typography>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Slider
+                value={defaultTypingSpeedMs}
+                onChange={handleDefaultTypingSpeedChange}
+                min={10}
+                max={100}
+                step={5}
+                valueLabelDisplay="auto"
+                valueLabelFormat={(value) => `${value}ms`}
+                sx={{ flex: 1 }}
+              />
+            </Stack>
+          </Stack>
+        )}
         {sortedTargets.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
             <FormattedMessage defaultMessage="No apps registered yet. Start dictating in an app and it will appear here." />
@@ -135,69 +227,135 @@ type AppKeybindingRowProps = {
 const AppKeybindingRow = ({ target }: AppKeybindingRowProps) => {
   const intl = useIntl();
   const pasteKeybindValue = target.pasteKeybind ?? "ctrl+v";
+  const insertionMethodValue = target.insertionMethod ?? "default";
+  const typingSpeedValue = target.typingSpeedMs ?? 40;
 
-  const handleChange = (event: SelectChangeEvent<string>) => {
+  const handlePasteKeybindChange = (event: SelectChangeEvent<string>) => {
     const value = event.target.value;
     void setAppTargetPasteKeybind(target.id, value === "ctrl+v" ? null : value);
   };
 
+  const handleInsertionMethodChange = (event: SelectChangeEvent<string>) => {
+    const value = event.target.value;
+    void setAppTargetInsertionMethod(
+      target.id,
+      value === "default" ? null : value,
+    );
+  };
+
+  const handleTypingSpeedChange = (_: Event, value: number | number[]) => {
+    const num = Array.isArray(value) ? value[0] : value;
+    void setAppTargetTypingSpeed(target.id, num);
+  };
+
+  const showSpeedSlider = insertionMethodValue === "type";
+
   return (
     <Stack
-      direction="row"
-      alignItems="center"
-      justifyContent="space-between"
       sx={{ backgroundColor: "level1", mb: 1, borderRadius: 1, px: 1.5, py: 1 }}
     >
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1.5}
+          sx={{ minWidth: 0 }}
+        >
+          <Box
+            sx={{
+              overflow: "hidden",
+              borderRadius: 0.75,
+              minWidth: 32,
+              minHeight: 32,
+              maxWidth: 32,
+              maxHeight: 32,
+              bgcolor: "level2",
+              flexShrink: 0,
+            }}
+          >
+            {target.iconPath && (
+              <StorageImage
+                path={target.iconPath}
+                alt={
+                  target.name ??
+                  intl.formatMessage({ defaultMessage: "App icon" })
+                }
+                size={32}
+              />
+            )}
+          </Box>
+          <Typography variant="body2" noWrap>
+            {target.name}
+          </Typography>
+        </Stack>
+        <Select
+          value={pasteKeybindValue}
+          onChange={handlePasteKeybindChange}
+          size="small"
+          variant="outlined"
+          sx={{ minWidth: 170, flexShrink: 0 }}
+        >
+          <MenuItem value="ctrl+v">
+            <FormattedMessage defaultMessage="Default (Ctrl+V)" />
+          </MenuItem>
+          <MenuItem value="ctrl+shift+v">
+            <FormattedMessage defaultMessage="Terminal (Ctrl+Shift+V)" />
+          </MenuItem>
+          <MenuItem value="shift+insert">
+            <FormattedMessage defaultMessage="Shift+Insert" />
+          </MenuItem>
+        </Select>
+      </Stack>
       <Stack
         direction="row"
         alignItems="center"
-        spacing={1.5}
-        sx={{ minWidth: 0 }}
+        justifyContent="space-between"
+        sx={{ mt: 1 }}
       >
-        <Box
-          sx={{
-            overflow: "hidden",
-            borderRadius: 0.75,
-            minWidth: 32,
-            minHeight: 32,
-            maxWidth: 32,
-            maxHeight: 32,
-            bgcolor: "level2",
-            flexShrink: 0,
-          }}
-        >
-          {target.iconPath && (
-            <StorageImage
-              path={target.iconPath}
-              alt={
-                target.name ??
-                intl.formatMessage({ defaultMessage: "App icon" })
-              }
-              size={32}
-            />
-          )}
-        </Box>
-        <Typography variant="body2" noWrap>
-          {target.name}
+        <Typography variant="caption" color="text.secondary">
+          <FormattedMessage defaultMessage="Insertion" />
         </Typography>
+        <Select
+          value={insertionMethodValue}
+          onChange={handleInsertionMethodChange}
+          size="small"
+          variant="outlined"
+          sx={{ minWidth: 140, flexShrink: 0 }}
+        >
+          <MenuItem value="default">
+            <FormattedMessage defaultMessage="Use default" />
+          </MenuItem>
+          <MenuItem value="paste">
+            <FormattedMessage defaultMessage="Paste" />
+          </MenuItem>
+          <MenuItem value="type">
+            <FormattedMessage defaultMessage="Type" />
+          </MenuItem>
+        </Select>
       </Stack>
-      <Select
-        value={pasteKeybindValue}
-        onChange={handleChange}
-        size="small"
-        variant="outlined"
-        sx={{ minWidth: 170, flexShrink: 0 }}
-      >
-        <MenuItem value="ctrl+v">
-          <FormattedMessage defaultMessage="Default (Ctrl+V)" />
-        </MenuItem>
-        <MenuItem value="ctrl+shift+v">
-          <FormattedMessage defaultMessage="Terminal (Ctrl+Shift+V)" />
-        </MenuItem>
-        <MenuItem value="shift+insert">
-          <FormattedMessage defaultMessage="Shift+Insert" />
-        </MenuItem>
-      </Select>
+      {showSpeedSlider && (
+        <Stack sx={{ mt: 1 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ minWidth: 80 }}
+            >
+              <FormattedMessage defaultMessage="Speed" />
+            </Typography>
+            <Slider
+              value={typingSpeedValue}
+              onChange={handleTypingSpeedChange}
+              min={10}
+              max={100}
+              step={5}
+              valueLabelDisplay="auto"
+              valueLabelFormat={(value) => `${value}ms`}
+              sx={{ flex: 1 }}
+            />
+          </Stack>
+        </Stack>
+      )}
     </Stack>
   );
 };

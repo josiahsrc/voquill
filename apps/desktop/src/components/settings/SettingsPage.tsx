@@ -158,6 +158,12 @@ export default function SettingsPage() {
     });
   };
 
+  const openGlobalInsertionMethodDialog = () => {
+    produceAppState((draft) => {
+      draft.settings.globalInsertionMethodDialogOpen = true;
+    });
+  };
+
   const openAgentModeDialog = () => {
     produceAppState((draft) => {
       draft.settings.agentModeDialogOpen = true;
@@ -280,6 +286,11 @@ export default function SettingsPage() {
           onClick={openGlobalPasteKeybindDialog}
         />
       )}
+      <ListTile
+        title={<FormattedMessage defaultMessage="Text insertion" />}
+        leading={<AppsOutlined />}
+        onClick={openGlobalInsertionMethodDialog}
+      />
       <ListTile
         title={<FormattedMessage defaultMessage="More settings" />}
         leading={<MoreVertOutlined />}

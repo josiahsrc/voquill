@@ -12,4 +12,8 @@ pub struct AppTarget {
     pub icon_path: Option<String>,
     #[serde(default)]
     pub paste_keybind: Option<String>,
+    #[serde(default)]
+    pub insertion_method: Option<String>,
+    #[serde(default)]
+    pub typing_speed_ms: Option<i64>,
 }

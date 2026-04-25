@@ -78,6 +78,10 @@ pub struct UserPreferences {
     pub dictation_audio_dim: f64,
     #[serde(default)]
     pub menu_bar_icon_hidden: bool,
+    #[serde(default)]
+    pub insertion_method: Option<String>,
+    #[serde(default)]
+    pub typing_speed_ms: Option<i64>,
 }
 
 fn default_dictation_pill_visibility() -> String {
