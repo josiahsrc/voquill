@@ -54,6 +54,10 @@ function isWhisperModel(modelId: string): boolean {
   return modelId.includes("whisper");
 }
 
+function isOpenAITranscriptionModel(modelId: string): boolean {
+  return isWhisperModel(modelId) || modelId.includes("transcribe");
+}
+
 function filterFetchedModels(
   fetched: string[],
   allowList: readonly string[],
@@ -115,12 +119,12 @@ export class OpenAIModelProviderRepo extends BaseModelProviderRepo {
     options: FetchModelsOptions,
   ): Promise<string[]> {
     const fetched = await this.fetchModels(options);
-    return fetched.filter((m) => !isWhisperModel(m));
+    return fetched.filter((m) => !isOpenAITranscriptionModel(m));
   }
 
   async getTranscriptionModels(options: FetchModelsOptions): Promise<string[]> {
     const fetched = await this.fetchModels(options);
-    return fetched.filter(isWhisperModel);
+    return fetched.filter(isOpenAITranscriptionModel);
   }
 }
 

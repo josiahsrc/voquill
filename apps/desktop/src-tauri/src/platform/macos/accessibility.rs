@@ -1204,7 +1204,7 @@ unsafe fn dump_element_children(
         lines.push(format_element_line(child, depth, i));
         *element_count += 1;
 
-        if depth + 1 <= DUMP_MAX_DEPTH {
+        if depth < DUMP_MAX_DEPTH {
             dump_element_children(child, depth + 1, lines, element_count);
         }
     }
@@ -1908,7 +1908,7 @@ unsafe fn resolve_element(
                             "RESOLVE: depth {depth}: sibling [{i}] score={score} {}",
                             snapshot_element("", candidate)
                         ));
-                        if best.map_or(true, |(s, _)| score > s) {
+                        if best.is_none_or(|(s, _)| score > s) {
                             best = Some((score, i));
                         }
                     }
@@ -2482,9 +2482,7 @@ pub fn capture_app_identity(pid: i32) -> Option<crate::commands::AppIdentity> {
 
         let _: () = msg_send![pool, drain];
 
-        if bundle_id.is_none() {
-            return None;
-        }
+        bundle_id.as_ref()?;
 
         Some(crate::commands::AppIdentity {
             exe_path: None,
