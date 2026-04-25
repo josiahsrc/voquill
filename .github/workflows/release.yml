@@ -1,10 +1,10 @@
 name: Release (auto)
 
 # Orchestrator. On push to `main` releases to dev; push to `prod` releases the
-# consumer-facing channel (CLI, Desktop, Docs, Web); push to `enterprise`
-# releases the enterprise channel (Desktop enterprise, Enterprise Admin,
-# Enterprise Gateway). Detects which folders changed since the previous
-# commit on that branch and invokes the per-component reusable workflows.
+# consumer-facing channel (CLI, Desktop, Docs); push to `enterprise` releases
+# the enterprise channel (Desktop enterprise, Enterprise Admin, Enterprise
+# Gateway). Detects which folders changed since the previous commit on that
+# branch and invokes the per-component reusable workflows.
 #
 # Promotion: fast-forward merge `main` into `prod` or `enterprise` → this
 # workflow runs on that branch and only the components that changed since
@@ -33,7 +33,6 @@ jobs:
       cli: ${{ steps.filter.outputs.cli }}
       desktop: ${{ steps.filter.outputs.desktop }}
       docs: ${{ steps.filter.outputs.docs }}
-      web: ${{ steps.filter.outputs.web }}
       enterprise_admin: ${{ steps.filter.outputs.enterprise_admin }}
       enterprise_gateway: ${{ steps.filter.outputs.enterprise_gateway }}
     steps:
@@ -61,8 +60,6 @@ jobs:
               - 'packages/**'
             docs:
               - 'apps/docs/**'
-            web:
-              - 'apps/web/**'
             enterprise_admin:
               - 'enterprise/admin/**'
               - 'packages/**'
@@ -115,16 +112,6 @@ jobs:
     uses: ./.github/workflows/release-docs.yml
     secrets: inherit
 
-  web:
-    name: Web
-    needs: detect
-    # Web is a single-environment Firebase deploy — only on `prod`.
-    if: |
-      needs.detect.outputs.web == 'true' &&
-      needs.detect.outputs.channel == 'prod'
-    uses: ./.github/workflows/release-web.yml
-    secrets: inherit
-
   enterprise-admin:
     name: Enterprise Admin
     needs: detect
@@ -151,7 +138,7 @@ jobs:
 
   notify:
     name: Notify Google Chat
-    needs: [detect, cli, desktop, desktop-enterprise-dev, docs, web, enterprise-admin, enterprise-gateway]
+    needs: [detect, cli, desktop, desktop-enterprise-dev, docs, enterprise-admin, enterprise-gateway]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -162,14 +149,12 @@ jobs:
           CLI_CHANGED: ${{ needs.detect.outputs.cli }}
           DESKTOP_CHANGED: ${{ needs.detect.outputs.desktop }}
           DOCS_CHANGED: ${{ needs.detect.outputs.docs }}
-          WEB_CHANGED: ${{ needs.detect.outputs.web }}
           ENTERPRISE_ADMIN_CHANGED: ${{ needs.detect.outputs.enterprise_admin }}
           ENTERPRISE_GATEWAY_CHANGED: ${{ needs.detect.outputs.enterprise_gateway }}
           CLI_RESULT: ${{ needs.cli.result }}
           DESKTOP_RESULT: ${{ needs.desktop.result }}
           DESKTOP_ENTERPRISE_DEV_RESULT: ${{ needs['desktop-enterprise-dev'].result }}
           DOCS_RESULT: ${{ needs.docs.result }}
-          WEB_RESULT: ${{ needs.web.result }}
           ENTERPRISE_ADMIN_RESULT: ${{ needs['enterprise-admin'].result }}
           ENTERPRISE_GATEWAY_RESULT: ${{ needs['enterprise-gateway'].result }}
           COMMIT_SHA: ${{ github.sha }}
@@ -185,10 +170,10 @@ jobs:
           fi
 
           case "$CHANNEL" in
-            dev)        cli_elig=true;  desktop_elig=true;  ded_elig=true;  docs_elig=false; web_elig=false; ea_elig=true;  eg_elig=true  ;;
-            prod)       cli_elig=true;  desktop_elig=true;  ded_elig=false; docs_elig=true;  web_elig=true;  ea_elig=false; eg_elig=false ;;
-            enterprise) cli_elig=false; desktop_elig=true;  ded_elig=false; docs_elig=false; web_elig=false; ea_elig=true;  eg_elig=true  ;;
-            *)          cli_elig=false; desktop_elig=false; ded_elig=false; docs_elig=false; web_elig=false; ea_elig=false; eg_elig=false ;;
+            dev)        cli_elig=true;  desktop_elig=true;  ded_elig=true;  docs_elig=false; ea_elig=true;  eg_elig=true  ;;
+            prod)       cli_elig=true;  desktop_elig=true;  ded_elig=false; docs_elig=true;  ea_elig=false; eg_elig=false ;;
+            enterprise) cli_elig=false; desktop_elig=true;  ded_elig=false; docs_elig=false; ea_elig=true;  eg_elig=true  ;;
+            *)          cli_elig=false; desktop_elig=false; ded_elig=false; docs_elig=false; ea_elig=false; eg_elig=false ;;
           esac
 
           lines=""
@@ -216,7 +201,6 @@ jobs:
           add_line desktop                "$DESKTOP_CHANGED"            "$DESKTOP_RESULT"                "$desktop_elig"
           add_line desktop-enterprise-dev "$DESKTOP_CHANGED"            "$DESKTOP_ENTERPRISE_DEV_RESULT" "$ded_elig"
           add_line docs                   "$DOCS_CHANGED"               "$DOCS_RESULT"                   "$docs_elig"
-          add_line web                    "$WEB_CHANGED"                "$WEB_RESULT"                    "$web_elig"
           add_line enterprise-admin       "$ENTERPRISE_ADMIN_CHANGED"   "$ENTERPRISE_ADMIN_RESULT"       "$ea_elig"
           add_line enterprise-gateway     "$ENTERPRISE_GATEWAY_CHANGED" "$ENTERPRISE_GATEWAY_RESULT"     "$eg_elig"
 
