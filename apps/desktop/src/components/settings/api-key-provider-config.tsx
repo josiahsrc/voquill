@@ -151,7 +151,7 @@ function getOpenAICompatibleConfig(
       label: <FormattedMessage defaultMessage="Model" />,
       placeholder: "whisper-1",
       helperText: (
-        <FormattedMessage defaultMessage="Transcription model name (e.g. whisper-1)" />
+        <FormattedMessage defaultMessage="Transcription model name (e.g. whisper-1, gpt-4o-transcribe)" />
       ),
       required: false,
     });

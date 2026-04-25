@@ -28,7 +28,11 @@ export const OPENAI_GENERATE_TEXT_MODELS = [
 export type OpenAIGenerateTextModel =
   (typeof OPENAI_GENERATE_TEXT_MODELS)[number];
 
-export const OPENAI_TRANSCRIPTION_MODELS = ["whisper-1"] as const;
+export const OPENAI_TRANSCRIPTION_MODELS = [
+  "whisper-1",
+  "gpt-4o-transcribe",
+  "gpt-4o-mini-transcribe",
+] as const;
 export type OpenAITranscriptionModel =
   (typeof OPENAI_TRANSCRIPTION_MODELS)[number];
 
@@ -306,7 +310,12 @@ function llmToolsToOpenAI(
 
 function llmToolChoiceToOpenAI(
   choice: LlmToolChoice | undefined,
-): "auto" | "none" | "required" | { type: "function"; function: { name: string } } | undefined {
+):
+  | "auto"
+  | "none"
+  | "required"
+  | { type: "function"; function: { name: string } }
+  | undefined {
   if (!choice) return undefined;
   if (typeof choice === "string") return choice;
   return { type: "function", function: { name: choice.name } };
@@ -378,7 +387,11 @@ export async function* openaiCompatibleStreamChat(
 
     for (const tc of choice.delta?.tool_calls ?? []) {
       const index = tc.index ?? toolCalls.size;
-      const current = toolCalls.get(index) ?? { id: "", name: "", arguments: "" };
+      const current = toolCalls.get(index) ?? {
+        id: "",
+        name: "",
+        arguments: "",
+      };
       if (tc.id) current.id = tc.id;
       if (tc.function?.name) current.name = tc.function.name;
       if (tc.function?.arguments) current.arguments += tc.function.arguments;
@@ -391,7 +404,12 @@ export async function* openaiCompatibleStreamChat(
   }
 
   for (const [, tc] of [...toolCalls.entries()].sort(([a], [b]) => a - b)) {
-    yield { type: "tool-call", id: tc.id, name: tc.name, arguments: tc.arguments };
+    yield {
+      type: "tool-call",
+      id: tc.id,
+      name: tc.name,
+      arguments: tc.arguments,
+    };
   }
 
   yield {
