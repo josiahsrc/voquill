@@ -58,6 +58,8 @@ type AXError = i32;
 const AX_ERROR_SUCCESS: AXError = 0;
 
 // AXValue type constants
+const AX_VALUE_TYPE_CG_POINT: i32 = 1;
+const AX_VALUE_TYPE_CG_SIZE: i32 = 2;
 const AX_VALUE_TYPE_CF_RANGE: i32 = 4;
 
 #[repr(C)]
@@ -86,10 +88,81 @@ extern "C" {
         attribute: CFStringRef,
         settable: *mut bool,
     ) -> AXError;
-    fn AXValueGetValue(value: CFTypeRef, value_type: i32, out: *mut CFRange) -> bool;
-    fn AXValueCreate(value_type: i32, value: *const CFRange) -> CFTypeRef;
+    fn AXValueGetValue(value: CFTypeRef, value_type: i32, out: *mut c_void) -> bool;
+    fn AXValueCreate(value_type: i32, value: *const c_void) -> CFTypeRef;
     fn AXUIElementGetPid(element: AXUIElementRef, pid: *mut i32) -> AXError;
     fn AXUIElementCreateApplication(pid: i32) -> AXUIElementRef;
+    fn AXUIElementCopyElementAtPosition(
+        application: AXUIElementRef,
+        x: f32,
+        y: f32,
+        element: *mut CFTypeRef,
+    ) -> AXError;
+    fn AXUIElementPerformAction(element: AXUIElementRef, action: CFStringRef) -> AXError;
+}
+
+#[link(name = "CoreGraphics", kind = "framework")]
+extern "C" {
+    fn CGEventCreate(source: CFTypeRef) -> CFTypeRef;
+    fn CGEventGetLocation(event: CFTypeRef) -> core_graphics::geometry::CGPoint;
+}
+
+/// Append a trace line to /Users/josiah/Downloads/voquill-binding-debug.log.
+/// Used to capture a full picture of what bind/resolve/paste does on a real
+/// run, since stdout logging gets lost in Tauri's combined output.
+fn debug_log(msg: &str) {
+    use std::io::Write;
+    let path = "/Users/josiah/Downloads/voquill-binding-debug.log";
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+    {
+        let ts = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis())
+            .unwrap_or(0);
+        let _ = writeln!(f, "[{ts}] {msg}");
+    }
+}
+
+fn fp_summary(fp: &crate::commands::ElementFingerprint) -> String {
+    format!(
+        "{{role={:?} subrole={:?} title={:?} desc={:?} id={:?} child_index={}}}",
+        fp.ax_role, fp.ax_subrole, fp.ax_title, fp.ax_description, fp.ax_identifier, fp.child_index,
+    )
+}
+
+fn chain_summary(chain: &[crate::commands::ElementFingerprint]) -> String {
+    if chain.is_empty() {
+        return "<empty>".to_string();
+    }
+    chain
+        .iter()
+        .enumerate()
+        .map(|(i, fp)| format!("[{i}] {}", fp_summary(fp)))
+        .collect::<Vec<_>>()
+        .join(" / ")
+}
+
+unsafe fn snapshot_element(label: &str, element: CFTypeRef) -> String {
+    let role = get_string_attribute(element, CFString::new("AXRole").as_concrete_TypeRef());
+    let subrole = get_string_attribute(element, CFString::new("AXSubrole").as_concrete_TypeRef());
+    let title = get_string_attribute(element, CFString::new("AXTitle").as_concrete_TypeRef());
+    let desc = get_string_attribute(element, CFString::new("AXDescription").as_concrete_TypeRef());
+    let value = get_string_attribute(element, CFString::new("AXValue").as_concrete_TypeRef());
+    let id = get_string_attribute(element, CFString::new("AXIdentifier").as_concrete_TypeRef());
+    let value_short = value.as_ref().map(|v| {
+        let truncated: String = v.chars().take(60).collect();
+        if truncated.len() < v.len() {
+            format!("{truncated}…")
+        } else {
+            truncated
+        }
+    });
+    format!(
+        "{label}{{role={role:?} subrole={subrole:?} title={title:?} desc={desc:?} id={id:?} value={value_short:?}}}",
+    )
 }
 
 /// Get text field information (cursor position, selection length, text content) without screen context.
@@ -238,7 +311,7 @@ unsafe fn get_range_attribute(
         length: 0,
     };
 
-    if AXValueGetValue(value, AX_VALUE_TYPE_CF_RANGE, &mut range) {
+    if AXValueGetValue(value, AX_VALUE_TYPE_CF_RANGE, &mut range as *mut _ as *mut c_void) {
         CFRelease(value);
 
         let cursor = if range.location >= 0 {
@@ -978,14 +1051,337 @@ pub fn get_selected_text() -> Option<String> {
     selected.filter(|s| !s.is_empty())
 }
 
+const DUMP_MAX_DEPTH: usize = 30;
+const DUMP_MAX_ELEMENTS: usize = 5000;
+const DUMP_MAX_VALUE_CHARS: usize = 80;
+
 pub fn gather_accessibility_dump() -> crate::commands::AccessibilityDumpResult {
-    log::warn!("gather_accessibility_dump not yet implemented for macOS (AX API)");
+    catch_unwind(AssertUnwindSafe(|| unsafe {
+        gather_accessibility_dump_impl()
+    }))
+    .unwrap_or_else(|_| {
+        log::error!("gather_accessibility_dump panicked");
+        empty_dump_result()
+    })
+}
+
+fn empty_dump_result() -> crate::commands::AccessibilityDumpResult {
     crate::commands::AccessibilityDumpResult {
         dump: None,
         window_title: None,
         process_name: None,
         element_count: 0,
     }
+}
+
+unsafe fn gather_accessibility_dump_impl() -> crate::commands::AccessibilityDumpResult {
+    let system_wide = AXUIElementCreateSystemWide();
+    if system_wide.is_null() {
+        return empty_dump_result();
+    }
+
+    let ax_focused_app = CFString::new("AXFocusedApplication");
+    let mut focused_app: CFTypeRef = ptr::null();
+    let app_result = AXUIElementCopyAttributeValue(
+        system_wide,
+        ax_focused_app.as_concrete_TypeRef(),
+        &mut focused_app,
+    );
+    CFRelease(system_wide);
+
+    if app_result != AX_ERROR_SUCCESS || focused_app.is_null() {
+        log::warn!("gather_accessibility_dump: no focused application");
+        return empty_dump_result();
+    }
+
+    let mut pid: i32 = 0;
+    let pid_ok =
+        AXUIElementGetPid(focused_app as AXUIElementRef, &mut pid) == AX_ERROR_SUCCESS;
+    let process_name = if pid_ok && pid > 0 {
+        process_name_for_pid(pid)
+    } else {
+        None
+    };
+
+    let app_title =
+        get_string_attribute(focused_app, CFString::new("AXTitle").as_concrete_TypeRef());
+
+    let ax_focused_window = CFString::new("AXFocusedWindow");
+    let mut focused_window: CFTypeRef = ptr::null();
+    let win_result = AXUIElementCopyAttributeValue(
+        focused_app,
+        ax_focused_window.as_concrete_TypeRef(),
+        &mut focused_window,
+    );
+
+    let window_title = if win_result == AX_ERROR_SUCCESS && !focused_window.is_null() {
+        get_string_attribute(focused_window, CFString::new("AXTitle").as_concrete_TypeRef())
+    } else {
+        None
+    };
+
+    let mut lines: Vec<String> = Vec::new();
+    let mut element_count: usize = 0;
+
+    let mut header = format!("[App] {:?}", app_title.as_deref().unwrap_or(""));
+    if pid_ok && pid > 0 {
+        header.push_str(&format!(" (pid={pid})"));
+    }
+    if let Some(ref name) = process_name {
+        header.push_str(&format!(" process={name:?}"));
+    }
+    lines.push(header);
+    element_count += 1;
+
+    if win_result == AX_ERROR_SUCCESS && !focused_window.is_null() {
+        lines.push(format!(
+            "  [Window] {:?}",
+            window_title.as_deref().unwrap_or(""),
+        ));
+        element_count += 1;
+        dump_element_children(focused_window, 2, &mut lines, &mut element_count);
+        CFRelease(focused_window);
+    } else {
+        log::info!(
+            "gather_accessibility_dump: no AXFocusedWindow on app, dumping app element instead"
+        );
+        dump_element_children(focused_app, 1, &mut lines, &mut element_count);
+    }
+
+    CFRelease(focused_app);
+
+    let dump = if lines.is_empty() {
+        None
+    } else {
+        Some(lines.join("\n"))
+    };
+
+    crate::commands::AccessibilityDumpResult {
+        dump,
+        window_title,
+        process_name,
+        element_count,
+    }
+}
+
+unsafe fn dump_element_children(
+    parent: CFTypeRef,
+    depth: usize,
+    lines: &mut Vec<String>,
+    element_count: &mut usize,
+) {
+    if depth > DUMP_MAX_DEPTH || *element_count >= DUMP_MAX_ELEMENTS {
+        return;
+    }
+
+    let ax_children = CFString::new("AXChildren");
+    let mut children_ref: CFTypeRef = ptr::null();
+    let result = AXUIElementCopyAttributeValue(
+        parent,
+        ax_children.as_concrete_TypeRef(),
+        &mut children_ref,
+    );
+    if result != AX_ERROR_SUCCESS || children_ref.is_null() {
+        return;
+    }
+
+    let arr = children_ref as core_foundation::array::CFArrayRef;
+    let count = CFArrayGetCount(arr) as usize;
+
+    for i in 0..count {
+        if *element_count >= DUMP_MAX_ELEMENTS {
+            lines.push(format!(
+                "{}... (truncated at {} elements)",
+                "  ".repeat(depth),
+                DUMP_MAX_ELEMENTS,
+            ));
+            break;
+        }
+        let child = CFArrayGetValueAtIndex(arr, i as isize);
+        if child.is_null() {
+            continue;
+        }
+        lines.push(format_element_line(child, depth, i));
+        *element_count += 1;
+
+        if depth + 1 <= DUMP_MAX_DEPTH {
+            dump_element_children(child, depth + 1, lines, element_count);
+        }
+    }
+
+    CFRelease(children_ref);
+}
+
+unsafe fn format_element_line(element: CFTypeRef, depth: usize, child_index: usize) -> String {
+    let indent = "  ".repeat(depth);
+    let role = get_string_attribute(element, CFString::new("AXRole").as_concrete_TypeRef())
+        .unwrap_or_else(|| "<no role>".to_string());
+    let mut s = format!("{indent}[{child_index}] {role}");
+
+    if let Some(sr) = get_string_attribute(element, CFString::new("AXSubrole").as_concrete_TypeRef())
+    {
+        if !sr.is_empty() {
+            s.push_str(&format!(" ({sr})"));
+        }
+    }
+    if let Some(t) =
+        get_string_attribute(element, CFString::new("AXTitle").as_concrete_TypeRef())
+            .filter(|t| !t.is_empty())
+    {
+        s.push_str(&format!(" title={:?}", truncate_for_dump(&t)));
+    }
+    if let Some(d) =
+        get_string_attribute(element, CFString::new("AXDescription").as_concrete_TypeRef())
+            .filter(|d| !d.is_empty())
+    {
+        s.push_str(&format!(" desc={:?}", truncate_for_dump(&d)));
+    }
+    if let Some(v) =
+        get_string_attribute(element, CFString::new("AXValue").as_concrete_TypeRef())
+            .filter(|v| !v.is_empty())
+    {
+        s.push_str(&format!(" value={:?}", truncate_for_dump(&v)));
+    }
+    if let Some(id) =
+        get_string_attribute(element, CFString::new("AXIdentifier").as_concrete_TypeRef())
+            .filter(|i| !i.is_empty())
+    {
+        s.push_str(&format!(" id={:?}", truncate_for_dump(&id)));
+    }
+    s
+}
+
+fn truncate_for_dump(s: &str) -> String {
+    let cleaned: String = s.replace('\n', "\\n").replace('\r', "\\r");
+    let truncated: String = cleaned.chars().take(DUMP_MAX_VALUE_CHARS).collect();
+    if truncated.len() < cleaned.len() {
+        format!("{truncated}…")
+    } else {
+        truncated
+    }
+}
+
+fn process_name_for_pid(pid: i32) -> Option<String> {
+    use cocoa::base::{id, nil};
+    use objc::{class, msg_send, sel, sel_impl};
+    use std::ffi::CStr;
+    use std::os::raw::c_char;
+
+    catch_unwind(AssertUnwindSafe(|| unsafe {
+        let pool: id = msg_send![class!(NSAutoreleasePool), new];
+        let app: id = msg_send![
+            class!(NSRunningApplication),
+            runningApplicationWithProcessIdentifier: pid
+        ];
+        if app == nil {
+            let _: () = msg_send![pool, drain];
+            return None;
+        }
+        let name_ns: id = msg_send![app, localizedName];
+        let name = if name_ns == nil {
+            None
+        } else {
+            let utf8: *const c_char = msg_send![name_ns, UTF8String];
+            if utf8.is_null() {
+                None
+            } else {
+                Some(CStr::from_ptr(utf8).to_string_lossy().into_owned())
+            }
+        };
+        let _: () = msg_send![pool, drain];
+        name
+    }))
+    .ok()
+    .flatten()
+}
+
+/// Top-down DFS from `parent` looking for `target`. Returns the index path
+/// (relative to `parent`) and the fingerprint chain. Used at bind time so
+/// the captured path is built via AXChildren walks — same direction the
+/// resolver walks at sync time. Avoids relying on AXParent, which Java's
+/// CAccessible bridge reports inconsistently with AXChildren.
+unsafe fn find_path_to_element(
+    parent: CFTypeRef,
+    target: CFTypeRef,
+    max_depth: usize,
+) -> Option<(Vec<usize>, Vec<crate::commands::ElementFingerprint>)> {
+    if max_depth == 0 {
+        return None;
+    }
+    let ax_children = CFString::new("AXChildren");
+    let mut children_ref: CFTypeRef = ptr::null();
+    let r = AXUIElementCopyAttributeValue(
+        parent,
+        ax_children.as_concrete_TypeRef(),
+        &mut children_ref,
+    );
+    if r != AX_ERROR_SUCCESS || children_ref.is_null() {
+        return None;
+    }
+    let arr = children_ref as core_foundation::array::CFArrayRef;
+    let count = CFArrayGetCount(arr) as usize;
+
+    for i in 0..count {
+        let child = CFArrayGetValueAtIndex(arr, i as isize);
+        if child.is_null() {
+            continue;
+        }
+        let is_target =
+            child == target || core_foundation::base::CFEqual(child, target) != 0;
+
+        if is_target {
+            let fp = capture_macos_fingerprint(child, i);
+            CFRelease(children_ref);
+            return Some((vec![i], vec![fp]));
+        }
+
+        if let Some((mut sub_path, mut sub_chain)) =
+            find_path_to_element(child, target, max_depth - 1)
+        {
+            let fp = capture_macos_fingerprint(child, i);
+            sub_path.insert(0, i);
+            sub_chain.insert(0, fp);
+            CFRelease(children_ref);
+            return Some((sub_path, sub_chain));
+        }
+    }
+    CFRelease(children_ref);
+    None
+}
+
+/// True when an AX role names a text-input widget the user might bind. We
+/// check this before trusting AXFocusedUIElement, because Java Swing's
+/// CAccessible reports a structural container as the focused element while
+/// the actual editable widget sits one level below.
+fn is_text_role(role: Option<&str>) -> bool {
+    matches!(
+        role,
+        Some("AXTextField" | "AXTextArea" | "AXSecureTextField" | "AXComboBox")
+    )
+}
+
+/// Look up the AX element directly under the mouse cursor in screen-space
+/// coordinates. Used as a fallback when the focused element isn't trustworthy
+/// (Java apps, mostly). Caller owns the returned reference.
+unsafe fn element_under_cursor(system_wide: CFTypeRef) -> Option<CFTypeRef> {
+    let event = CGEventCreate(ptr::null());
+    if event.is_null() {
+        return None;
+    }
+    let cursor = CGEventGetLocation(event);
+    CFRelease(event);
+
+    let mut at_cursor: CFTypeRef = ptr::null();
+    let r = AXUIElementCopyElementAtPosition(
+        system_wide,
+        cursor.x as f32,
+        cursor.y as f32,
+        &mut at_cursor,
+    );
+    if r != AX_ERROR_SUCCESS || at_cursor.is_null() {
+        return None;
+    }
+    Some(at_cursor)
 }
 
 pub fn get_focused_field_info() -> Option<crate::commands::AccessibilityFieldInfo> {
@@ -999,6 +1395,8 @@ pub fn get_focused_field_info() -> Option<crate::commands::AccessibilityFieldInf
 }
 
 unsafe fn get_focused_field_info_impl() -> Option<crate::commands::AccessibilityFieldInfo> {
+    debug_log("\n=== BIND: get_focused_field_info ===");
+
     let ax_focused_ui_element = CFString::new("AXFocusedUIElement");
     let ax_role = CFString::new("AXRole");
     let ax_title = CFString::new("AXTitle");
@@ -1006,10 +1404,10 @@ unsafe fn get_focused_field_info_impl() -> Option<crate::commands::Accessibility
     let ax_value = CFString::new("AXValue");
     let ax_placeholder = CFString::new("AXPlaceholderValue");
     let ax_parent = CFString::new("AXParent");
-    let ax_children = CFString::new("AXChildren");
 
     let system_wide = AXUIElementCreateSystemWide();
     if system_wide.is_null() {
+        debug_log("BIND: AXUIElementCreateSystemWide returned null");
         return None;
     }
 
@@ -1019,11 +1417,63 @@ unsafe fn get_focused_field_info_impl() -> Option<crate::commands::Accessibility
         ax_focused_ui_element.as_concrete_TypeRef(),
         &mut focused_element,
     );
-    CFRelease(system_wide);
 
     if result != AX_ERROR_SUCCESS || focused_element.is_null() {
+        debug_log(&format!(
+            "BIND: AXFocusedUIElement read failed (result={result}, null={})",
+            focused_element.is_null()
+        ));
+        CFRelease(system_wide);
         return None;
     }
+
+    debug_log(&snapshot_element("BIND: AXFocusedUIElement = ", focused_element));
+
+    // Java's CAccessible bridge often returns a structural container as the
+    // "focused" element instead of the actual JTextPane the user clicked.
+    // When the focused element has no real role (or a non-text container
+    // role), prefer whatever element is under the mouse cursor — the user
+    // just clicked there, so it's the field they meant to bind.
+    let focused_role_check =
+        get_string_attribute(focused_element, ax_role.as_concrete_TypeRef());
+    debug_log(&format!(
+        "BIND: focused role text-y? {} (role={:?})",
+        is_text_role(focused_role_check.as_deref()),
+        focused_role_check
+    ));
+    if !is_text_role(focused_role_check.as_deref()) {
+        let event = CGEventCreate(ptr::null());
+        if !event.is_null() {
+            let cursor = CGEventGetLocation(event);
+            CFRelease(event);
+            debug_log(&format!(
+                "BIND: cursor at ({:.1}, {:.1})",
+                cursor.x, cursor.y
+            ));
+        }
+        if let Some(at_cursor) = element_under_cursor(system_wide) {
+            debug_log(&snapshot_element("BIND: cursor element = ", at_cursor));
+            let cursor_role =
+                get_string_attribute(at_cursor, ax_role.as_concrete_TypeRef());
+            if is_text_role(cursor_role.as_deref()) {
+                debug_log(&format!(
+                    "BIND: switching to cursor element (role={cursor_role:?})"
+                ));
+                CFRelease(focused_element);
+                focused_element = at_cursor;
+            } else {
+                debug_log(&format!(
+                    "BIND: cursor element role={cursor_role:?} also not text-y; keeping focused"
+                ));
+                CFRelease(at_cursor);
+            }
+        } else {
+            debug_log("BIND: no element found under cursor");
+        }
+    }
+    CFRelease(system_wide);
+
+    debug_log(&snapshot_element("BIND: final target = ", focused_element));
 
     let role = get_string_attribute(focused_element, ax_role.as_concrete_TypeRef());
     let title = get_string_attribute(focused_element, ax_title.as_concrete_TypeRef());
@@ -1044,95 +1494,97 @@ unsafe fn get_focused_field_info_impl() -> Option<crate::commands::Accessibility
         app_pid = Some(pid);
     }
 
-    let mut element_index_path: Vec<usize> = Vec::new();
-    let mut fingerprint_chain: Vec<crate::commands::ElementFingerprint> = Vec::new();
     let mut app_name: Option<String> = None;
     let mut window_title: Option<String> = None;
 
-    let mut current = focused_element;
-    let mut depth = 0;
-
-    while depth < MAX_LEVELS_UP {
-        let mut parent: CFTypeRef = ptr::null();
-        let parent_result =
-            AXUIElementCopyAttributeValue(current, ax_parent.as_concrete_TypeRef(), &mut parent);
-
-        if parent_result != AX_ERROR_SUCCESS || parent.is_null() {
-            break;
-        }
-
-        let mut children_ref: CFTypeRef = ptr::null();
-        let children_result = AXUIElementCopyAttributeValue(
-            parent,
-            ax_children.as_concrete_TypeRef(),
-            &mut children_ref,
-        );
-        if children_result == AX_ERROR_SUCCESS && !children_ref.is_null() {
-            let arr = children_ref as core_foundation::array::CFArrayRef;
-            let count = CFArrayGetCount(arr);
-            let mut chosen_index: Option<usize> = None;
-            for i in 0..count {
-                let child = CFArrayGetValueAtIndex(arr, i);
-                let mut child_pid: i32 = 0;
-                let child_pid_ok =
-                    AXUIElementGetPid(child as AXUIElementRef, &mut child_pid) == AX_ERROR_SUCCESS;
-                let mut current_pid: i32 = 0;
-                let current_pid_ok = AXUIElementGetPid(current as AXUIElementRef, &mut current_pid)
-                    == AX_ERROR_SUCCESS;
-                if child_pid_ok
-                    && current_pid_ok
-                    && child_pid == current_pid
-                    && core_foundation::base::CFEqual(child, current) != 0
-                {
-                    chosen_index = Some(i as usize);
-                    break;
-                }
-            }
-            if chosen_index.is_none() {
-                for i in 0..count {
-                    let child = CFArrayGetValueAtIndex(arr, i);
-                    if child == current {
-                        chosen_index = Some(i as usize);
-                        break;
-                    }
-                }
-            }
-            if let Some(idx) = chosen_index {
-                element_index_path.push(idx);
-                fingerprint_chain.push(capture_macos_fingerprint(current, idx));
-            }
-            CFRelease(children_ref);
-        }
-
-        let parent_role = get_string_attribute(parent, ax_role.as_concrete_TypeRef());
-        if let Some(ref r) = parent_role {
-            if r == "AXWindow" {
-                window_title = get_string_attribute(parent, ax_title.as_concrete_TypeRef());
-            }
-            if r == "AXApplication" {
-                app_name = get_string_attribute(parent, ax_title.as_concrete_TypeRef());
-                if current != focused_element {
-                    CFRelease(current);
-                }
-                current = focused_element;
-                CFRelease(parent);
+    // Walk up via AXParent ONLY to capture window_title and app_name. We do
+    // NOT use the indices from this walk: Java's CAccessible has broken
+    // parent↔child links — AXParent of an inner element can skip nodes that
+    // AXChildren legitimately includes, so the upward indices don't agree
+    // with downward ones. Path construction happens via top-down DFS below.
+    {
+        let mut current = focused_element;
+        let mut levels = 0;
+        while levels < MAX_LEVELS_UP {
+            let mut parent: CFTypeRef = ptr::null();
+            let r = AXUIElementCopyAttributeValue(
+                current,
+                ax_parent.as_concrete_TypeRef(),
+                &mut parent,
+            );
+            if r != AX_ERROR_SUCCESS || parent.is_null() {
                 break;
             }
+            let parent_role = get_string_attribute(parent, ax_role.as_concrete_TypeRef());
+            debug_log(&format!(
+                "BIND: parent walk depth {levels}: role={parent_role:?}"
+            ));
+            let mut should_break = false;
+            match parent_role.as_deref() {
+                Some("AXWindow") if window_title.is_none() => {
+                    window_title = get_string_attribute(parent, ax_title.as_concrete_TypeRef());
+                }
+                Some("AXApplication") => {
+                    app_name = get_string_attribute(parent, ax_title.as_concrete_TypeRef());
+                    should_break = true;
+                }
+                _ => {}
+            }
+            // Release `current` before reassigning. Skip release for the
+            // sentinel `focused_element` reference — its lifetime is
+            // managed at the end of the function.
+            if current != focused_element {
+                CFRelease(current);
+            }
+            if should_break {
+                CFRelease(parent);
+                current = focused_element;
+                break;
+            }
+            current = parent;
+            levels += 1;
         }
-
         if current != focused_element {
             CFRelease(current);
         }
-        current = parent;
-        depth += 1;
     }
 
-    if current != focused_element {
-        CFRelease(current);
+    // Build the index path by walking DOWN from the AXApplication root.
+    // AXChildren is the source of truth at sync time too, so the path we
+    // record matches the path the resolver walks.
+    let mut element_index_path: Vec<usize> = Vec::new();
+    let mut fingerprint_chain: Vec<crate::commands::ElementFingerprint> = Vec::new();
+    if let Some(p) = app_pid {
+        let app_root = AXUIElementCreateApplication(p);
+        if !app_root.is_null() {
+            debug_log("BIND: top-down DFS from AXApplication root...");
+            match find_path_to_element(app_root, focused_element, MAX_LEVELS_UP) {
+                Some((path, chain)) => {
+                    debug_log(&format!(
+                        "BIND: DFS found path={path:?} after visiting {} levels",
+                        chain.len()
+                    ));
+                    element_index_path = path;
+                    fingerprint_chain = chain;
+                }
+                None => {
+                    debug_log(
+                        "BIND: DFS could NOT find focused element under AXApplication root",
+                    );
+                }
+            }
+            CFRelease(app_root);
+        } else {
+            debug_log("BIND: AXUIElementCreateApplication returned null");
+        }
+    } else {
+        debug_log("BIND: no app_pid; cannot build path via DFS");
     }
 
-    element_index_path.reverse();
-    fingerprint_chain.reverse();
+    debug_log(&format!(
+        "BIND: captured pid={app_pid:?} path={element_index_path:?} chain={}",
+        chain_summary(&fingerprint_chain)
+    ));
 
     CFRelease(focused_element);
 
@@ -1303,7 +1755,7 @@ unsafe fn focus_accessibility_field_impl(
     CFRelease(app_element);
 
     let element = resolve_element(app_pid, element_index_path, fingerprint_chain)
-        .ok_or_else(|| "Could not resolve element by path".to_string())?;
+        .map_err(|err| format!("Could not resolve element by path: {err}"))?;
 
     let cf_true = core_foundation::boolean::CFBoolean::true_value();
     let focus_result = AXUIElementSetAttributeValue(
@@ -1334,7 +1786,7 @@ unsafe fn focus_accessibility_field_impl(
             location: position as isize,
             length: 0,
         };
-        let range_value = AXValueCreate(AX_VALUE_TYPE_CF_RANGE, &range);
+        let range_value = AXValueCreate(AX_VALUE_TYPE_CF_RANGE, &range as *const _ as *const c_void);
         if !range_value.is_null() {
             AXUIElementSetAttributeValue(
                 element,
@@ -1377,10 +1829,16 @@ unsafe fn resolve_element(
     app_pid: i32,
     index_path: &[usize],
     fingerprint_chain: Option<&[crate::commands::ElementFingerprint]>,
-) -> Option<CFTypeRef> {
+) -> Result<CFTypeRef, String> {
+    debug_log(&format!(
+        "RESOLVE: pid={app_pid} path={index_path:?} chain={}",
+        chain_summary(fingerprint_chain.unwrap_or(&[]))
+    ));
+
     let app_element = AXUIElementCreateApplication(app_pid);
     if app_element.is_null() {
-        return None;
+        debug_log("RESOLVE: AXUIElementCreateApplication returned null");
+        return Err("could not create application AX element".to_string());
     }
 
     let ax_children = CFString::new("AXChildren");
@@ -1400,31 +1858,42 @@ unsafe fn resolve_element(
                 CFRelease(current);
             }
             CFRelease(app_element);
-            return None;
+            return Err(format!(
+                "depth {depth}: AXChildren read failed (AX error {result})"
+            ));
         }
 
         let arr = children_ref as core_foundation::array::CFArrayRef;
         let count = CFArrayGetCount(arr) as usize;
+        debug_log(&format!(
+            "RESOLVE: depth {depth}: {count} children, recorded_index={recorded_index}"
+        ));
 
         let mut chosen: Option<usize> = None;
+        let mut chosen_score: u32 = 0;
 
         // Fast path: try the recorded index first, accept it if there's
         // either no fingerprint to check or the fingerprint scores > 0.
         if recorded_index < count {
             let candidate = CFArrayGetValueAtIndex(arr, recorded_index as isize);
             if !candidate.is_null() {
-                let accept = match fp {
-                    Some(fp) => fingerprint_score(candidate, fp, recorded_index) > 0,
-                    None => true,
+                let score = match fp {
+                    Some(fp) => fingerprint_score(candidate, fp, recorded_index),
+                    None => 1,
                 };
-                if accept {
+                debug_log(&format!(
+                    "RESOLVE: depth {depth}: fast path candidate at {recorded_index} score={score} {}",
+                    snapshot_element("", candidate)
+                ));
+                if score > 0 {
                     chosen = Some(recorded_index);
+                    chosen_score = score;
                 }
             }
         }
 
-        // Fallback: scan siblings for the best fingerprint match. Only
-        // runs when we have a fingerprint to score against.
+        // Sibling scan: pick the highest-scoring sibling when the recorded
+        // index didn't match. Only runs when we have a fingerprint.
         if chosen.is_none() {
             if let Some(fp) = fp {
                 let mut best: Option<(u32, usize)> = None;
@@ -1434,23 +1903,63 @@ unsafe fn resolve_element(
                         continue;
                     }
                     let score = fingerprint_score(candidate, fp, i);
-                    if score > 0 && best.map_or(true, |(s, _)| score > s) {
-                        best = Some((score, i));
+                    if score > 0 {
+                        debug_log(&format!(
+                            "RESOLVE: depth {depth}: sibling [{i}] score={score} {}",
+                            snapshot_element("", candidate)
+                        ));
+                        if best.map_or(true, |(s, _)| score > s) {
+                            best = Some((score, i));
+                        }
                     }
                 }
-                chosen = best.map(|(_, i)| i);
+                if let Some((s, i)) = best {
+                    debug_log(&format!(
+                        "RESOLVE: depth {depth}: best sibling = [{i}] score={s}"
+                    ));
+                    chosen = Some(i);
+                    chosen_score = s;
+                } else if recorded_index < count {
+                    // Best-effort fallback: nothing matched the fingerprint
+                    // but the recorded index is at least within range. The
+                    // tree may have shifted attributes; warn loudly but
+                    // proceed so the user sees their binding work.
+                    debug_log(&format!(
+                        "RESOLVE: depth {depth}: NO sibling matched fingerprint (expected role={:?}); falling back to recorded index {recorded_index}",
+                        fp.ax_role
+                    ));
+                    log::warn!(
+                        "[resolve_element] depth {depth}: no fingerprint match \
+(expected role={:?} title={:?} description={:?} identifier={:?}); \
+falling back to recorded index {recorded_index} of {count}",
+                        fp.ax_role, fp.ax_title, fp.ax_description, fp.ax_identifier,
+                    );
+                    chosen = Some(recorded_index);
+                }
             } else if recorded_index < count {
                 chosen = Some(recorded_index);
             }
         }
+        debug_log(&format!(
+            "RESOLVE: depth {depth}: chosen={chosen:?} score={chosen_score}"
+        ));
 
         let Some(idx) = chosen else {
+            let summary = describe_children(arr, count);
             CFRelease(children_ref);
             if current != app_element {
                 CFRelease(current);
             }
             CFRelease(app_element);
-            return None;
+            return Err(format!(
+                "depth {depth}: no candidate. Recorded index {recorded_index}, \
+sibling count {count}, expected fingerprint {{role={:?}, title={:?}, \
+description={:?}, identifier={:?}}}. Available children: {summary}",
+                fp.and_then(|f| f.ax_role.as_deref()),
+                fp.and_then(|f| f.ax_title.as_deref()),
+                fp.and_then(|f| f.ax_description.as_deref()),
+                fp.and_then(|f| f.ax_identifier.as_deref()),
+            ));
         };
 
         let child = CFArrayGetValueAtIndex(arr, idx as isize);
@@ -1460,7 +1969,7 @@ unsafe fn resolve_element(
                 CFRelease(current);
             }
             CFRelease(app_element);
-            return None;
+            return Err(format!("depth {depth}: child at index {idx} is null"));
         }
 
         core_foundation::base::CFRetain(child);
@@ -1474,11 +1983,54 @@ unsafe fn resolve_element(
 
     if current == app_element {
         CFRelease(app_element);
-        return None;
+        debug_log("RESOLVE: empty index path");
+        return Err("empty index path".to_string());
     }
 
+    debug_log(&snapshot_element("RESOLVE: success final element = ", current));
     CFRelease(app_element);
-    Some(current)
+    Ok(current)
+}
+
+/// Build a human-readable summary of the children at a given level. Used
+/// only for error messages, so the per-element get_string_attribute calls
+/// are acceptable here even though they aren't cheap.
+unsafe fn describe_children(
+    arr: core_foundation::array::CFArrayRef,
+    count: usize,
+) -> String {
+    if count == 0 {
+        return "<empty>".to_string();
+    }
+    let mut parts: Vec<String> = Vec::with_capacity(count);
+    for i in 0..count {
+        let child = CFArrayGetValueAtIndex(arr, i as isize);
+        if child.is_null() {
+            parts.push(format!("[{i}]=<null>"));
+            continue;
+        }
+        let role = get_string_attribute(child, CFString::new("AXRole").as_concrete_TypeRef());
+        let title = get_string_attribute(child, CFString::new("AXTitle").as_concrete_TypeRef());
+        let desc = get_string_attribute(child, CFString::new("AXDescription").as_concrete_TypeRef());
+        let id = get_string_attribute(child, CFString::new("AXIdentifier").as_concrete_TypeRef());
+        let mut s = format!("[{i}] role={:?}", role.as_deref().unwrap_or(""));
+        if let Some(t) = &title {
+            s.push_str(&format!(" title={t:?}"));
+        }
+        if let Some(d) = &desc {
+            s.push_str(&format!(" desc={d:?}"));
+        }
+        if let Some(id) = &id {
+            s.push_str(&format!(" id={id:?}"));
+        }
+        parts.push(s);
+    }
+    let joined = parts.join(", ");
+    if joined.len() > 800 {
+        format!("{}... ({count} children total)", &joined[..800])
+    } else {
+        joined
+    }
 }
 
 unsafe fn write_accessibility_fields_impl(
@@ -1490,22 +2042,33 @@ unsafe fn write_accessibility_fields_impl(
     let mut errors: Vec<String> = Vec::new();
 
     for entry in &entries {
-        let element = resolve_element(
+        debug_log(&format!(
+            "\n=== WRITE entry pid={} path={:?} value={:?} ===",
+            entry.app_pid,
+            entry.element_index_path,
+            entry.value.chars().take(60).collect::<String>(),
+        ));
+
+        let element = match resolve_element(
             entry.app_pid,
             &entry.element_index_path,
             entry.fingerprint_chain.as_deref(),
-        );
-        let Some(element) = element else {
-            failed += 1;
-            errors.push(format!(
-                "Could not resolve element for PID {} path {:?}",
-                entry.app_pid, entry.element_index_path
-            ));
-            continue;
+        ) {
+            Ok(e) => e,
+            Err(err) => {
+                debug_log(&format!("WRITE: resolve failed: {err}"));
+                failed += 1;
+                errors.push(format!(
+                    "Could not resolve element for PID {} path {:?}: {err}",
+                    entry.app_pid, entry.element_index_path
+                ));
+                continue;
+            }
         };
 
         let mut settable = false;
         AXUIElementIsAttributeSettable(element, ax_value.as_concrete_TypeRef(), &mut settable);
+        debug_log(&format!("WRITE: AXValue settable={settable}"));
 
         let mut wrote = false;
         let mut ax_set_error: Option<String> = None;
@@ -1517,6 +2080,7 @@ unsafe fn write_accessibility_fields_impl(
                 ax_value.as_concrete_TypeRef(),
                 cf_text.as_CFTypeRef(),
             );
+            debug_log(&format!("WRITE: AXValue set result={set_result}"));
             if set_result == AX_ERROR_SUCCESS {
                 wrote = true;
             } else {
@@ -1527,6 +2091,16 @@ unsafe fn write_accessibility_fields_impl(
             }
         }
 
+        // AXValue isn't settable on most Java Swing widgets. Try replacing
+        // via AXSelectedText next — same outcome (full text replaced) but
+        // routed through the selection API, which Java's CAccessible often
+        // implements even when the value setter isn't wired. No cursor
+        // movement, no keystrokes.
+        if !wrote && try_replace_via_selected_text(element, &entry.value) {
+            debug_log("WRITE: replaced via AXSelectedText");
+            wrote = true;
+        }
+
         CFRelease(element);
 
         // Java Swing (and a handful of other toolkits) report AXValue as
@@ -1534,14 +2108,19 @@ unsafe fn write_accessibility_fields_impl(
         // focus + Cmd+A + Cmd+V clipboard paste — same approach Windows
         // uses for JAB ClipboardPaste.
         if !wrote {
+            debug_log("WRITE: falling back to clipboard paste");
             match clipboard_paste_into_element(
                 entry.app_pid,
                 &entry.element_index_path,
                 entry.fingerprint_chain.as_deref(),
                 &entry.value,
             ) {
-                Ok(()) => wrote = true,
+                Ok(()) => {
+                    debug_log("WRITE: clipboard paste reported success");
+                    wrote = true;
+                }
                 Err(err) => {
+                    debug_log(&format!("WRITE: clipboard paste FAILED: {err}"));
                     let prefix = ax_set_error
                         .map(|e| format!("{e}; "))
                         .unwrap_or_else(|| "AXValue not settable; ".to_string());
@@ -1582,8 +2161,13 @@ unsafe fn clipboard_paste_into_element(
     fingerprint_chain: Option<&[crate::commands::ElementFingerprint]>,
     value: &str,
 ) -> Result<(), String> {
+    debug_log(&format!(
+        "\n=== CLIPBOARD_PASTE pid={app_pid} path={element_index_path:?} ==="
+    ));
+
     let app_element = AXUIElementCreateApplication(app_pid);
     if app_element.is_null() {
+        debug_log("CLIPBOARD_PASTE: AXUIElementCreateApplication returned null");
         return Err("could not create application element".to_string());
     }
     let raise_attr = CFString::new("AXFrontmost");
@@ -1594,44 +2178,213 @@ unsafe fn clipboard_paste_into_element(
         cf_true.as_CFTypeRef(),
     );
     CFRelease(app_element);
+    debug_log("CLIPBOARD_PASTE: raised app, sleeping 150ms");
 
     // Let the activation propagate — the AX tree is rebuilt on raise, so any
     // pre-raise element reference is now stale.
     std::thread::sleep(std::time::Duration::from_millis(150));
 
     let element = resolve_element(app_pid, element_index_path, fingerprint_chain)
-        .ok_or_else(|| "could not re-resolve element after raise".to_string())?;
+        .map_err(|err| {
+            debug_log(&format!("CLIPBOARD_PASTE: re-resolve failed: {err}"));
+            format!("could not re-resolve element after raise: {err}")
+        })?;
 
-    let ax_focused = CFString::new("AXFocused");
-    let cf_true = core_foundation::boolean::CFBoolean::true_value();
-    let focus_result = AXUIElementSetAttributeValue(
-        element,
-        ax_focused.as_concrete_TypeRef(),
-        cf_true.as_CFTypeRef(),
-    );
+    debug_log(&snapshot_element("CLIPBOARD_PASTE: re-resolved element = ", element));
+
+    // Java's CAccessible doesn't actually move focus in response to AXPress
+    // (returns success without doing anything), so the only mechanism that
+    // reliably focuses a Swing widget is a real synthesized click. Cursor
+    // visibly jumps to the field, paste happens, and we warp it back at
+    // the end so user mouse intent isn't disrupted permanently.
+    let element_center = get_element_center(element);
     CFRelease(element);
-    // Don't fail hard on focus error — Java Swing returns errors here even
-    // when the field is the active text component. Cmd+A / Cmd+V will land
-    // wherever focus actually ended up.
-    if focus_result != AX_ERROR_SUCCESS {
-        log::warn!(
-            "AXFocused set returned AX error {focus_result}; proceeding with paste anyway"
-        );
-    }
+
+    let center = element_center.ok_or_else(|| {
+        debug_log("CLIPBOARD_PASTE: element has no AXPosition/AXSize");
+        format!(
+            "element has no AXPosition/AXSize at path {element_index_path:?}; can't focus for paste"
+        )
+    })?;
+
+    debug_log(&format!(
+        "CLIPBOARD_PASTE: posting click to pid {app_pid} at ({:.1}, {:.1}) — cursor will not move",
+        center.x, center.y
+    ));
+    simulate_click_to_pid(app_pid, center).map_err(|err| {
+        debug_log(&format!("CLIPBOARD_PASTE: focus click failed: {err}"));
+        format!("focus click failed: {err}")
+    })?;
+
+    debug_log("CLIPBOARD_PASTE: click sent, sleeping 120ms for focus to land");
+    std::thread::sleep(std::time::Duration::from_millis(120));
 
     let mut clipboard = arboard::Clipboard::new()
         .map_err(|err| format!("clipboard unavailable: {err}"))?;
     clipboard
         .set_text(value.to_string())
         .map_err(|err| format!("failed to set clipboard: {err}"))?;
+    debug_log("CLIPBOARD_PASTE: clipboard set, sleeping 80ms then Cmd+A");
 
     std::thread::sleep(std::time::Duration::from_millis(80));
     crate::platform::macos::input::simulate_cmd_a()
         .map_err(|err| format!("Cmd+A failed: {err}"))?;
+    debug_log("CLIPBOARD_PASTE: Cmd+A sent, sleeping 30ms then Cmd+V");
     std::thread::sleep(std::time::Duration::from_millis(30));
     crate::platform::macos::input::simulate_cmd_v()
         .map_err(|err| format!("Cmd+V failed: {err}"))?;
+    debug_log("CLIPBOARD_PASTE: Cmd+V sent, sleeping 60ms");
     std::thread::sleep(std::time::Duration::from_millis(60));
+
+    debug_log("CLIPBOARD_PASTE: done");
+    Ok(())
+}
+
+/// Read AXPosition + AXSize off an element and return its screen-space
+/// center. Returns None when either attribute is missing — common on
+/// container/structural nodes, but text fields generally have both.
+unsafe fn get_element_center(element: CFTypeRef) -> Option<core_graphics::geometry::CGPoint> {
+    use core_graphics::geometry::{CGPoint, CGSize};
+
+    let mut position = CGPoint { x: 0.0, y: 0.0 };
+    let pos_attr = CFString::new("AXPosition");
+    let mut pos_value: CFTypeRef = ptr::null();
+    if AXUIElementCopyAttributeValue(element, pos_attr.as_concrete_TypeRef(), &mut pos_value)
+        != AX_ERROR_SUCCESS
+        || pos_value.is_null()
+    {
+        return None;
+    }
+    let pos_ok = AXValueGetValue(
+        pos_value,
+        AX_VALUE_TYPE_CG_POINT,
+        &mut position as *mut _ as *mut c_void,
+    );
+    CFRelease(pos_value);
+    if !pos_ok {
+        return None;
+    }
+
+    let mut size = CGSize {
+        width: 0.0,
+        height: 0.0,
+    };
+    let size_attr = CFString::new("AXSize");
+    let mut size_value: CFTypeRef = ptr::null();
+    if AXUIElementCopyAttributeValue(element, size_attr.as_concrete_TypeRef(), &mut size_value)
+        != AX_ERROR_SUCCESS
+        || size_value.is_null()
+    {
+        return None;
+    }
+    let size_ok = AXValueGetValue(
+        size_value,
+        AX_VALUE_TYPE_CG_SIZE,
+        &mut size as *mut _ as *mut c_void,
+    );
+    CFRelease(size_value);
+    if !size_ok {
+        return None;
+    }
+
+    Some(CGPoint {
+        x: position.x + size.width / 2.0,
+        y: position.y + size.height / 2.0,
+    })
+}
+
+/// Try to replace the element's full text by setting AXSelectedTextRange
+/// to span the whole field and then setting AXSelectedText to the new
+/// value. No focus, click, or keystrokes — entirely AX-level. Returns
+/// true on success. Java's CAccessible reports AXValue as not-settable
+/// for many text widgets but often does accept AXSelectedText edits, so
+/// this is the cheapest path to try before falling back to a click.
+unsafe fn try_replace_via_selected_text(element: CFTypeRef, value: &str) -> bool {
+    let ax_value = CFString::new("AXValue");
+    let ax_selected_text = CFString::new("AXSelectedText");
+    let ax_selected_text_range = CFString::new("AXSelectedTextRange");
+
+    let mut settable = false;
+    let r = AXUIElementIsAttributeSettable(
+        element,
+        ax_selected_text.as_concrete_TypeRef(),
+        &mut settable,
+    );
+    if r != AX_ERROR_SUCCESS || !settable {
+        return false;
+    }
+
+    // Length of the existing text (in UTF-16 code units, which is what
+    // AXSelectedTextRange uses on macOS).
+    let length: isize = match get_string_attribute(element, ax_value.as_concrete_TypeRef()) {
+        Some(s) => s.encode_utf16().count() as isize,
+        None => 0,
+    };
+
+    let range = CFRange {
+        location: 0,
+        length,
+    };
+    let range_value = AXValueCreate(
+        AX_VALUE_TYPE_CF_RANGE,
+        &range as *const _ as *const c_void,
+    );
+    if range_value.is_null() {
+        return false;
+    }
+    let r = AXUIElementSetAttributeValue(
+        element,
+        ax_selected_text_range.as_concrete_TypeRef(),
+        range_value,
+    );
+    CFRelease(range_value);
+    if r != AX_ERROR_SUCCESS {
+        return false;
+    }
+
+    let cf_text = CFString::new(value);
+    let r = AXUIElementSetAttributeValue(
+        element,
+        ax_selected_text.as_concrete_TypeRef(),
+        cf_text.as_CFTypeRef(),
+    );
+    r == AX_ERROR_SUCCESS
+}
+
+/// Inject a left-mouse click at the given screen-space point, delivered
+/// directly to the target process via CGEventPostToPid. Bypasses the
+/// global HID/cursor positioning layer so the user's cursor does NOT
+/// move — the target app receives the click as if it happened at `point`,
+/// but macOS never repositions the cursor in response.
+fn simulate_click_to_pid(
+    pid: i32,
+    point: core_graphics::geometry::CGPoint,
+) -> Result<(), String> {
+    use core_graphics::event::{CGEvent, CGEventType, CGMouseButton};
+    use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+
+    let source = CGEventSource::new(CGEventSourceStateID::Private)
+        .map_err(|_| "failed to create mouse event source".to_string())?;
+
+    let down = CGEvent::new_mouse_event(
+        source.clone(),
+        CGEventType::LeftMouseDown,
+        point,
+        CGMouseButton::Left,
+    )
+    .map_err(|_| "failed to create mouse-down event".to_string())?;
+    down.post_to_pid(pid);
+
+    std::thread::sleep(std::time::Duration::from_millis(15));
+
+    let up = CGEvent::new_mouse_event(
+        source,
+        CGEventType::LeftMouseUp,
+        point,
+        CGMouseButton::Left,
+    )
+    .map_err(|_| "failed to create mouse-up event".to_string())?;
+    up.post_to_pid(pid);
 
     Ok(())
 }
@@ -1661,21 +2414,33 @@ unsafe fn read_field_values_impl(
     fields
         .into_iter()
         .map(|field| {
-            let Some(element) = resolve_element(
+            debug_log(&format!(
+                "\n=== READ field pid={} path={:?} ===",
+                field.app_pid, field.element_index_path
+            ));
+            let element = match resolve_element(
                 field.app_pid,
                 &field.element_index_path,
                 field.fingerprint_chain.as_deref(),
-            ) else {
-                return crate::commands::FieldValueResult {
-                    value: None,
-                    error: Some(format!(
-                        "Could not resolve element for PID {} path {:?}",
-                        field.app_pid, field.element_index_path
-                    )),
-                };
+            ) {
+                Ok(e) => e,
+                Err(err) => {
+                    debug_log(&format!("READ: resolve failed: {err}"));
+                    return crate::commands::FieldValueResult {
+                        value: None,
+                        error: Some(format!(
+                            "Could not resolve element for PID {} path {:?}: {err}",
+                            field.app_pid, field.element_index_path
+                        )),
+                    };
+                }
             };
 
             let value = get_string_attribute(element, ax_value.as_concrete_TypeRef());
+            debug_log(&format!(
+                "READ: got value={:?}",
+                value.as_ref().map(|v| v.chars().take(60).collect::<String>())
+            ));
             CFRelease(element);
 
             crate::commands::FieldValueResult {
