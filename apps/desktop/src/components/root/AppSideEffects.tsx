@@ -624,10 +624,7 @@ export const AppSideEffects = () => {
         updateInitializedRef.current = true;
       }
 
-      const available = await checkForAppUpdates();
-      invoke("set_menu_icon", {
-        variant: available ? "update" : "default",
-      }).catch(console.error);
+      await checkForAppUpdates();
     },
     [],
   );
