@@ -32,7 +32,6 @@ pub enum MenuIconVariant {
 pub const EVT_INSTALL_UPDATE: &str = "tray-install-update";
 pub const EVT_TRAY_NAVIGATE: &str = "tray-navigate";
 pub const EVT_TRAY_COPY_LAST_TRANSCRIPTION: &str = "tray-copy-last-transcription";
-pub const EVT_TRAY_ADD_SELECTION_TO_DICTIONARY: &str = "tray-add-selection-to-dictionary";
 pub const EVT_TRAY_SELECT_MICROPHONE: &str = "tray-select-microphone";
 pub const EVT_TRAY_SELECT_TONE: &str = "tray-select-tone";
 pub const EVT_TRAY_SELECT_TRANSCRIPTION_PROVIDER: &str = "tray-select-transcription-provider";
@@ -84,15 +83,7 @@ pub fn build_tray_menu_from_config(
         true,
         None::<&str>,
     )?;
-    let add_dict = MenuItem::with_id(
-        app,
-        "add-selection-to-dictionary",
-        "Add Selection to Dictionary",
-        true,
-        None::<&str>,
-    )?;
     menu.append(&copy)?;
-    menu.append(&add_dict)?;
 
     menu.append(&PredefinedMenuItem::separator(app)?)?;
 
@@ -233,11 +224,6 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
                 "copy-last-transcription" => {
                     if let Err(err) = app.emit(EVT_TRAY_COPY_LAST_TRANSCRIPTION, ()) {
                         log::error!("Failed to emit tray-copy-last-transcription event: {err}");
-                    }
-                }
-                "add-selection-to-dictionary" => {
-                    if let Err(err) = app.emit(EVT_TRAY_ADD_SELECTION_TO_DICTIONARY, ()) {
-                        log::error!("Failed to emit tray-add-selection-to-dictionary event: {err}");
                     }
                 }
                 id if id.starts_with("mic-") => {

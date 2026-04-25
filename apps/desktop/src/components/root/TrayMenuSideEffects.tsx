@@ -1,7 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Nullable, Term, Tone } from "@voquill/types";
+import { Nullable, Tone } from "@voquill/types";
 import { useCallback } from "react";
-import { useIntl } from "react-intl";
 import { browserRouter } from "../../router";
 import {
   setPreferredMicrophone,
@@ -11,14 +10,11 @@ import {
   setPreferredTranscriptionMode,
 } from "../../actions/user.actions";
 import { setActiveTone } from "../../actions/tone.actions";
-import { getTermRepo } from "../../repos";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
-import { useAppStore } from "../../store";
-import { createId } from "../../utils/id.utils";
-import { sendPillFlashMessage } from "../../utils/overlay.utils";
+import { getAppState, useAppStore } from "../../store";
+import { getActiveManualToneIds } from "../../utils/tone.utils";
 import { getLogger } from "../../utils/log.utils";
-import { produceAppState } from "../../store";
 
 type InputDeviceDescriptor = {
   label: string;
@@ -72,8 +68,9 @@ const buildTrayMenuConfig = async (
     // Ignore microphone enumeration errors
   }
 
-  const tones = Object.values(toneById)
-    .sort((a, b) => a.name.localeCompare(b.name))
+  const tones = getActiveManualToneIds(getAppState())
+    .map((id) => toneById[id])
+    .filter((tone): tone is Tone => tone !== undefined)
     .map((tone) => ({
       id: tone.id,
       label: tone.name,
@@ -111,7 +108,6 @@ const buildTrayMenuConfig = async (
 };
 
 export const TrayMenuSideEffects = () => {
-  const intl = useIntl();
   const initialized = useAppStore((state) => state.initialized);
   const preferredMicrophone = useAppStore(
     (state) => state.userPrefs?.preferredMicrophone ?? null,
@@ -193,36 +189,6 @@ export const TrayMenuSideEffects = () => {
     invoke("copy_to_clipboard", { text: transcript }).catch((error) => {
       getLogger().error(`Failed to copy transcription: ${error}`);
     });
-  });
-
-  useTauriListen<void>("tray-add-selection-to-dictionary", async () => {
-    try {
-      const selectedText = await invoke<Nullable<string>>("get_selected_text");
-      const text = selectedText?.trim() ?? "";
-      if (!text) {
-        return;
-      }
-      const newTerm: Term = {
-        id: createId(),
-        createdAt: new Date().toISOString(),
-        sourceValue: text,
-        destinationValue: "",
-        isReplacement: false,
-      };
-      produceAppState((draft) => {
-        draft.termById[newTerm.id] = newTerm;
-        draft.dictionary.termIds = [newTerm.id, ...draft.dictionary.termIds];
-      });
-      await getTermRepo().createTerm(newTerm);
-      sendPillFlashMessage(
-        intl.formatMessage(
-          { defaultMessage: 'Added "{text}" to dictionary' },
-          { text },
-        ),
-      );
-    } catch (error) {
-      getLogger().error(`Failed to add selection to dictionary: ${error}`);
-    }
   });
 
   useTauriListen<string>("tray-select-microphone", (micId) => {
